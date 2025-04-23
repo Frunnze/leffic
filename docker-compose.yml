@@ -1,0 +1,48 @@
+services:
+  file-processor-service:
+    build: ./file-processor-service
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_HOST=redis
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CONTENT_MANAGEMENT_SERVICE=http://content-management-service:8000
+    volumes:
+      - files:/app/files
+    depends_on:
+      - postgres
+      - content-management-service
+
+  content-management-service:
+    build: ./content-management-service
+    ports:
+      - "8001:8000"
+    environment:
+      - CM_DB_USER=postgres
+      - CM_DB_PASS=postgres
+      - CM_DB_HOST=postgres
+      - CM_DB_PORT=5432
+    depends_on:
+      - postgres
+
+  redis:
+    image: redis:6.2
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    ports:
+      - "5450:5432"
+
+volumes:
+  redis-data:
+  files:
+  postgres:

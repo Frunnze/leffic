@@ -1,0 +1,11 @@
+node_modules
+myenv
+__pycache__
+.DS_Store
+build
+.env*
+*.db
+.vscode/settings.json
+myenv
+test*
+templates
