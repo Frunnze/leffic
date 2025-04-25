@@ -22,8 +22,18 @@ services:
       - CM_DB_PASS=postgres
       - CM_DB_HOST=postgres
       - CM_DB_PORT=5432
+      - SCHEDULER_SERVICE=http://scheduler-service:8000
     depends_on:
       - postgres
+
+  scheduler-service:
+    build: ./scheduler-service
+    ports:
+      - "8002:8000"
+    environment:
+      - MONGODB_HOST=mongodb:27017
+    depends_on:
+      - mongodb
 
   redis:
     image: redis:6.2
@@ -42,7 +52,15 @@ services:
     ports:
       - "5450:5432"
 
+  mongodb:
+    image: mongo:latest
+    volumes:
+      - mongodb:/data/db
+    ports:
+      - "27017:27017"
+
 volumes:
   redis-data:
   files:
   postgres:
+  mongodb:
