@@ -4,9 +4,10 @@ from pydantic import BaseModel
 from typing import Optional, List
 import uuid
 import traceback
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
+from sqlalchemy import select, union_all, func, or_
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 
 from ..models import Folder, FlashcardDeck, Flashcard, FlashcardReview
 from ..database import get_db
@@ -66,24 +67,17 @@ async def save_study_units(request_data: FlashcardRequest, db: Session = Depends
         raise HTTPException(status_code=500, detail=str(e))
     
 
-def str_date(dateobj):
+def date_to_str(dateobj):
     return dateobj.strftime("%Y-%m-%d %H:%M:%S")
 
-def get_deck_flashcards(db, flashcard_deck_id):
-    flashcards = (
-        db.query(Flashcard)
-        .filter(
-            Flashcard.deck_id == uuid.UUID(flashcard_deck_id)
-        )
-        .all()
-    )
+def flashcard_results(flashcards):
     return [
         {
             "id": flashcard.id,
             "type": flashcard.type,
-            "next_review": flashcard.next_review,
+            "next_review": date_to_str(flashcard.next_review) if flashcard.next_review else None,
             "content": flashcard.content,
-            "created_at": str_date(flashcard.created_at),
+            "created_at": date_to_str(flashcard.created_at),
             "future_ratings_time": flashcard.future_ratings_time if flashcard.future_ratings_time else {1: 59, 2: 329, 3: 599, 4: 86399}
         } for flashcard in flashcards
     ]
@@ -91,12 +85,52 @@ def get_deck_flashcards(db, flashcard_deck_id):
 @study_units.get("/flashcards")
 async def get_flashcards(flashcard_deck_id: Optional[str] = None, folder_id: Optional[str] = None, db: Session = Depends(get_db)):
     try:
+        # Trigger the optimizer from the scheduler service
+        # ...
+
+        # Get the flashcards from a specific deck
         flashcards = []
         if flashcard_deck_id:
-            flashcards = get_deck_flashcards(db, flashcard_deck_id)
-            return JSONResponse(content={"flashcards": flashcards})
+            flashcards = (
+                db.query(Flashcard)
+                .filter(
+                    Flashcard.deck_id == uuid.UUID(flashcard_deck_id),
+                    or_(
+                        func.date(Flashcard.next_review) <= datetime.now(timezone.utc).date(),
+                        Flashcard.next_review.is_(None)
+                    )
+                )
+                .all()
+            )
+            return JSONResponse(content={"flashcards": flashcard_results(flashcards)})
 
-        return JSONResponse(content={"flashcards": flashcards})
+        # Get the flashcards from a folder and its subfolders
+        folder_cte = (
+            select(Folder.id)
+            .where(Folder.id == folder_id)
+            .cte(name="subfolders", recursive=True)
+        )
+        subfolder = aliased(Folder)
+        folder_cte = folder_cte.union_all(
+            select(subfolder.id).where(subfolder.parent_id == folder_cte.c.id)
+        )
+        deck_ids_subquery = (
+            select(FlashcardDeck.id)
+            .where(FlashcardDeck.folder_id.in_(folder_cte))
+        )
+        flashcards = (
+            db.query(Flashcard)
+            .filter(
+                Flashcard.deck_id.in_(deck_ids_subquery),
+                or_(
+                    func.date(Flashcard.next_review) <= datetime.now(timezone.utc).date(),
+                    Flashcard.next_review.is_(None)
+                )
+            )
+            .all()
+        )
+
+        return JSONResponse(content={"flashcards": flashcard_results(flashcards)})
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

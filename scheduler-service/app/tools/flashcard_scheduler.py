@@ -35,7 +35,21 @@ def get_ratings_time(card, scheduler, timestamp):
     ratings_time = {}
     for r, val in rating_map.items():
         temp_card, _ = scheduler.review_card(card, val)
-        time_delta = temp_card.due - timestamp
-        ratings_time[r] = time_delta.seconds
-    
+        ratings_time[r] = max(0, int((temp_card.due - timestamp).total_seconds()))
+
     return ratings_time
+
+# celery task
+def optimize_scheduler(scheduler, user_id):
+    new_scheduler = None
+
+    # Check if there are enough review logs
+    # ...
+
+    # Get review logs
+    # ...
+
+    # Optimize the scheduler
+    # ...
+
+    return new_scheduler

@@ -14,7 +14,7 @@ class Folder(Base):
     __tablename__ = "folders"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
-    parent_id = Column(UUID(as_uuid=True), ForeignKey("folders.id"), nullable=True)
+    parent_id = Column(UUID(as_uuid=True), ForeignKey("folders.id"), nullable=True, index=True)
     name = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
     user_id = Column(UUID(as_uuid=True), nullable=False)
@@ -57,9 +57,9 @@ class Flashcard(Base):
     __tablename__ = "flashcards"
 
     id = Column(Integer, primary_key=True, nullable=False)
-    deck_id = Column(UUID(as_uuid=True), ForeignKey("flashcard_decks.id"), nullable=False)
+    deck_id = Column(UUID(as_uuid=True), ForeignKey("flashcard_decks.id"), nullable=False, index=True)
     type = Column(String, nullable=False)
-    next_review = Column(DateTime, nullable=True)
+    next_review = Column(DateTime, nullable=True, index=True)
     content = Column(JSONB, nullable=False)
     created_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
     fsrs_card = Column(JSONB, nullable=True)
