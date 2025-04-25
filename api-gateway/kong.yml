@@ -1,0 +1,23 @@
+_format_version: "3.0"
+
+services:
+  - name: content-management-service
+    url: http://content-management-service:8000
+    routes:
+      - name: content-route
+        paths: ["/api/content"]
+        strip_path: true
+
+  - name: file-processor-service
+    url: http://file-processor-service:8000
+    routes:
+      - name: files-route
+        paths: ["/api/files"]
+        strip_path: true
+
+  - name: scheduler-service
+    url: http://scheduler-service:8000
+    routes:
+      - name: scheduler-route
+        paths: ["/api/scheduler"]
+        strip_path: true
