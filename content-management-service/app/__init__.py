@@ -1,7 +1,8 @@
 from fastapi import FastAPI
-from dotenv import load_dotenv
+import os
 
-load_dotenv()
+
+SCHEDULER_SERVICE = os.getenv("SCHEDULER_SERVICE")
 
 def create_app():
     app = FastAPI()

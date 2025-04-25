@@ -10,9 +10,9 @@ import requests
 from ..tools.text_extractor import text_extractor_factory
 from .. import ai_factory
 from ..tools.prompts.flashcards_prompt import get_flashcards_system_prompt
+from .. import CONTENT_MANAGEMENT_SERVICE
 
 study_units_generator = APIRouter()
-CONTENT_MANAGEMENT_SERVICE = os.getenv("CONTENT_MANAGEMENT_SERVICE")
 
 class FlashcardsMetadata(BaseModel):
     comprehensiveness: Literal["high", "medium", "low"] = "medium"
@@ -20,50 +20,51 @@ class FlashcardsMetadata(BaseModel):
     types: List[Literal["basic", "list", "cloze"]] = ["basic"]
     amount: Optional[int] = None
 
+class FileMetadata(BaseModel):
+    storage_id: str
+    extension: str
+
 class StudyUnitsMetadata(BaseModel):
     user_id: str
     folder_id: Optional[str] = None
-    files_ids: List[str]
+    file_metadata: List[FileMetadata]
     flashcards: FlashcardsMetadata
     ai_model: Optional[str] = None
 
-def get_file_from_storage(file_id):
-    with open("files/" + file_id, "rb") as file:
+def get_file_from_storage(storage_name):
+    with open("files/" + storage_name, "rb") as file:
         return file.read()
 
 @study_units_generator.post("/generate-study-units/")
-async def generate_study_units(metadata: StudyUnitsMetadata):
+async def generate_study_units(request_data: StudyUnitsMetadata):
     try:
         # Check if the user has enough resources
         # ... (request to user service)
 
         # Extract the text
         extracted_text = ""
-        for file_id in metadata.files_ids:
-            file_bytes = get_file_from_storage(file_id)
+        for file_meta in request_data.file_metadata:
+            file_bytes = get_file_from_storage(file_meta.storage_id + "." + file_meta.extension)
 
-            with tempfile.NamedTemporaryFile(suffix=file_id, delete=True, dir="temp_files") as temp_file:
+            with tempfile.NamedTemporaryFile(suffix=file_meta.storage_id, delete=True, dir="temp_files") as temp_file:
                 temp_file.write(file_bytes)
-                temp_file.flush() 
-
-                _, extension = os.path.splitext(file_id)
-                extension = extension.lstrip(".")
+                temp_file.flush()
 
                 text_extractor = text_extractor_factory\
-                    .get_text_extractor(extension)
-                extracted_text += text_extractor.extract_text(temp_file.name, extension) + "\n"
+                    .get_text_extractor(file_meta.extension)
+                extracted_text += text_extractor.extract_text(temp_file.name, file_meta.extension) + "\n"
 
         # Check if the current resources are enough for the extracted text 
         # ...
 
         # Generate study units
-        ai = ai_factory.get_ai(metadata.ai_model)
+        ai = ai_factory.get_ai(request_data.ai_model)
         flashcards, request_cost = ai.get_ai_res(
             system_prompt=get_flashcards_system_prompt(
-                comprehensiveness=metadata.flashcards.comprehensiveness,
-                verbosity=metadata.flashcards.verbosity,
-                amount=metadata.flashcards.amount,
-                flashcard_types=metadata.flashcards.types
+                comprehensiveness=request_data.flashcards.comprehensiveness,
+                verbosity=request_data.flashcards.verbosity,
+                amount=request_data.flashcards.amount,
+                flashcard_types=request_data.flashcards.types
             ),
             user_prompt=extracted_text
         )
@@ -76,8 +77,8 @@ async def generate_study_units(metadata: StudyUnitsMetadata):
         data = {
             "flashcards": flashcards,
             "deck_name": deck_name,
-            "folder_id": metadata.folder_id, 
-            "user_id": metadata.user_id
+            "folder_id": request_data.folder_id, 
+            "user_id": request_data.user_id
         }
         response = requests.post(
             url=CONTENT_MANAGEMENT_SERVICE + "/save-study-units",

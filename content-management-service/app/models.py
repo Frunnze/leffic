@@ -36,6 +36,7 @@ class File(Base):
     folder_id = Column(UUID(as_uuid=True), ForeignKey("folders.id"), nullable=False)
     storage_id = Column(UUID(as_uuid=True), nullable=False)
     name = Column(String, nullable=False)
+    extension = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
     public = Column(Boolean, default=False, nullable=False)
 
@@ -61,6 +62,8 @@ class Flashcard(Base):
     next_review = Column(DateTime, nullable=True)
     content = Column(JSONB, nullable=False)
     created_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
+    fsrs_card = Column(JSONB, nullable=True)
+    future_ratings_time = Column(JSONB, nullable=True)
 
     flashcard_reviews = relationship("FlashcardReview", backref="flashcard", cascade="all, delete-orphan")
 
@@ -70,9 +73,10 @@ class FlashcardReview(Base):
 
     id = Column(Integer, primary_key=True, nullable=False)
     flashcard_id = Column(Integer, ForeignKey("flashcards.id"), nullable=False)
-    reviewed_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=True)
-    score = Column(Integer, nullable=False)
-    duration = Column(Float, nullable=True)
+    fsrs_review = Column(JSONB, nullable=False)
+    # reviewed_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=True)
+    # score = Column(Integer, nullable=False)
+    # duration = Column(Float, nullable=True)
 
 
 class Test(Base):
