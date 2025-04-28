@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+
+@theme {
+  --color-primary: #FFFFFF;
+  --color-secondary: #3083DC;
+  --color-secondary-10: rgba(48, 131, 220, 110);
+  --color-tertiary-100: rgba(57, 57, 58, 1);
+  --color-tertiary-40: rgba(57, 57, 58, 0.40);
+  --color-tertiary-30: rgba(57, 57, 58, 0.30);
+  --color-tertiary-20: rgba(57, 57, 58, 0.20);
+  --color-tertiary-10: rgba(57, 57, 58, 0.10);
+  --color-tertiary-2: rgba(57, 57, 58, 0.02);
+}
+
+.btn-primary {
+  @apply border flex items-center gap-2 py-1.5 px-3 border-tertiary-40 rounded-md hover:bg-tertiary-2 cursor-pointer font-medium text-sm md:text-base text-nowrap;
+}
