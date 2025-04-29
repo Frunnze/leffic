@@ -1,12 +1,14 @@
-import Home from "./components/Home";
-import LeftNavBar from "./components/LeftNavBar";
+import { Router, Route } from "@solidjs/router"
+import Home from "./pages/Home";
+import FlashcardsReview from "./pages/FlashcardsReview";
+
 
 function App() {
   return (
-    <div class="flex text-tertiary-100">
-      <LeftNavBar/>
-      <Home/>
-    </div>
+    <Router>
+      <Route path="/folder/:id" component={Home} />
+      <Route path="/flashcard_deck/:id" component={FlashcardsReview} />
+    </Router>
   );
 }
 

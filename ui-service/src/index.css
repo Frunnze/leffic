@@ -4,13 +4,21 @@
 @theme {
   --color-primary: #FFFFFF;
   --color-secondary: #3083DC;
-  --color-secondary-10: rgba(48, 131, 220, 110);
   --color-tertiary-100: rgba(57, 57, 58, 1);
   --color-tertiary-40: rgba(57, 57, 58, 0.40);
   --color-tertiary-30: rgba(57, 57, 58, 0.30);
   --color-tertiary-20: rgba(57, 57, 58, 0.20);
   --color-tertiary-10: rgba(57, 57, 58, 0.10);
   --color-tertiary-2: rgba(57, 57, 58, 0.02);
+
+  --color-tertiary-red-75: rgba(208, 0, 0, 0.75);
+  --color-tertiary-red-80: rgba(208, 0, 0, 0.80);
+  --color-tertiary-red-60: rgba(208, 0, 0, 0.60);
+  --color-tertiary-red-65: rgba(208, 0, 0, 0.65);
+  --color-tertiary-green-60: rgba(28, 124, 84, 0.60);
+  --color-tertiary-green-65: rgba(28, 124, 84, 0.65);
+  --color-tertiary-green-95: rgba(28, 124, 84, 0.95);
+  --color-tertiary-green-100: rgba(28, 124, 84, 1);
 }
 
 .btn-primary {
