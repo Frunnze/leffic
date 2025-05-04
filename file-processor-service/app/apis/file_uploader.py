@@ -1,5 +1,5 @@
 from fastapi import APIRouter, File, Form, UploadFile, HTTPException
-from typing import List
+from typing import List, Optional
 import os
 import shutil
 import requests
@@ -17,8 +17,8 @@ def save_file_to_storage(file, unique_name):
     with open(file_path, "wb") as out_file:
         shutil.copyfileobj(file.file, out_file)
 
-@file_uploader.post("/upload-files/")
-async def upload_files(files: List[UploadFile] = File(...), folder_id: str = Form(...)):
+@file_uploader.post("/upload-files")
+async def upload_files(files: List[UploadFile] = File(...), folder_id: Optional[str] = Form(...)):
     try:
         uploaded_files = []
 
@@ -44,6 +44,7 @@ async def upload_files(files: List[UploadFile] = File(...), folder_id: str = For
                 "folder_id": folder_id
             }
         )
+        print(response.json())
         response.raise_for_status()
 
         return {"msg": "Files uploaded!", "file_metadata": uploaded_files}

@@ -8,16 +8,17 @@ export default function NewFolder(props) {
 
     const createNewFolder = async () => {
         console.log(folderName())
+        let payload = {
+            "user_id": "23da4be0-70fd-439b-b984-aaf729959e9a",
+            "folder_name": folderName(),
+            parent_folder_id: params.id
+        };
         const res = await fetch("http://localhost:8888/api/content/create-folder", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({
-                "user_id": "23da4be0-70fd-439b-b984-aaf729959e9a",
-                "parent_folder_id": params.id,
-                "folder_name": folderName()
-            })
+            body: JSON.stringify(payload)
         })
         const resData = await res.json()
         props.displayUnits([{

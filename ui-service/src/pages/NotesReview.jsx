@@ -3,11 +3,7 @@ import LeftNavBar from "../components/LeftNavBar";
 import { useParams } from "@solidjs/router";
 
 
-const getFlashcards = async (flashcardDeckId) => {
-    if (!flashcardDeckId) {
-        throw new Error('No flashcard deck ID provided');
-    }
-    
+const getNotes = async (notesId) => {    
     const baseUrl = 'http://localhost:8888/api/content/flashcards';
     const paramsToSend = new URLSearchParams({
         flashcard_deck_id: flashcardDeckId,

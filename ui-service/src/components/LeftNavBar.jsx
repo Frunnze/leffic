@@ -2,7 +2,7 @@ import { A } from "@solidjs/router";
 
 export default function LeftNavBar() {
     return (
-      <nav class="z-50 flex flex-col justify-between bg-primary fixed h-full w-17 border-r border-tertiary-10 font-medium text-xs">
+      <nav class="absolute left-0 z-50 flex flex-col justify-between bg-primary fixed h-full w-17 border-r border-tertiary-10 font-medium text-xs">
         <ul class="flex flex-col">
           <li class="flex justify-center border-b border-tertiary-10 py-4">
               <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 35 35" fill="none">

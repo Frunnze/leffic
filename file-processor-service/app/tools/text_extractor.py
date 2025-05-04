@@ -34,7 +34,7 @@ def register_extractor(extensions: list):
     "rtf", "tiff", "tif", "txt", "wav", "xlsx", "xls"
 ])
 class GeneralTextExtractor(TextExtractor):
-    def extract_text(self, filename: str, extension: str) -> str:
+    def extract_text(self, filename: str, extension: str):
         text_bytes = textract.process(
             filename, 
             output_encoding="UTF-8", 

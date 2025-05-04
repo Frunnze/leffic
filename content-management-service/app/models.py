@@ -119,7 +119,7 @@ class Note(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
     folder_id = Column(UUID(as_uuid=True), ForeignKey("folders.id"), nullable=False)
     name = Column(String, nullable=False)
-    content = Column(JSONB, nullable=False)
+    content = Column(String, nullable=False)
     type = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
     public = Column(Boolean, default=False, nullable=False)

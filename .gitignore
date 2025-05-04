@@ -9,3 +9,6 @@ build
 myenv
 test*
 templates
+
+node_modules
+dist

@@ -2,7 +2,7 @@ services:
   kong:
     image: kong:3.6
     ports:
-      - 8003:8000
+      - 8888:8000
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /kong/kong.yml
@@ -19,7 +19,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - REDIS_HOST=redis
+      - REDIS_HOST=redis:6379
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - CONTENT_MANAGEMENT_SERVICE=http://content-management-service:8000
     volumes:
@@ -73,6 +73,20 @@ services:
       - mongodb:/data/db
     ports:
       - "27017:27017"
+
+  celery-worker:
+    build: ./file-processor-service
+    environment:
+      - REDIS_HOST=redis:6379
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CONTENT_MANAGEMENT_SERVICE=http://content-management-service:8000
+    depends_on:
+      - redis
+      - file-processor-service
+    command: >
+      celery -A app
+      worker
+      --loglevel info
 
 volumes:
   redis-data:

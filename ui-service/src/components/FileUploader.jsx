@@ -1,18 +1,82 @@
 import { useParams } from "@solidjs/router";
-import { createSignal } from "solid-js";
+import { createEffect, createSignal } from "solid-js";
 
 
 export default function FileUploader(props) {
     const [file, setFile] = createSignal();
+    const [flashcardsGenerationTaskId, setFlashcardsGenerationTaskId] = createSignal();
+    const [flashcardsGenerationTaskStatus, setFlashcardsGenerationTaskStatus] = createSignal();
     const params = useParams();
 
+    async function generateFlashcards(user_id, storage_id, extension) {
+        const flashcardsGenerationResponse = await fetch(
+            "http://localhost:8888/api/files/generate-study-units",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    flashcards: {},
+                    user_id: user_id,
+                    folder_id: params.id,
+                    file_metadata: [
+                        {
+                            storage_id: storage_id,
+                            extension: extension
+                        }
+                    ]
+                })
+            }
+        );
+        const flashcardsGenerationResponseData = await flashcardsGenerationResponse.json()
+
+        // Get flashcards task id
+        setFlashcardsGenerationTaskId(flashcardsGenerationResponseData.task_id)
+    }
+
+    // Check the flashcards generation task
+    createEffect(() => {
+        if (!flashcardsGenerationTaskId()) return;
+        const interval = setInterval(async () => {
+          try {
+            const res = await fetch(`http://localhost:8888/api/files/flashcards-status/${flashcardsGenerationTaskId()}`);
+            const data = await res.json();
+            console.log("FLASHCARDS GENERATION TASK STATUS", data)
+            setFlashcardsGenerationTaskStatus(data.status);
+            
+            if (data.status === "SUCCESS") {
+                props.displayUnits([{
+                    id: data.flashcard_deck_id,
+                    name: data.name,
+                    type: data.type,
+                    created_at: data.created_at
+                }]);
+            }
+            if (data.status === "SUCCESS" || data.status === "FAILURE") {
+              clearInterval(interval); // stop polling
+              setFlashcardsGenerationTaskId(null);
+            }
+          } catch (err) {
+            console.error("Error polling task status:", err);
+          }
+        }, 2000);
+      
+        // Cleanup on component unmount or task ID change
+        return () => clearInterval(interval);
+      });
+
     const uploadFile = async () => {
+        let user_id = "23da4be0-70fd-439b-b984-aaf729959e9a";
         if (!file()) return;
         const formData = new FormData();
         formData.append("files", file());
-        console.log("files", file())
-        formData.append("folder_id", params.id);
-        console.log("folder_id", params.id);
+        formData.append("user_id", user_id);
+        if (params.id !== "home") {
+            formData.append("folder_id", params.id);
+        } else {
+            formData.append("folder_id", user_id);
+        }
         try {
             const response = await fetch(
                 "http://localhost:8888/api/files/upload-files", {
@@ -20,7 +84,7 @@ export default function FileUploader(props) {
                     body: formData
                 }
             )
-            const data = await response.json() // return the deck id, notes id, job id etc.
+            const data = await response.json()
             props.displayUnits(
                 (data.file_metadata || []).map(file => ({
                     id: file.storage_id,
@@ -30,43 +94,9 @@ export default function FileUploader(props) {
                 }))
             )
 
-            // Generate study units
-            const requestBody = JSON.stringify({
-                flashcards: {},
-                user_id: "23da4be0-70fd-439b-b984-aaf729959e9a",
-                folder_id: params.id,
-                file_metadata: [
-                    {
-                        storage_id: data.file_metadata[0].storage_id,
-                        extension: data.file_metadata[0].extension
-                    }
-                ]
-            })
-            console.log(requestBody)
-            const studyUnitsResponse = await fetch(
-                "http://localhost:8888/api/files/generate-study-units",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: requestBody
-                }
-            );
-            console.log("studyUnitsResponse", studyUnitsResponse)
+            // Generate flashcards
+            await generateFlashcards(user_id, data.file_metadata[0].storage_id, data.file_metadata[0].extension)
 
-            // Get flashcard deck id
-            const parsedStudyUnitsResponse = await studyUnitsResponse.json()
-            console.log("parsedStudyUnitsResponse", parsedStudyUnitsResponse)
-
-            // Retrieve flashcards
-            props.displayUnits([{
-                id: parsedStudyUnitsResponse.flashcard_deck_id,
-                name: parsedStudyUnitsResponse.name,
-                type: "flashcard_deck",
-                created_at: parsedStudyUnitsResponse.created_at
-            }]);
-            console.log("parsedStudyUnitsResponse", parsedStudyUnitsResponse)
         } catch (error) {
             console.error("Error: ", error);
         };

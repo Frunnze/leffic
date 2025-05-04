@@ -5,11 +5,11 @@ from typing import Optional, List
 import uuid
 import traceback
 from sqlalchemy.orm import Session, aliased
-from sqlalchemy import select, union_all, func, or_
+from sqlalchemy import select, func, or_
 import requests
 from datetime import datetime, timezone
 
-from ..models import Folder, FlashcardDeck, Flashcard, FlashcardReview
+from ..models import Folder, FlashcardDeck, Flashcard, FlashcardReview, Note
 from ..database import get_db
 from .. import SCHEDULER_SERVICE
 
@@ -22,21 +22,16 @@ class FlashcardRequest(BaseModel):
     folder_id: Optional[str] = None
     flashcards: dict
 
-@study_units.post("/save-study-units")
+@study_units.post("/save-flashcards")
 async def save_study_units(request_data: FlashcardRequest, db: Session = Depends(get_db)):
     try:
         # Convert user_id and folder_id to UUIDs
         flashcard_deck_name = request_data.deck_name
-        user_id = uuid.UUID(request_data.user_id)
-        folder_id = request_data.folder_id
 
         # Create or get folder
-        folder = None
-        if folder_id:
-            folder = db.query(Folder).filter_by(id=uuid.UUID(folder_id)).first()
-
-        if not folder_id or not folder:
-            folder = Folder(name=flashcard_deck_name, user_id=user_id)
+        folder = db.query(Folder).filter_by(id=request_data.folder_id).first()
+        if not folder:
+            folder = Folder(name=flashcard_deck_name, user_id=request_data.user_id)
             db.add(folder)
             db.flush()
 
@@ -83,8 +78,9 @@ def flashcard_results(flashcards):
     ]
 
 @study_units.get("/flashcards")
-async def get_flashcards(flashcard_deck_id: Optional[str] = None, folder_id: Optional[str] = None, db: Session = Depends(get_db)):
+async def get_flashcards(user_id: str, flashcard_deck_id: Optional[str] = None, folder_id: Optional[str] = None, db: Session = Depends(get_db)):
     try:
+        folder_id = folder_id if folder_id != "home" else user_id
         # Trigger the optimizer from the scheduler service
         # ...
 
@@ -100,6 +96,7 @@ async def get_flashcards(flashcard_deck_id: Optional[str] = None, folder_id: Opt
                         Flashcard.next_review.is_(None)
                     )
                 )
+                .order_by(Flashcard.next_review.asc())
                 .all()
             )
             return JSONResponse(content={"flashcards": flashcard_results(flashcards)})
@@ -107,7 +104,10 @@ async def get_flashcards(flashcard_deck_id: Optional[str] = None, folder_id: Opt
         # Get the flashcards from a folder and its subfolders
         folder_cte = (
             select(Folder.id)
-            .where(Folder.id == folder_id)
+            .where(
+                Folder.id == folder_id,
+                Folder.user_id == user_id
+            )
             .cte(name="subfolders", recursive=True)
         )
         subfolder = aliased(Folder)
@@ -127,6 +127,7 @@ async def get_flashcards(flashcard_deck_id: Optional[str] = None, folder_id: Opt
                     Flashcard.next_review.is_(None)
                 )
             )
+            .order_by(Flashcard.next_review.asc())
             .all()
         )
 
@@ -177,5 +178,19 @@ async def review_flashcard(request_data: ReviewFlashcardRequest, db: Session = D
         )
     except Exception as e:
         db.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@study_units.get("/note")
+async def get_note(note_id: str, db: Session = Depends(get_db)):
+    try:
+        result = (
+            db.query(Note)
+            .filter(Note.id == note_id)
+            .first()
+        )
+        return JSONResponse(content={"content": result.content})
+    except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
