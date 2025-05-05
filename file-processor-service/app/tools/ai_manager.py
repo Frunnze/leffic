@@ -23,6 +23,7 @@ class AIManager(ABC):
 
 
 def get_dict_from_text(text):
+    text = text.replace("\n", "").replace("\t", "")
     start_index = text.find("{")
     end_index = text.rfind("}")
     dictionary = demjson3.decode(text[start_index:end_index+1])
@@ -34,20 +35,26 @@ class OpenAIManager(AIManager):
         self.client = client
 
     def get_ai_res(self, system_prompt: str, user_prompt: str, output_format_type="JSON"):
-        response = self.client.responses.create(
-            model=self.model_name,
-            input=[
-                {
-                    "role": "developer",
-                    "content": system_prompt
-                },
-                {
-                    "role": "user",
-                    "content": user_prompt
-                }
-            ]
-        )
-        print(response)
+        for _ in range(2):
+            try:
+                response = self.client.responses.create(
+                    model=self.model_name,
+                    input=[
+                        {
+                            "role": "developer",
+                            "content": system_prompt
+                        },
+                        {
+                            "role": "user",
+                            "content": user_prompt
+                        }
+                    ]
+                )
+                break
+            except Exception as e:
+                print("Error in ai manager:", str(e))
+
+        print("Output text:", response.output_text)
         request_cost = self.get_request_cost(response)
         if output_format_type == "JSON":
             return get_dict_from_text(response.output_text), request_cost

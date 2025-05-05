@@ -124,7 +124,7 @@ export default function FlashcardsReview() {
     return (
         <div class="flex h-screen text-tertiary-100">
             <LeftNavBar/>
-            <div class="ml-17 w-full h-full bg-primary flex justify-center items-center text-primary">
+            <div class="ml-17 w-full h-full bg-secondary/10 flex justify-center items-center text-primary">
                 <div class="shadow-sm flex flex-col justify-end items-end w-[85%] lg:w-[65%] h-[75%] border border-tertiary-40 rounded-lg bg-primary">
                     <Switch>
                         <Match when={flashcardDeck() && flashcardDeck().flashcards.length === 0}>

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 
 @theme {
@@ -24,3 +25,18 @@
 .btn-primary {
   @apply border flex items-center gap-2 py-1.5 px-3 border-tertiary-40 rounded-md hover:bg-tertiary-2 cursor-pointer font-medium text-sm md:text-base text-nowrap;
 }
+
+/* 
+h1, h2, h3, h4, h5, h6 {
+  font-weight: bold;
+  margin: 0.5em 0;
+}
+
+ul, ol {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+li {
+  list-style: disc;
+} */

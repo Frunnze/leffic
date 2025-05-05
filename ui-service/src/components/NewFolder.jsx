@@ -1,6 +1,7 @@
 import { useParams } from "@solidjs/router";
 import { createSignal } from "solid-js";
 
+
 export default function NewFolder(props) {
     const params = useParams();
     const [open, setOpen] = createSignal(false);

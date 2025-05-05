@@ -9,7 +9,7 @@ from sqlalchemy import func
 from datetime import datetime, timezone
 import os
 
-from ..models import Folder, FlashcardDeck, File
+from ..models import Folder, FlashcardDeck, File, Note
 from ..database import get_db
 
 file_system_manager = APIRouter()
@@ -167,6 +167,20 @@ async def access_folder(user_id: str, folder_id: Optional[str] = None, db: Sessi
                 "created_at": str(row[2]),
                 "storage_id": str(row[3]),
                 "type": "file"
+            })
+
+        # Get the folder's files
+        notes_rows = (
+            db.query(Note.id, Note.name, Note.created_at)
+            .filter(Note.folder_id == folder_id)
+            .all()
+        )
+        for row in notes_rows:
+            content.append({
+                "id": str(row[0]), 
+                "name": row[1], 
+                "created_at": str(row[2]),
+                "type": "note"
             })
         return JSONResponse(content={
             "content": content,

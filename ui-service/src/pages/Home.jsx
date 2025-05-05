@@ -107,9 +107,9 @@ export default function Home() {
         <Show when={flashcardsReview()}>
             <FlashcardsMixedReview setFlashcardsReview={setFlashcardsReview} folderId={unitIdSignal()} />
         </Show>
-        <div class="relative flex text-tertiary-100 pl-17">
+        <div class="relative flex text-tertiary-100 pl-17 h-full">
             <LeftNavBar/>
-            <div class="flex flex-col w-full py-17 px-10 md:px-40 lg:px-80 h-full gap-y-4">
+            <div class="flex flex-col w-full h-full py-17 px-10 md:px-40 lg:px-80 gap-y-4">
                 <div class="flex items-center w-full mb-4">
                     <svg class="flex-none" xmlns="http://www.w3.org/2000/svg" width="30" height="23" viewBox="0 0 27 20" fill="none">
                         <g clip-path="url(#clip0_9_17)">
@@ -191,7 +191,7 @@ export default function Home() {
                         <For each={folderContent().content}>
                             {(unit) => (
                                 <div class="relative">
-                                    <A href={`/${unit.type}/` + unit.id} class="flex gap-2 items-center w-full border justify-between py-1.5 px-3 border-tertiary-40 rounded-md hover:bg-secondary hover:fill-primary hover:text-primary hover:border-transparent hover:shadow-sm cursor-pointer font-medium text-sm truncate">
+                                    <A href={`/${unit.type}/` + unit.id} class="bg-primary flex gap-2 items-center w-full border justify-between py-1.5 px-3 border-tertiary-40 rounded-md hover:bg-secondary hover:fill-primary hover:text-primary hover:border-transparent hover:shadow-sm cursor-pointer font-medium text-sm truncate">
                                         <div class="flex gap-2 w-[80%]">
                                             <Switch>
                                                 <Match when={unit.type === "folder"}>
@@ -215,6 +215,11 @@ export default function Home() {
                                                 <Match when={unit.type === "file"}>
                                                     <svg class="flex-none" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
                                                         <path d="M3.74996 20C3.17704 20 2.68659 19.8042 2.27861 19.4125C1.87062 19.0208 1.66663 18.55 1.66663 18V2C1.66663 1.45 1.87062 0.979167 2.27861 0.5875C2.68659 0.195833 3.17704 0 3.74996 0H12.0833L18.3333 6V18C18.3333 18.55 18.1293 19.0208 17.7213 19.4125C17.3133 19.8042 16.8229 20 16.25 20H3.74996ZM11.0416 7V2H3.74996V18H16.25V7H11.0416Z"/>
+                                                    </svg>
+                                                </Match>
+                                                <Match when={unit.type === "note"}>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
+                                                        <path d="M6.45833 16H14.375V14H6.45833V16ZM6.45833 12H14.375V10H6.45833V12ZM4.47917 20C3.9349 20 3.46897 19.8042 3.08138 19.4125C2.69379 19.0208 2.5 18.55 2.5 18V2C2.5 1.45 2.69379 0.979167 3.08138 0.5875C3.46897 0.195833 3.9349 0 4.47917 0H12.3958L18.3333 6V18C18.3333 18.55 18.1395 19.0208 17.752 19.4125C17.3644 19.8042 16.8984 20 16.3542 20H4.47917ZM11.4062 7V2H4.47917V18H16.3542V7H11.4062Z"/>
                                                     </svg>
                                                 </Match>
                                             </Switch>

@@ -23,17 +23,13 @@ class FlashcardRequest(BaseModel):
     flashcards: dict
 
 @study_units.post("/save-flashcards")
-async def save_study_units(request_data: FlashcardRequest, db: Session = Depends(get_db)):
+async def save_flashcards(request_data: FlashcardRequest, db: Session = Depends(get_db)):
     try:
         # Convert user_id and folder_id to UUIDs
         flashcard_deck_name = request_data.deck_name
 
         # Create or get folder
         folder = db.query(Folder).filter_by(id=request_data.folder_id).first()
-        if not folder:
-            folder = Folder(name=flashcard_deck_name, user_id=request_data.user_id)
-            db.add(folder)
-            db.flush()
 
         # Create flashcard deck
         flashcard_deck = FlashcardDeck(
@@ -57,6 +53,31 @@ async def save_study_units(request_data: FlashcardRequest, db: Session = Depends
         db.commit()
 
         return JSONResponse(content={"flashcard_deck_id": str(flashcard_deck_id)})
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+class SaveNoteRequest(BaseModel):
+    note_content: str
+    note_name: str
+    folder_id: Optional[str] = None
+    user_id: str
+
+@study_units.post("/save-note")
+async def save_note(request_data: SaveNoteRequest, db: Session = Depends(get_db)):
+    try:
+        new_note = Note(
+            folder_id=request_data.folder_id,
+            name=request_data.note_name,
+            content=request_data.note_content,
+            type="general"
+        )
+        db.add(new_note)
+        db.flush()
+        new_note_id = new_note.id
+        db.commit()
+        return JSONResponse(content={"note_id": str(new_note_id)})
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
@@ -190,7 +211,7 @@ async def get_note(note_id: str, db: Session = Depends(get_db)):
             .filter(Note.id == note_id)
             .first()
         )
-        return JSONResponse(content={"content": result.content})
+        return JSONResponse(content={"content": result.content, "name": result.name})
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

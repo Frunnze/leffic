@@ -1,14 +1,22 @@
 import { useParams } from "@solidjs/router";
 import { createEffect, createSignal } from "solid-js";
+import { useNotificationContext } from "../context/NotificationContext";
 
 
 export default function FileUploader(props) {
     const [file, setFile] = createSignal();
     const [flashcardsGenerationTaskId, setFlashcardsGenerationTaskId] = createSignal();
-    const [flashcardsGenerationTaskStatus, setFlashcardsGenerationTaskStatus] = createSignal();
+    const [noteGenerationTaskId, setNoteGenerationTaskId] = createSignal();
+    const [folderId, setFolderId] = createSignal();
+    const {
+        setDisplayStartGenerationNotification, 
+        setFlashcardsTaskStatus,
+        setNoteTaskStatus
+    } = useNotificationContext();
+
     const params = useParams();
 
-    async function generateFlashcards(user_id, storage_id, extension) {
+    async function generateStudyUnits(user_id, storage_id, extension) {
         const flashcardsGenerationResponse = await fetch(
             "http://localhost:8888/api/files/generate-study-units",
             {
@@ -29,10 +37,11 @@ export default function FileUploader(props) {
                 })
             }
         );
-        const flashcardsGenerationResponseData = await flashcardsGenerationResponse.json()
+        const studyUnitsGenerationResponseData = await flashcardsGenerationResponse.json()
 
-        // Get flashcards task id
-        setFlashcardsGenerationTaskId(flashcardsGenerationResponseData.task_id)
+        setFlashcardsGenerationTaskId(studyUnitsGenerationResponseData.task_id)
+        setNoteGenerationTaskId(studyUnitsGenerationResponseData.note_task_id)
+        setDisplayStartGenerationNotification(true);
     }
 
     // Check the flashcards generation task
@@ -42,10 +51,10 @@ export default function FileUploader(props) {
           try {
             const res = await fetch(`http://localhost:8888/api/files/flashcards-status/${flashcardsGenerationTaskId()}`);
             const data = await res.json();
+            setFlashcardsTaskStatus(data.status)
             console.log("FLASHCARDS GENERATION TASK STATUS", data)
-            setFlashcardsGenerationTaskStatus(data.status);
             
-            if (data.status === "SUCCESS") {
+            if (data.status === "SUCCESS" && params.id === folderId()) {
                 props.displayUnits([{
                     id: data.flashcard_deck_id,
                     name: data.name,
@@ -66,6 +75,35 @@ export default function FileUploader(props) {
         return () => clearInterval(interval);
       });
 
+    // Check the note generation task
+    createEffect(() => {
+        if (!noteGenerationTaskId()) return;
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`http://localhost:8888/api/files/note-task-status/${noteGenerationTaskId()}`);
+                const data = await res.json();
+                setNoteTaskStatus(data.status)
+                console.log("NOTE GENERATION TASK STATUS", data)
+                
+                if (data.status === "SUCCESS" && params.id === folderId()) {
+                    props.displayUnits([{
+                        id: data.note_id,
+                        name: data.name,
+                        type: data.type,
+                        created_at: data.created_at
+                    }]);
+                }
+                if (data.status === "SUCCESS" || data.status === "FAILURE") {
+                    clearInterval(interval); // stop polling
+                    setNoteGenerationTaskId(null);
+                }
+            } catch (err) {
+                console.error("Error polling task status:", err);
+            }
+        }, 2000);        
+        return () => clearInterval(interval);
+        });
+
     const uploadFile = async () => {
         let user_id = "23da4be0-70fd-439b-b984-aaf729959e9a";
         if (!file()) return;
@@ -77,6 +115,7 @@ export default function FileUploader(props) {
         } else {
             formData.append("folder_id", user_id);
         }
+        setFolderId(params.id)
         try {
             const response = await fetch(
                 "http://localhost:8888/api/files/upload-files", {
@@ -95,8 +134,7 @@ export default function FileUploader(props) {
             )
 
             // Generate flashcards
-            await generateFlashcards(user_id, data.file_metadata[0].storage_id, data.file_metadata[0].extension)
-
+            await generateStudyUnits(user_id, data.file_metadata[0].storage_id, data.file_metadata[0].extension)
         } catch (error) {
             console.error("Error: ", error);
         };
