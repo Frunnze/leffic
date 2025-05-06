@@ -1,11 +1,9 @@
 from fastapi import FastAPI
 from dotenv import load_dotenv
-from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 
 
 load_dotenv()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 def create_app():
     app = FastAPI()

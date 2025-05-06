@@ -1,8 +1,11 @@
 _format_version: "3.0"
 
+
 services:
   - name: content-management-service
     url: http://content-management-service:8000
+    plugins:
+      - name: jwt
     routes:
       - name: content-route
         paths: ["/api/content"]
@@ -21,3 +24,18 @@ services:
       - name: scheduler-route
         paths: ["/api/scheduler"]
         strip_path: true
+
+  - name: user-service
+    url: http://user-service:8000
+    plugins: []
+    routes:
+      - name: user-route
+        paths: ["/api/user"]
+        strip_path: true
+
+consumers:
+  - username: api-user  # Consumer username
+    jwt_secrets:
+      - key: "my-issuer"
+        secret: "my-secret"
+        algorithm: HS256

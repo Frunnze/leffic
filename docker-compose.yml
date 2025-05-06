@@ -1,6 +1,6 @@
 services:
   kong:
-    image: kong:3.6
+    image: kong:3.9
     ports:
       - 8888:8000
     environment:
@@ -41,10 +41,22 @@ services:
     depends_on:
       - postgres
 
+  user-service:
+    build: ./user-service
+    ports:
+      - "8002:8000"
+    environment:
+      - DB_USER=postgres
+      - DB_PASS=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+    depends_on:
+      - postgres
+
   scheduler-service:
     build: ./scheduler-service
     ports:
-      - "8002:8000"
+      - "8003:8000"
     environment:
       - MONGODB_HOST=mongodb:27017
     depends_on:

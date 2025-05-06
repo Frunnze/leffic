@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional, List
@@ -7,22 +7,22 @@ import traceback
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timezone
-import os
 
 from ..models import Folder, FlashcardDeck, File, Note
 from ..database import get_db
+from ..tools.claims_extractor import get_user_id_from_jwt
 
 file_system_manager = APIRouter()
 
 class CreateFolderRequest(BaseModel):
-    user_id: str
     parent_folder_id: Optional[str] = None
     folder_name: Optional[str] = "New folder"
 
 @file_system_manager.post("/create-folder")
-async def create_folder(request_data: CreateFolderRequest, db: Session = Depends(get_db)):
+async def create_folder(request_data: CreateFolderRequest, user_id: str = Depends(get_user_id_from_jwt), db: Session = Depends(get_db)):
     try:
-        parent_folder_id = request_data.parent_folder_id if request_data.parent_folder_id != "home" else request_data.user_id
+        print("user_id", user_id)
+        parent_folder_id = request_data.parent_folder_id if request_data.parent_folder_id != "home" else user_id
         # Count folders with the same name
         same_name_folders_num = (
             db.query(func.count(Folder.id))
@@ -43,7 +43,7 @@ async def create_folder(request_data: CreateFolderRequest, db: Session = Depends
         new_folder = Folder(
             parent_id=parent_folder_id,
             name=folder_name,
-            user_id=uuid.UUID(request_data.user_id),
+            user_id=uuid.UUID(user_id),
             created_at=datetime.now(timezone.utc)
         )
         db.add(new_folder)
