@@ -1,19 +1,13 @@
 import { createSignal, Switch, Match, createResource, Show } from "solid-js";
+import { apiRequest } from "../utils/apiRequest";
 
 
 const getFlashcards = async (folderId) => {
-    const baseUrl = 'http://localhost:8888/api/content/flashcards';
-    let paramsToSend;
-    paramsToSend = new URLSearchParams({
-        user_id: "23da4be0-70fd-439b-b984-aaf729959e9a",
-        folder_id: folderId
-    });
-
-    const urlWithParams = `${baseUrl}?${paramsToSend}`;
-    const res = await fetch(urlWithParams);
-    if (!res.ok) {
-        throw new Error('Failed to fetch flashcards');
-    }
+    const res = await apiRequest({
+        endpoint: `/api/content/flashcards?${new URLSearchParams({
+            folder_id: folderId
+        }).toString()}`
+    })
     let data = await res.json();
     data["total_flashcards"] = data.flashcards.length;
     console.log(data);
@@ -74,24 +68,17 @@ export default function FlashcardsMixedReview(props) {
 
     const reviewFlashcard = async (rating) => {
         const flashCardId = flashcardDeck().flashcards[0].id;
-        console.log(JSON.stringify({
-            "flashcard_id": flashCardId,
-            "rating": rating,
-            "user_id": "23da4be0-70fd-439b-b984-aaf729959e9a"
-        }));
 
-        const res = await fetch("http://localhost:8888/api/content/review-flashcard", {
+        const res = await apiRequest({
+            endpoint: "/api/content/review-flashcard",
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
+            body: {
                 "flashcard_id": flashCardId,
-                "rating": rating,
-                "user_id": "23da4be0-70fd-439b-b984-aaf729959e9a"
-            })
-        });
+                "rating": rating
+            }
+        })
         const resData = await res.json();
+        
         console.log("resData", resData)
 
         let updatedFlashcards;

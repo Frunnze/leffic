@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from typing import List
 import traceback
 import tempfile
@@ -17,7 +17,7 @@ from .. import celery_app
 from .. import ai_factory
 from ..tools.prompts.flashcards_prompt import get_flashcards_system_prompt
 from ..tools.prompts.notes_prompt import get_notes_system_prompt
-import time
+from ..tools.claims_extractor import get_user_id_from_jwt
 
 
 study_units_generator = APIRouter()
@@ -120,11 +120,10 @@ class FlashcardsMetadata(BaseModel):
     amount: Optional[int] = None
 
 class FileMetadata(BaseModel):
-    storage_id: str
+    file_id: str
     extension: str
 
 class StudyUnitsMetadata(BaseModel):
-    user_id: str
     folder_id: Optional[str] = None
     file_metadata: List[FileMetadata]
     flashcards: Optional[FlashcardsMetadata] = None
@@ -132,15 +131,15 @@ class StudyUnitsMetadata(BaseModel):
     ai_model: Optional[str] = None
 
 @study_units_generator.post("/generate-study-units")
-async def generate_study_units(request_data: StudyUnitsMetadata):
+async def generate_study_units(request_data: StudyUnitsMetadata, user_id: str = Depends(get_user_id_from_jwt)):
     try:
-        folder_id = request_data.folder_id if request_data.folder_id != "home" else request_data.user_id
+        folder_id = request_data.folder_id if request_data.folder_id != "home" else user_id
 
         extracted_text = ""
         for file_meta in request_data.file_metadata:
-            file_bytes = get_file_from_storage(file_meta.storage_id + "." + file_meta.extension)
+            file_bytes = get_file_from_storage(file_meta.file_id + "." + file_meta.extension)
 
-            with tempfile.NamedTemporaryFile(suffix=file_meta.storage_id, delete=True, dir="temp_files") as temp_file:
+            with tempfile.NamedTemporaryFile(suffix=file_meta.file_id, delete=True, dir="temp_files") as temp_file:
                 temp_file.write(file_bytes)
                 temp_file.flush()
 
@@ -152,14 +151,14 @@ async def generate_study_units(request_data: StudyUnitsMetadata):
             extracted_text=extracted_text,
             flashcards_metadata=request_data.flashcards.dict(),
             folder_id=folder_id,
-            user_id=request_data.user_id
+            user_id=user_id
         )
         
         note_task = generate_note_task.delay(
             ai_model=request_data.ai_model, 
             extracted_text=extracted_text,
             folder_id=folder_id,
-            user_id=request_data.user_id
+            user_id=user_id
         )
 
         return {

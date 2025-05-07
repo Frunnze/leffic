@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
 import uuid
 import traceback
 from sqlalchemy.orm import Session, aliased
@@ -12,13 +12,13 @@ from datetime import datetime, timezone
 from ..models import Folder, FlashcardDeck, Flashcard, FlashcardReview, Note
 from ..database import get_db
 from .. import SCHEDULER_SERVICE
+from ..tools.claims_extractor import get_user_id_from_jwt
 
 study_units = APIRouter()
 
 
 class FlashcardRequest(BaseModel):
     deck_name: str
-    user_id: str
     folder_id: Optional[str] = None
     flashcards: dict
 
@@ -62,7 +62,6 @@ class SaveNoteRequest(BaseModel):
     note_content: str
     note_name: str
     folder_id: Optional[str] = None
-    user_id: str
 
 @study_units.post("/save-note")
 async def save_note(request_data: SaveNoteRequest, db: Session = Depends(get_db)):
@@ -99,7 +98,12 @@ def flashcard_results(flashcards):
     ]
 
 @study_units.get("/flashcards")
-async def get_flashcards(user_id: str, flashcard_deck_id: Optional[str] = None, folder_id: Optional[str] = None, db: Session = Depends(get_db)):
+async def get_flashcards(
+    flashcard_deck_id: Optional[str] = None, 
+    folder_id: Optional[str] = None, 
+    user_id: str = Depends(get_user_id_from_jwt), 
+    db: Session = Depends(get_db)
+):
     try:
         folder_id = folder_id if folder_id != "home" else user_id
         # Trigger the optimizer from the scheduler service
@@ -161,10 +165,13 @@ async def get_flashcards(user_id: str, flashcard_deck_id: Optional[str] = None, 
 class ReviewFlashcardRequest(BaseModel):
     flashcard_id: int
     rating: int
-    user_id: str
 
 @study_units.post("/review-flashcard")
-async def review_flashcard(request_data: ReviewFlashcardRequest, db: Session = Depends(get_db)):
+async def review_flashcard(
+    request_data: ReviewFlashcardRequest, 
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_user_id_from_jwt)
+):
     try:
         # Get card
         card = db.query(Flashcard).filter_by(id=request_data.flashcard_id).first()
@@ -175,7 +182,7 @@ async def review_flashcard(request_data: ReviewFlashcardRequest, db: Session = D
             json={
                 "card": card.fsrs_card,
                 "rating": request_data.rating,
-                "user_id": request_data.user_id
+                "user_id": user_id
             }
         )
         response.raise_for_status()
@@ -204,11 +211,13 @@ async def review_flashcard(request_data: ReviewFlashcardRequest, db: Session = D
     
 
 @study_units.get("/note")
-async def get_note(note_id: str, db: Session = Depends(get_db)):
+async def get_note(note_id: str, db: Session = Depends(get_db), user_id: str = Depends(get_user_id_from_jwt)):
     try:
         result = (
             db.query(Note)
-            .filter(Note.id == note_id)
+            .filter(
+                Note.id == note_id
+            )
             .first()
         )
         return JSONResponse(content={"content": result.content, "name": result.name})

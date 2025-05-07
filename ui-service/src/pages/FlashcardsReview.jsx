@@ -1,29 +1,20 @@
 import { createSignal, Switch, Match, createResource} from "solid-js";
 import LeftNavBar from "../components/LeftNavBar";
 import { useParams } from "@solidjs/router";
+import { apiRequest } from "../utils/apiRequest";
 
 
 const getFlashcards = async (flashcardDeckId) => {
-    if (!flashcardDeckId) {
-        throw new Error('No flashcard deck ID provided');
-    }
-    
-    const baseUrl = 'http://localhost:8888/api/content/flashcards';
-    const paramsToSend = new URLSearchParams({
-        flashcard_deck_id: flashcardDeckId,
-        user_id: "23da4be0-70fd-439b-b984-aaf729959e9a"
-    });
-    const urlWithParams = `${baseUrl}?${paramsToSend}`;
-
-    const res = await fetch(urlWithParams);
-    if (!res.ok) {
-        throw new Error('Failed to fetch flashcards');
-    }
-    const data = await res.json();
+    const res = await apiRequest({
+        endpoint: `/api/content/flashcards?${new URLSearchParams({
+            flashcard_deck_id: flashcardDeckId
+        }).toString()}`,
+    })
+    let data = await res.json();
+    data["total_flashcards"] = data.flashcards.length;
     console.log(data);
     return data;
 };
-
 
 export default function FlashcardsReview() {
     const params = useParams();
@@ -79,22 +70,13 @@ export default function FlashcardsReview() {
 
     const reviewFlashcard = async (rating) => {
         const flashCardId = flashcardDeck().flashcards[0].id;
-        console.log(JSON.stringify({
-            "flashcard_id": flashCardId,
-            "rating": rating,
-            "user_id": "23da4be0-70fd-439b-b984-aaf729959e9a"
-        }));
-
-        const res = await fetch("http://localhost:8888/api/content/review-flashcard", {
+        const res = await apiRequest({
+            endpoint: "/api/content/review-flashcard",
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
+            body: {
                 "flashcard_id": flashCardId,
-                "rating": rating,
-                "user_id": "23da4be0-70fd-439b-b984-aaf729959e9a"
-            })
+                "rating": rating
+            }
         });
         const resData = await res.json();
         console.log("resData", resData)

@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, status, Response
+from fastapi import APIRouter, Depends, status, Response, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 import traceback
+import jwt
 
 from ..schemas import (
     UserCreate, UserLogin
@@ -10,7 +11,7 @@ from ..models import User
 from ..database import get_db
 from ..tools.access import (
     create_access_token, create_refresh_token,
-    hash_password, verify_password
+    hash_password, verify_password, SECRET_KEY, ALGORITHM
 )
 
 
@@ -61,8 +62,7 @@ def register_user(user: UserCreate, response: Response, db: Session = Depends(ge
             "user_id": str(db_user.id),
             "username": db_user.username,
             "email": db_user.email,
-            "access_token": access_token,
-            "refresh_token": refresh_token
+            "access_token": access_token
         }
     except Exception as e:
         traceback.print_exc()
@@ -78,13 +78,18 @@ def login_user(user_login: UserLogin, response: Response, db: Session = Depends(
     try:
         # Find user by email
         user = db.query(User).filter(User.email == user_login.email).first()
+
+        if not user:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"detail": "Incorrect email"}
+            )
         
         # Verify password
-        if not user or not verify_password(user_login.password, user.hashed_password):
+        if not verify_password(user_login.password, user.hashed_password):
             return JSONResponse(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"detail": "Incorrect email or password"},
-                headers={"WWW-Authenticate": "Bearer"},
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"detail": "Incorrect password"}
             )
 
         # Generate tokens
@@ -104,8 +109,7 @@ def login_user(user_login: UserLogin, response: Response, db: Session = Depends(
             "user_id": str(user.id),
             "username": user.username,
             "email": user.email,
-            "access_token": access_token,
-            "refresh_token": refresh_token
+            "access_token": access_token
         }
     except Exception as e:
         traceback.print_exc()
@@ -113,3 +117,35 @@ def login_user(user_login: UserLogin, response: Response, db: Session = Depends(
             status_code=500,
             content={"error": str(e)},
         )
+
+
+@auth.post("/refresh-token")
+def refresh_token(request: Request):
+    token = request.cookies.get("refresh_token")
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing refresh token")
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("user_id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    access_token = create_access_token({"user_id": user_id, "iss": "my-issuer"})
+
+    return {"access_token": access_token, "user_id": user_id}
+
+
+@auth.post("/logout")
+def logout_user(response: Response):
+    response.delete_cookie(
+        key="refresh_token",
+        httponly=True,
+        secure=False,  # use True in production
+        samesite="Strict",
+        path="/"
+    )
+    response.status_code = status.HTTP_200_OK
+    return {"message": "Successfully logged out"}

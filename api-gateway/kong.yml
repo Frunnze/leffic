@@ -4,15 +4,27 @@ _format_version: "3.0"
 services:
   - name: content-management-service
     url: http://content-management-service:8000
-    plugins:
-      - name: jwt
     routes:
-      - name: content-route
+      - name: content-route-protected
         paths: ["/api/content"]
         strip_path: true
+        plugins:
+          - name: jwt
+          - name: cors
+            config:
+              origins:
+                - http://localhost:3000
+              credentials: true
 
   - name: file-processor-service
     url: http://file-processor-service:8000
+    plugins:
+      - name: jwt
+      - name: cors
+        config:
+          origins:
+            - http://localhost:3000
+          credentials: true
     routes:
       - name: files-route
         paths: ["/api/files"]
@@ -27,14 +39,19 @@ services:
 
   - name: user-service
     url: http://user-service:8000
-    plugins: []
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - http://localhost:3000
+          credentials: true
     routes:
       - name: user-route
         paths: ["/api/user"]
         strip_path: true
 
 consumers:
-  - username: api-user  # Consumer username
+  - username: api-user
     jwt_secrets:
       - key: "my-issuer"
         secret: "my-secret"

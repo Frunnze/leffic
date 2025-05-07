@@ -1,20 +1,15 @@
 import { createResource, Show } from "solid-js";
 import LeftNavBar from "../components/LeftNavBar";
 import { useParams } from "@solidjs/router";
+import { apiRequest } from "../utils/apiRequest";
 
 
 const getNote = async (noteId) => {
-    const baseUrl = 'http://localhost:8888/api/content/note';
-    const paramsToSend = new URLSearchParams({
-        note_id: noteId
-        //user_id: "23da4be0-70fd-439b-b984-aaf729959e9a"
+    const res = await apiRequest({
+        endpoint: `/api/content/note?${new URLSearchParams({
+            note_id: noteId
+        }).toString()}`,
     });
-    const urlWithParams = `${baseUrl}?${paramsToSend}`;
-
-    const res = await fetch(urlWithParams);
-    if (!res.ok) {
-        throw new Error('Failed to fetch flashcards');
-    }
     const data = await res.json();
     console.log(data);
     return data;

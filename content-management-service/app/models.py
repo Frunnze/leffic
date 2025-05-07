@@ -34,7 +34,6 @@ class File(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
     folder_id = Column(UUID(as_uuid=True), ForeignKey("folders.id"), nullable=False)
-    storage_id = Column(UUID(as_uuid=True), nullable=False)
     name = Column(String, nullable=False)
     extension = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)

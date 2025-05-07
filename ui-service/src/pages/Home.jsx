@@ -4,6 +4,9 @@ import LeftNavBar from "../components/LeftNavBar";
 import FileUploader from "../components/FileUploader";
 import NewFolder from "../components/NewFolder";
 import FlashcardsMixedReview from "../components/FlashcardsMixedReview";
+import { apiRequest } from "../utils/apiRequest";
+import { useNavigate } from '@solidjs/router';
+// import { setRedirectToLogin } from "../utils/apiRequest"
 
 
 function sortUnitsByCreatedTime(units) {
@@ -11,20 +14,13 @@ function sortUnitsByCreatedTime(units) {
 }
 
 const getFolders = async (folderId) => {
-    console.log(folderId)
-    const baseUrl = 'http://localhost:8888/api/content/access-folder/';
-    const paramsToSend = new URLSearchParams({
-        user_id: "23da4be0-70fd-439b-b984-aaf729959e9a",
-        folder_id: folderId
+    const res = await apiRequest({
+        endpoint: `/api/content/access-folder/?${new URLSearchParams({ 
+            folder_id: folderId 
+        }).toString()}`,
     });
-    const urlWithParams = `${baseUrl}?${paramsToSend.toString()}`;
-
-    const res = await fetch(urlWithParams);
-    if (!res.ok) {
-        throw new Error('Failed to fetch folder contents');
-    }
     let data = await res.json();
-    console.log(data)
+    console.log("/api/content/access-folder", data);
     data = {
         content: sortUnitsByCreatedTime(data["content"]),
         parent_folder_name: data.parent_folder_name
@@ -32,7 +28,7 @@ const getFolders = async (folderId) => {
     return data;
 };
 
-export default function Home() {
+export default function Home() {    
     const params = useParams();
     const [folderContent, {mutate: mutateFolderContent, refetch}] = createResource(
         () => params.id,
@@ -45,7 +41,8 @@ export default function Home() {
     const [dropdownState, setDropdownState] = createSignal(false);
     const deleteUnit = async (unitId, unitType) => {
         if (unitType == "folder") {
-            const res = fetch(`http://localhost:8888/api/content/delete-folder/?folder_id=${unitId}`, {
+            await apiRequest({
+                endpoint: `/api/content/delete-folder/?folder_id=${unitId}`,
                 method: "DELETE"
             })
             const updatedContent = {
@@ -107,7 +104,7 @@ export default function Home() {
         <Show when={flashcardsReview()}>
             <FlashcardsMixedReview setFlashcardsReview={setFlashcardsReview} folderId={unitIdSignal()} />
         </Show>
-        <div class="relative flex text-tertiary-100 pl-17 h-full">
+        <div class="pl-17 relative flex text-tertiary-100 h-full">
             <LeftNavBar/>
             <div class="flex flex-col w-full h-full py-17 px-10 md:px-40 lg:px-80 gap-y-4">
                 <div class="flex items-center w-full mb-4">
@@ -171,12 +168,12 @@ export default function Home() {
 
                         <FileUploader displayUnits={displayUnits}/>
                         <NewFolder displayUnits={displayUnits}/>
-                        <button class="btn-primary">
+                        {/* <button class="btn-primary">
                             <svg class="flex-none" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
                                 <path d="M7.73437 14.4H9.51562V11.7H12.1875V9.9H9.51562V7.2H7.73437V9.9H5.0625V11.7H7.73437V14.4ZM3.28125 18C2.79141 18 2.37207 17.8238 2.02324 17.4713C1.67441 17.1188 1.5 16.695 1.5 16.2V1.8C1.5 1.305 1.67441 0.88125 2.02324 0.52875C2.37207 0.17625 2.79141 0 3.28125 0H10.4062L15.75 5.4V16.2C15.75 16.695 15.5756 17.1188 15.2268 17.4713C14.8779 17.8238 14.4586 18 13.9687 18H3.28125ZM9.51562 6.3V1.8H3.28125V16.2H13.9687V6.3H9.51562Z" fill="#39393A"/>
                             </svg>
                             <span>New file</span>
-                        </button>
+                        </button> */}
                     </div>
                 <button class="btn-primary">
                     <svg class="flex-none" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -185,13 +182,18 @@ export default function Home() {
                 </button>
                 </div>
 
-                <div class="flex flex-col gap-4 relative">
+                <div class="relative flex flex-col gap-4">
                     <hr class="border-tertiary-10"/>
+                    <Show when={folderContent() && folderContent().content.length == 0}>
+                        <span class="absolute text-tertiary-40 top-50 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                            Empty folder
+                        </span>
+                    </Show>
                     <Show when={folderContent()} fallback={<p>Contents are loading...</p>}>
                         <For each={folderContent().content}>
                             {(unit) => (
                                 <div class="relative">
-                                    <A href={`/${unit.type}/` + unit.id} class="bg-primary flex gap-2 items-center w-full border justify-between py-1.5 px-3 border-tertiary-40 rounded-md hover:bg-secondary hover:fill-primary hover:text-primary hover:border-transparent hover:shadow-sm cursor-pointer font-medium text-sm truncate">
+                                    <A href={`/${unit.type}/` + unit.id} class="flex gap-2 items-center w-full justify-between py-1.5 px-3 border border-tertiary-40 rounded-md hover:bg-secondary hover:fill-primary hover:text-primary hover:border-transparent hover:shadow-sm cursor-pointer font-medium text-sm truncate">
                                         <div class="flex gap-2 w-[80%]">
                                             <Switch>
                                                 <Match when={unit.type === "folder"}>
@@ -218,7 +220,7 @@ export default function Home() {
                                                     </svg>
                                                 </Match>
                                                 <Match when={unit.type === "note"}>
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
+                                                    <svg class="flex-none" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
                                                         <path d="M6.45833 16H14.375V14H6.45833V16ZM6.45833 12H14.375V10H6.45833V12ZM4.47917 20C3.9349 20 3.46897 19.8042 3.08138 19.4125C2.69379 19.0208 2.5 18.55 2.5 18V2C2.5 1.45 2.69379 0.979167 3.08138 0.5875C3.46897 0.195833 3.9349 0 4.47917 0H12.3958L18.3333 6V18C18.3333 18.55 18.1395 19.0208 17.752 19.4125C17.3644 19.8042 16.8984 20 16.3542 20H4.47917ZM11.4062 7V2H4.47917V18H16.3542V7H11.4062Z"/>
                                                     </svg>
                                                 </Match>

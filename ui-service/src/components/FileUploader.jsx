@@ -1,6 +1,7 @@
 import { useParams } from "@solidjs/router";
 import { createEffect, createSignal } from "solid-js";
 import { useNotificationContext } from "../context/NotificationContext";
+import { apiRequest } from "../utils/apiRequest";
 
 
 export default function FileUploader(props) {
@@ -16,29 +17,22 @@ export default function FileUploader(props) {
 
     const params = useParams();
 
-    async function generateStudyUnits(user_id, storage_id, extension) {
-        const flashcardsGenerationResponse = await fetch(
-            "http://localhost:8888/api/files/generate-study-units",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    flashcards: {},
-                    user_id: user_id,
-                    folder_id: params.id,
-                    file_metadata: [
-                        {
-                            storage_id: storage_id,
-                            extension: extension
-                        }
-                    ]
-                })
+    async function generateStudyUnits(file_id, extension) {
+        const flashcardsGenerationResponse = await apiRequest({
+            endpoint: "/api/files/generate-study-units",
+            method: "POST",
+            body: {
+                flashcards: {},
+                folder_id: params.id,
+                file_metadata: [
+                    {
+                        file_id: file_id,
+                        extension: extension
+                    }
+                ]
             }
-        );
+        })
         const studyUnitsGenerationResponseData = await flashcardsGenerationResponse.json()
-
         setFlashcardsGenerationTaskId(studyUnitsGenerationResponseData.task_id)
         setNoteGenerationTaskId(studyUnitsGenerationResponseData.note_task_id)
         setDisplayStartGenerationNotification(true);
@@ -49,7 +43,9 @@ export default function FileUploader(props) {
         if (!flashcardsGenerationTaskId()) return;
         const interval = setInterval(async () => {
           try {
-            const res = await fetch(`http://localhost:8888/api/files/flashcards-status/${flashcardsGenerationTaskId()}`);
+            const res = await apiRequest({
+                endpoint: `/api/files/flashcards-status/${flashcardsGenerationTaskId()}`
+            })
             const data = await res.json();
             setFlashcardsTaskStatus(data.status)
             console.log("FLASHCARDS GENERATION TASK STATUS", data)
@@ -80,7 +76,9 @@ export default function FileUploader(props) {
         if (!noteGenerationTaskId()) return;
         const interval = setInterval(async () => {
             try {
-                const res = await fetch(`http://localhost:8888/api/files/note-task-status/${noteGenerationTaskId()}`);
+                const res = await apiRequest({
+                    endpoint: `/api/files/note-task-status/${noteGenerationTaskId()}`
+                })
                 const data = await res.json();
                 setNoteTaskStatus(data.status)
                 console.log("NOTE GENERATION TASK STATUS", data)
@@ -105,28 +103,21 @@ export default function FileUploader(props) {
         });
 
     const uploadFile = async () => {
-        let user_id = "23da4be0-70fd-439b-b984-aaf729959e9a";
         if (!file()) return;
         const formData = new FormData();
         formData.append("files", file());
-        formData.append("user_id", user_id);
-        if (params.id !== "home") {
-            formData.append("folder_id", params.id);
-        } else {
-            formData.append("folder_id", user_id);
-        }
+        formData.append("folder_id", params.id);
         setFolderId(params.id)
         try {
-            const response = await fetch(
-                "http://localhost:8888/api/files/upload-files", {
-                    method: "POST",
-                    body: formData
-                }
-            )
+            const response = await apiRequest({
+                endpoint: "/api/files/upload-files",
+                method: "POST",
+                body: formData
+            })
             const data = await response.json()
             props.displayUnits(
                 (data.file_metadata || []).map(file => ({
-                    id: file.storage_id,
+                    id: file.file_id,
                     name: file.name,
                     type: "file",
                     created_at: file.created_at
@@ -134,7 +125,7 @@ export default function FileUploader(props) {
             )
 
             // Generate flashcards
-            await generateStudyUnits(user_id, data.file_metadata[0].storage_id, data.file_metadata[0].extension)
+            await generateStudyUnits(data.file_metadata[0].file_id, data.file_metadata[0].extension)
         } catch (error) {
             console.error("Error: ", error);
         };

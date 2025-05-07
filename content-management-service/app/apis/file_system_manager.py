@@ -21,7 +21,6 @@ class CreateFolderRequest(BaseModel):
 @file_system_manager.post("/create-folder")
 async def create_folder(request_data: CreateFolderRequest, user_id: str = Depends(get_user_id_from_jwt), db: Session = Depends(get_db)):
     try:
-        print("user_id", user_id)
         parent_folder_id = request_data.parent_folder_id if request_data.parent_folder_id != "home" else user_id
         # Count folders with the same name
         same_name_folders_num = (
@@ -86,7 +85,11 @@ async def delete_folder(folder_id: str, db: Session = Depends(get_db)):
     
 
 @file_system_manager.get("/access-folder/")
-async def access_folder(user_id: str, folder_id: Optional[str] = None, db: Session = Depends(get_db)):
+async def access_folder(
+    folder_id: Optional[str] = None,
+    user_id: str = Depends(get_user_id_from_jwt), 
+    db: Session = Depends(get_db)
+):
     try:
         parent_folder_name = None
         if folder_id == "home":
@@ -149,7 +152,7 @@ async def access_folder(user_id: str, folder_id: Optional[str] = None, db: Sessi
 
         # Get the folder's files
         file_rows = (
-            db.query(File.id, File.name, File.created_at, File.storage_id)
+            db.query(File.id, File.name, File.created_at)
             .join(
                 Folder,
                 File.folder_id == Folder.id
@@ -165,7 +168,6 @@ async def access_folder(user_id: str, folder_id: Optional[str] = None, db: Sessi
                 "id": str(row[0]), 
                 "name": row[1], 
                 "created_at": str(row[2]),
-                "storage_id": str(row[3]),
                 "type": "file"
             })
 
@@ -192,7 +194,7 @@ async def access_folder(user_id: str, folder_id: Optional[str] = None, db: Sessi
     
 
 class FileMetadata(BaseModel):
-    storage_id: str
+    file_id: str
     name: str
     extension: str
 
@@ -212,7 +214,7 @@ async def save_file_names(request_data: SaveFileNamesRequest, db: Session = Depe
         for file_meta in request_data.file_metadata:
             folder.files.append(
                 File(
-                    storage_id=file_meta.storage_id,
+                    id=file_meta.file_id,
                     name=file_meta.name,
                     extension=file_meta.extension
                 )

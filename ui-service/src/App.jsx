@@ -1,4 +1,4 @@
-import { Router, Route } from "@solidjs/router"
+import { Route } from "@solidjs/router"
 import Home from "./pages/Home";
 import FlashcardsReview from "./pages/FlashcardsReview";
 import StartNotification from "./components/notifications/StartNotification";
@@ -7,13 +7,19 @@ import FailureNotification from "./components/notifications/FailureNotification"
 import NotesReview from "./pages/NotesReview";
 import { useNotificationContext } from './context/NotificationContext';
 import { Match, Switch } from "solid-js";
+import Login from "./pages/Login";
+import SignUp from "./pages/SignUp";
+import LandingPage from "./pages/LandingPage";
+import FileReview from "./pages/FileReview";
+import { Router } from "@solidjs/router"
 
 
 function App() {
-    const { 
-      displayStartGenerationNotification, setDisplayStartGenerationNotification,
-      flashcardsTaskStatus, setFlashcardsTaskStatus, noteTaskStatus, setNoteTaskStatus
-    } = useNotificationContext();
+  const { 
+    displayStartGenerationNotification, setDisplayStartGenerationNotification,
+    flashcardsTaskStatus, setFlashcardsTaskStatus, noteTaskStatus, setNoteTaskStatus
+  } = useNotificationContext();
+
 
   return (
     <>
@@ -62,6 +68,10 @@ function App() {
         <Route path="/folder/:id" component={Home} />
         <Route path="/flashcard_deck/:id" component={FlashcardsReview} />
         <Route path="/note/:id" component={NotesReview} />
+        <Route path="/file/:id" component={FileReview} />
+        <Route path="/login" component={Login} />
+        <Route path="/sign-up" component={SignUp} />
+        <Route path="/" component={LandingPage} />
       </Router>
     </>
   );

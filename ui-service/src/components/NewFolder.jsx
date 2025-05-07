@@ -1,5 +1,6 @@
 import { useParams } from "@solidjs/router";
 import { createSignal } from "solid-js";
+import { apiRequest } from "../utils/apiRequest";
 
 
 export default function NewFolder(props) {
@@ -8,20 +9,16 @@ export default function NewFolder(props) {
     const [folderName, setFolderName] = createSignal("");
 
     const createNewFolder = async () => {
-        console.log(folderName())
-        let payload = {
-            "user_id": "23da4be0-70fd-439b-b984-aaf729959e9a",
-            "folder_name": folderName(),
-            parent_folder_id: params.id
-        };
-        const res = await fetch("http://localhost:8888/api/content/create-folder", {
+        const res = await apiRequest({
+            endpoint: "/api/content/create-folder",
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload)
+            body: {
+                "folder_name": folderName(),
+                "parent_folder_id": params.id
+            }
         })
         const resData = await res.json()
+
         props.displayUnits([{
             id: resData.folder_id,
             name: resData.folder_name,
