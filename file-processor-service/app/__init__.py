@@ -32,8 +32,10 @@ def create_app():
 
     from .apis.study_units_generator import study_units_generator
     from .apis.file_uploader import file_uploader
+    from .apis.chatbot import chatbot
     app.include_router(study_units_generator)
     app.include_router(file_uploader)
+    app.include_router(chatbot)
    
 
     return app

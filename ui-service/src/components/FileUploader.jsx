@@ -8,11 +8,13 @@ export default function FileUploader(props) {
     const [file, setFile] = createSignal();
     const [flashcardsGenerationTaskId, setFlashcardsGenerationTaskId] = createSignal();
     const [noteGenerationTaskId, setNoteGenerationTaskId] = createSignal();
+    const [testGenerationTaskId, setTestGenerationTaskId] = createSignal();
     const [folderId, setFolderId] = createSignal();
     const {
         setDisplayStartGenerationNotification, 
         setFlashcardsTaskStatus,
-        setNoteTaskStatus
+        setNoteTaskStatus,
+        setTestTaskStatus
     } = useNotificationContext();
 
     const params = useParams();
@@ -22,6 +24,8 @@ export default function FileUploader(props) {
             endpoint: "/api/files/generate-study-units",
             method: "POST",
             body: {
+                note: {},
+                test: {},
                 flashcards: {},
                 folder_id: params.id,
                 file_metadata: [
@@ -35,6 +39,7 @@ export default function FileUploader(props) {
         const studyUnitsGenerationResponseData = await flashcardsGenerationResponse.json()
         setFlashcardsGenerationTaskId(studyUnitsGenerationResponseData.task_id)
         setNoteGenerationTaskId(studyUnitsGenerationResponseData.note_task_id)
+        setTestGenerationTaskId(studyUnitsGenerationResponseData.test_task_id)
         setDisplayStartGenerationNotification(true);
     }
 
@@ -64,6 +69,7 @@ export default function FileUploader(props) {
             }
           } catch (err) {
             console.error("Error polling task status:", err);
+            clearInterval(interval);
           }
         }, 2000);
       
@@ -97,6 +103,39 @@ export default function FileUploader(props) {
                 }
             } catch (err) {
                 console.error("Error polling task status:", err);
+                clearInterval(interval);
+            }
+        }, 2000);        
+        return () => clearInterval(interval);
+        });
+
+    // Check the test generation task
+    createEffect(() => {
+        if (!testGenerationTaskId()) return;
+        const interval = setInterval(async () => {
+            try {
+                const res = await apiRequest({
+                    endpoint: `/api/files/test-task-status/${testGenerationTaskId()}`
+                })
+                const data = await res.json();
+                setTestTaskStatus(data.status)
+                console.log("TEST GENERATION TASK STATUS", data)
+                
+                if (data.status === "SUCCESS" && params.id === folderId()) {
+                    props.displayUnits([{
+                        id: data.test_id,
+                        name: data.name,
+                        type: data.type,
+                        created_at: data.created_at
+                    }]);
+                }
+                if (data.status === "SUCCESS" || data.status === "FAILURE") {
+                    clearInterval(interval); // stop polling
+                    setTestGenerationTaskId(null);
+                }
+            } catch (err) {
+                console.error("Error polling task status:", err);
+                clearInterval(interval);
             }
         }, 2000);        
         return () => clearInterval(interval);

@@ -1,14 +1,15 @@
 import { A } from "@solidjs/router";
-import { createSignal } from "solid-js";
+import { createSignal, Show } from "solid-js";
 import { useNavigate } from '@solidjs/router';
 import { apiRequest, setAccessToken } from "../utils/apiRequest";
 import GeneralDropdown from "./GeneralDropdown";
+import ChatBot from "./Chatbot";
 
 
 export default function LeftNavBar() {
   const navigate = useNavigate(); 
   const [dropdownState, setDropdownState] = createSignal(false);
-  const [chatWithAI, setChatWithAI] = createSignal(false);
+  const [closeChatbot, setCloseChatbot] = createSignal(true);
   
   async function logoutUser() {
     const res = await apiRequest({
@@ -49,7 +50,11 @@ export default function LeftNavBar() {
   )
 
   return (
+    <>
     <nav class="absolute left-0 z-50 flex flex-col justify-between bg-primary fixed h-full w-17 border-r border-tertiary-10 font-medium text-xs">
+      <Show when={!closeChatbot()}>
+        <ChatBot closeBot={() => setCloseChatbot(true)}/>
+      </Show>
       <ul class="flex flex-col">
         <li class="flex justify-center border-b border-tertiary-10 py-4">
             <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 35 35" fill="none">
@@ -98,7 +103,7 @@ export default function LeftNavBar() {
             <span>Explore</span>
         </A> */}
 
-        <button onClick={() => setChatWithAI(!chatWithAI())} class="flex flex-col items-center border-b border-tertiary-10 py-3 cursor-pointer hover:bg-tertiary-2">
+        <button onClick={() => setCloseChatbot(!closeChatbot())} class="flex flex-col items-center border-b border-tertiary-10 py-3 cursor-pointer hover:bg-tertiary-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
               <g clip-path="url(#clip0_70_54)">
               <path d="M1.97915 20C1.65449 20 1.38236 19.8935 1.16274 19.6806C0.943122 19.4676 0.833313 19.2037 0.833313 18.8889V14.4444C0.833313 13.8333 1.05771 13.3102 1.50649 12.875C1.95527 12.4398 2.49477 12.2222 3.12498 12.2222H16.875C17.5052 12.2222 18.0447 12.4398 18.4935 12.875C18.9423 13.3102 19.1666 13.8333 19.1666 14.4444V18.8889C19.1666 19.2037 19.0568 19.4676 18.8372 19.6806C18.6176 19.8935 18.3455 20 18.0208 20H1.97915ZM6.56248 11.1111C4.97741 11.1111 3.62628 10.5694 2.50909 9.48611C1.39191 8.40278 0.833313 7.09259 0.833313 5.55556C0.833313 4.01852 1.39191 2.70833 2.50909 1.625C3.62628 0.541667 4.97741 0 6.56248 0H13.4375C15.0225 0 16.3737 0.541667 17.4909 1.625C18.6081 2.70833 19.1666 4.01852 19.1666 5.55556C19.1666 7.09259 18.6081 8.40278 17.4909 9.48611C16.3737 10.5694 15.0225 11.1111 13.4375 11.1111H6.56248ZM6.56248 6.66667C6.88713 6.66667 7.15927 6.56019 7.37889 6.34722C7.5985 6.13426 7.70831 5.87037 7.70831 5.55556C7.70831 5.24074 7.5985 4.97685 7.37889 4.76389C7.15927 4.55093 6.88713 4.44444 6.56248 4.44444C6.23783 4.44444 5.96569 4.55093 5.74607 4.76389C5.52646 4.97685 5.41665 5.24074 5.41665 5.55556C5.41665 5.87037 5.52646 6.13426 5.74607 6.34722C5.96569 6.56019 6.23783 6.66667 6.56248 6.66667ZM13.4375 6.66667C13.7621 6.66667 14.0343 6.56019 14.2539 6.34722C14.4735 6.13426 14.5833 5.87037 14.5833 5.55556C14.5833 5.24074 14.4735 4.97685 14.2539 4.76389C14.0343 4.55093 13.7621 4.44444 13.4375 4.44444C13.1128 4.44444 12.8407 4.55093 12.6211 4.76389C12.4015 4.97685 12.2916 5.24074 12.2916 5.55556C12.2916 5.87037 12.4015 6.13426 12.6211 6.34722C12.8407 6.56019 13.1128 6.66667 13.4375 6.66667Z" fill="#39393A"/>
@@ -131,5 +136,6 @@ export default function LeftNavBar() {
         />
       </div>
     </nav>
+    </>
   );
 }

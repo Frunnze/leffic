@@ -6,6 +6,7 @@ export function NotificationContextProvider(props) {
   const [displayStartGenerationNotification, setDisplayStartGenerationNotification] = createSignal(false);
   const [flashcardsTaskStatus, setFlashcardsTaskStatus] = createSignal();
   const [noteTaskStatus, setNoteTaskStatus] = createSignal();
+  const [testTaskStatus, setTestTaskStatus] = createSignal();
 
   return (
     <NotificationContext.Provider value={{
@@ -16,7 +17,10 @@ export function NotificationContextProvider(props) {
       setFlashcardsTaskStatus,
       
       noteTaskStatus,
-      setNoteTaskStatus
+      setNoteTaskStatus,
+
+      testTaskStatus,
+      setTestTaskStatus
     }}>
       {props.children}
     </NotificationContext.Provider>

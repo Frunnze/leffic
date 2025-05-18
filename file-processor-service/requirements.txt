@@ -13,3 +13,4 @@ openai
 textract==1.6.3
 python-multipart
 PyJWT
+pyclamd

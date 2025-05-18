@@ -17,6 +17,7 @@ from .. import celery_app
 from .. import ai_factory
 from ..tools.prompts.flashcards_prompt import get_flashcards_system_prompt
 from ..tools.prompts.notes_prompt import get_notes_system_prompt
+from ..tools.prompts.tests_prompt import get_test_system_prompt
 from ..tools.claims_extractor import get_user_id_from_jwt
 
 
@@ -100,6 +101,46 @@ def generate_note_task(ai_model, extracted_text, folder_id, user_id):
         "note_name": note.get("note_name"),
     }
 
+
+@celery_app.task
+def generate_test_task(ai_model, extracted_text, folder_id, user_id):
+    ai = ai_factory.get_ai(ai_model)
+    test, _ = ai.get_ai_res(
+        system_prompt=get_test_system_prompt(),
+        user_prompt=extracted_text
+    )
+
+    response = requests.post(
+        url=CONTENT_MANAGEMENT_SERVICE + "/save-test",
+        json={
+            "test_items": test.get("multiple_choice_test_items"),
+            "test_name": test.get("test_name"),
+            "folder_id": folder_id,
+            "user_id": user_id,
+        }
+    )
+    response.raise_for_status()
+    response_data = response.json()
+    return {
+        "test_id": response_data.get("test_id"),
+        "test_name": test.get("test_name"),
+    }
+
+
+@study_units_generator.get("/test-task-status/{task_id}")
+def get_test_task_status(task_id: str):
+    task_result = AsyncResult(task_id, app=celery_app)
+    if task_result.ready():
+        return {
+            "status": task_result.status,
+            "test_id": task_result.result.get("test_id"),
+            "type": "test",
+            "name": task_result.result.get("test_name"),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+    return {"status": task_result.status}
+
+
 @study_units_generator.get("/note-task-status/{task_id}")
 def get_note_task_status(task_id: str):
     task_result = AsyncResult(task_id, app=celery_app)
@@ -123,15 +164,25 @@ class FileMetadata(BaseModel):
     file_id: str
     extension: str
 
+class NoteMetadata(BaseModel):
+    pass
+
+class TestMetadata(BaseModel):
+    amount: int = 10
+
 class StudyUnitsMetadata(BaseModel):
     folder_id: Optional[str] = None
     file_metadata: List[FileMetadata]
     flashcards: Optional[FlashcardsMetadata] = None
-    # note: Optional[NoteMetadata] = None
+    note: Optional[NoteMetadata] = None
+    test: Optional[TestMetadata] = None
     ai_model: Optional[str] = None
 
 @study_units_generator.post("/generate-study-units")
-async def generate_study_units(request_data: StudyUnitsMetadata, user_id: str = Depends(get_user_id_from_jwt)):
+async def generate_study_units(
+    request_data: StudyUnitsMetadata, 
+    user_id: str = Depends(get_user_id_from_jwt)
+):
     try:
         folder_id = request_data.folder_id if request_data.folder_id != "home" else user_id
 
@@ -146,25 +197,36 @@ async def generate_study_units(request_data: StudyUnitsMetadata, user_id: str = 
                 text_extractor = text_extractor_factory.get_text_extractor(file_meta.extension)
                 extracted_text += text_extractor.extract_text(temp_file.name, file_meta.extension) + "\n"
 
-        flashcard_task = generate_flashcards_task.delay(
-            ai_model=request_data.ai_model,
-            extracted_text=extracted_text,
-            flashcards_metadata=request_data.flashcards.dict(),
-            folder_id=folder_id,
-            user_id=user_id
-        )
+        response_data = {}
+        if request_data.flashcards:
+            flashcard_task = generate_flashcards_task.delay(
+                ai_model=request_data.ai_model,
+                extracted_text=extracted_text,
+                flashcards_metadata=request_data.flashcards.dict(),
+                folder_id=folder_id,
+                user_id=user_id
+            )
+            response_data["task_id"] = flashcard_task.id
         
-        note_task = generate_note_task.delay(
-            ai_model=request_data.ai_model, 
-            extracted_text=extracted_text,
-            folder_id=folder_id,
-            user_id=user_id
-        )
+        if request_data.note:
+            note_task = generate_note_task.delay(
+                ai_model=request_data.ai_model, 
+                extracted_text=extracted_text,
+                folder_id=folder_id,
+                user_id=user_id
+            )
+            response_data["note_task_id"] = note_task.id
 
-        return {
-            "task_id": flashcard_task.id,
-            "note_task_id": note_task.id
-        }
+        if request_data.test:
+            test_task = generate_test_task.delay(
+                ai_model=request_data.ai_model, 
+                extracted_text=extracted_text,
+                folder_id=folder_id,
+                user_id=user_id
+            )
+            response_data["test_task_id"] = test_task.id
+
+        return response_data
     except Exception as e:
         traceback.print_exc()
         return {"err": str(e)}

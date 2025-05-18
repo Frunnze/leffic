@@ -9,7 +9,10 @@ from sqlalchemy import select, func, or_
 import requests
 from datetime import datetime, timezone
 
-from ..models import Folder, FlashcardDeck, Flashcard, FlashcardReview, Note
+from ..models import (
+    Folder, FlashcardDeck, Flashcard, 
+    FlashcardReview, Note, Test, TestItem
+)
 from ..database import get_db
 from .. import SCHEDULER_SERVICE
 from ..tools.claims_extractor import get_user_id_from_jwt
@@ -82,6 +85,36 @@ async def save_note(request_data: SaveNoteRequest, db: Session = Depends(get_db)
         raise HTTPException(status_code=500, detail=str(e))
     
 
+class SaveTestRequest(BaseModel):
+    test_name: str
+    folder_id: Optional[str] = None
+    test_items: list[dict]
+
+@study_units.post("/save-test")
+async def save_note(request_data: SaveTestRequest, db: Session = Depends(get_db)):
+    try:
+        new_test = Test(
+            folder_id=request_data.folder_id,
+            name=request_data.test_name
+        )
+        db.add(new_test)
+        db.flush()
+        new_test_id = new_test.id
+        for test_item in request_data.test_items:
+            new_test.test_items.append(
+                TestItem(
+                    content=test_item,
+                    type="mult_choice",
+                )
+            )
+        db.commit()
+        return JSONResponse(content={"test_id": str(new_test_id)})
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+
 def date_to_str(dateobj):
     return dateobj.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -106,8 +139,6 @@ async def get_flashcards(
 ):
     try:
         folder_id = folder_id if folder_id != "home" else user_id
-        # Trigger the optimizer from the scheduler service
-        # ...
 
         # Get the flashcards from a specific deck
         flashcards = []
@@ -221,6 +252,67 @@ async def get_note(note_id: str, db: Session = Depends(get_db), user_id: str = D
             .first()
         )
         return JSONResponse(content={"content": result.content, "name": result.name})
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@study_units.get("/test-items")
+async def get_test_items(
+    test_id: Optional[str] = None, 
+    folder_id: Optional[str] = None, 
+    user_id: str = Depends(get_user_id_from_jwt), 
+    db: Session = Depends(get_db)
+):
+    try:
+        folder_id = folder_id if folder_id != "home" else user_id
+
+        test_items = []
+        if test_id:
+            test_items = (
+                db.query(TestItem)
+                .filter(TestItem.test_id == uuid.UUID(test_id))
+                .all()
+            )
+            return JSONResponse(content={"test_items": [
+                {
+                    "id": test_item.id,
+                    "type": test_item.type,
+                    "content": test_item.content,
+                    "created_at": date_to_str(test_item.created_at),
+                } for test_item in test_items
+            ]})
+
+        folder_cte = (
+            select(Folder.id)
+            .where(
+                Folder.id == folder_id,
+                Folder.user_id == user_id
+            )
+            .cte(name="subfolders", recursive=True)
+        )
+        subfolder = aliased(Folder)
+        folder_cte = folder_cte.union_all(
+            select(subfolder.id).where(subfolder.parent_id == folder_cte.c.id)
+        )
+        test_ids_subquery = (
+            select(Test.id)
+            .where(Test.folder_id.in_(folder_cte))
+        )
+        test_items = (
+            db.query(TestItem)
+            .filter(TestItem.test_id.in_(test_ids_subquery))
+            .all()
+        )
+
+        return JSONResponse(content={"test_items": [
+            {
+                "id": test_item.id,
+                "type": test_item.type,
+                "content": test_item.content,
+                "created_at": date_to_str(test_item.created_at),
+            } for test_item in test_items
+        ]})
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

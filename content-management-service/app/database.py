@@ -10,7 +10,7 @@ db_name = "content"
 db_user = os.getenv("CM_DB_USER", "postgres")
 db_pass = os.getenv("CM_DB_PASS", "postgres")
 db_host = os.getenv("CM_DB_HOST",  "localhost")
-db_port = os.getenv("CM_DB_PORT", 5450)
+db_port = os.getenv("CM_DB_PORT", 5455)
 SQLALCHEMY_DATABASE_URL = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
 
 def create_database_if_not_exists():

@@ -6,6 +6,9 @@ import shutil
 import requests
 from uuid import uuid4
 import traceback
+import pyclamd
+import shutil
+
 
 from .. import CONTENT_MANAGEMENT_SERVICE
 from ..tools.claims_extractor import get_user_id_from_jwt
@@ -19,6 +22,17 @@ def save_file_to_storage(file, unique_name):
     with open(file_path, "wb") as out_file:
         shutil.copyfileobj(file.file, out_file)
 
+
+def scan_file_in_memory(file: UploadFile):
+    cd = pyclamd.ClamdNetworkSocket()
+    if not cd.ping():
+        raise RuntimeError("Could not connect to ClamAV daemon")
+    file.file.seek(0)
+    result = cd.instream(file.file)
+    file.file.seek(0)
+    return result
+    
+
 @file_uploader.post("/upload-files")
 async def upload_files(
     files: List[UploadFile] = File(...), 
@@ -30,6 +44,10 @@ async def upload_files(
         uploaded_files = []
         for file in files:
             try:
+                # scan_result = scan_file_in_memory(file)
+                # if scan_result:
+                #     raise HTTPException(status_code=400, detail=f"Malicious file detected: {scan_result}")
+
                 file_id = str(uuid4())
                 _, extension = os.path.splitext(file.filename)
                 save_file_to_storage(file, file_id + extension)

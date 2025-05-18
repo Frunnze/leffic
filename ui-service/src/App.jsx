@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import LandingPage from "./pages/LandingPage";
 import FileReview from "./pages/FileReview";
+import TestReview from "./pages/TestReview";
 import { Router } from "@solidjs/router"
 
 
@@ -69,6 +70,7 @@ function App() {
         <Route path="/flashcard_deck/:id" component={FlashcardsReview} />
         <Route path="/note/:id" component={NotesReview} />
         <Route path="/file/:id" component={FileReview} />
+        <Route path="/test/:id" component={TestReview} />
         <Route path="/login" component={Login} />
         <Route path="/sign-up" component={SignUp} />
         <Route path="/" component={LandingPage} />

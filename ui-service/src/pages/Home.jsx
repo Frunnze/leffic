@@ -193,8 +193,8 @@ export default function Home() {
                         <For each={folderContent().content}>
                             {(unit) => (
                                 <div class="relative">
-                                    <A href={`/${unit.type}/` + unit.id} class="flex gap-2 items-center w-full justify-between py-1.5 px-3 border border-tertiary-40 rounded-md hover:bg-secondary hover:fill-primary hover:text-primary hover:border-transparent hover:shadow-sm cursor-pointer font-medium text-sm truncate">
-                                        <div class="flex gap-2 w-[80%]">
+                                    <A href={`/${unit.type}/` + unit.id} class="flex gap-2 items-center w-full justify-between py-1.5 px-3 border border-tertiary-40 rounded-md hover:bg-secondary hover:fill-primary hover:text-primary hover:border-transparent hover:shadow-sm cursor-pointer truncate">
+                                        <div class="flex items-center gap-2 w-[80%]">
                                             <Switch>
                                                 <Match when={unit.type === "folder"}>
                                                     <svg class="flex-none" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
@@ -222,6 +222,18 @@ export default function Home() {
                                                 <Match when={unit.type === "note"}>
                                                     <svg class="flex-none" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
                                                         <path d="M6.45833 16H14.375V14H6.45833V16ZM6.45833 12H14.375V10H6.45833V12ZM4.47917 20C3.9349 20 3.46897 19.8042 3.08138 19.4125C2.69379 19.0208 2.5 18.55 2.5 18V2C2.5 1.45 2.69379 0.979167 3.08138 0.5875C3.46897 0.195833 3.9349 0 4.47917 0H12.3958L18.3333 6V18C18.3333 18.55 18.1395 19.0208 17.752 19.4125C17.3644 19.8042 16.8984 20 16.3542 20H4.47917ZM11.4062 7V2H4.47917V18H16.3542V7H11.4062Z"/>
+                                                    </svg>
+                                                </Match>
+                                                <Match when={unit.type === "test"}>
+                                                    <svg class="flex-none" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
+                                                        <g clip-path="url(#clip0_166_8)">
+                                                        <path d="M12 13C12.2833 13 12.5292 12.8958 12.7375 12.6875C12.9458 12.4792 13.05 12.2333 13.05 11.95C13.05 11.6667 12.9458 11.4208 12.7375 11.2125C12.5292 11.0042 12.2833 10.9 12 10.9C11.7167 10.9 11.4708 11.0042 11.2625 11.2125C11.0542 11.4208 10.95 11.6667 10.95 11.95C10.95 12.2333 11.0542 12.4792 11.2625 12.6875C11.4708 12.8958 11.7167 13 12 13ZM11.25 9.8H12.75C12.75 9.31667 12.8 8.9625 12.9 8.7375C13 8.5125 13.2333 8.21667 13.6 7.85C14.1 7.35 14.4333 6.94583 14.6 6.6375C14.7667 6.32917 14.85 5.96667 14.85 5.55C14.85 4.8 14.5875 4.1875 14.0625 3.7125C13.5375 3.2375 12.85 3 12 3C11.3167 3 10.7208 3.19167 10.2125 3.575C9.70417 3.95833 9.35 4.46667 9.15 5.1L10.5 5.65C10.65 5.23333 10.8542 4.92083 11.1125 4.7125C11.3708 4.50417 11.6667 4.4 12 4.4C12.4 4.4 12.725 4.5125 12.975 4.7375C13.225 4.9625 13.35 5.26667 13.35 5.65C13.35 5.88333 13.2833 6.10417 13.15 6.3125C13.0167 6.52083 12.7833 6.78333 12.45 7.1C11.9 7.58333 11.5625 7.9625 11.4375 8.2375C11.3125 8.5125 11.25 9.03333 11.25 9.8ZM6 16C5.45 16 4.97917 15.8042 4.5875 15.4125C4.19583 15.0208 4 14.55 4 14V2C4 1.45 4.19583 0.979167 4.5875 0.5875C4.97917 0.195833 5.45 0 6 0H18C18.55 0 19.0208 0.195833 19.4125 0.5875C19.8042 0.979167 20 1.45 20 2V14C20 14.55 19.8042 15.0208 19.4125 15.4125C19.0208 15.8042 18.55 16 18 16H6ZM6 14H18V2H6V14ZM2 20C1.45 20 0.979167 19.8042 0.5875 19.4125C0.195833 19.0208 0 18.55 0 18V4H2V18H16V20H2Z"/>
+                                                        </g>
+                                                        <defs>
+                                                        <clipPath id="clip0_166_8">
+                                                        <rect width="20" height="20" fill="white"/>
+                                                        </clipPath>
+                                                        </defs>
                                                     </svg>
                                                 </Match>
                                             </Switch>

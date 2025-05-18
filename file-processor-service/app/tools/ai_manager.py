@@ -10,7 +10,7 @@ class AIManager(ABC):
         pass
 
     @abstractmethod
-    def get_ai_res_hist(self, system_prompt, history, output_format_type):
+    def get_ai_res_hist(self, system_prompt, history):
         pass
 
     @abstractmethod
@@ -50,18 +50,33 @@ class OpenAIManager(AIManager):
                         }
                     ]
                 )
-                break
+                print("Output text:", response.output_text)
+                request_cost = self.get_request_cost(response)
+                print("request_cost", request_cost)
+                if output_format_type == "JSON":
+                    data = get_dict_from_text(response.output_text), request_cost
+                else:
+                    data = response.output_text, request_cost
+                return data
             except Exception as e:
                 print("Error in ai manager:", str(e))
 
-        print("Output text:", response.output_text)
-        request_cost = self.get_request_cost(response)
-        if output_format_type == "JSON":
-            return get_dict_from_text(response.output_text), request_cost
-        return response.output_text, request_cost
-    
-    def get_ai_res_hist(self, system_prompt, history, output_format_type):
-        pass
+    def get_ai_res_hist(self, system_prompt, history):
+        input = [
+            {
+                "role": "developer",
+                "content": system_prompt
+            },
+            # {
+            #     "role": "user",
+            #     "content": user_prompt
+            # }
+        ] + history
+        response = self.client.responses.create(
+            model=self.model_name,
+            input=input
+        )
+        return response.output_text
 
     def get_request_cost(self, response):
         input_tokens = response.usage.input_tokens
@@ -70,7 +85,7 @@ class OpenAIManager(AIManager):
         return input_tokens * self.input_token_cost + \
             output_tokens * self.output_token_cost + \
             cached_tokens * self.cached_token_cost
-    
+
     def get_input_prompt_cost(self, text):
         pass
 

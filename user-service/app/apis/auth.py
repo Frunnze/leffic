@@ -11,7 +11,8 @@ from ..models import User
 from ..database import get_db
 from ..tools.access import (
     create_access_token, create_refresh_token,
-    hash_password, verify_password, SECRET_KEY, ALGORITHM
+    hash_password, verify_password, 
+    SECRET_KEY, ALGORITHM
 )
 
 

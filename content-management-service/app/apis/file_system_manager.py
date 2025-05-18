@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timezone
 
-from ..models import Folder, FlashcardDeck, File, Note
+from ..models import Folder, FlashcardDeck, File, Note, Test
 from ..database import get_db
 from ..tools.claims_extractor import get_user_id_from_jwt
 
@@ -148,6 +148,27 @@ async def access_folder(
                 "name": row[1], 
                 "created_at": str(row[2]),
                 "type": "flashcard_deck"
+            })
+
+        # Get the folder's flashcard tests
+        test_rows = (
+            db.query(Test.id, Test.name, Test.created_at)
+            .join(
+                Folder,
+                Test.folder_id == Folder.id
+            )
+            .filter(
+                Folder.id == folder_id,
+                Folder.user_id == uuid.UUID(user_id)
+            )
+            .all()
+        )
+        for row in test_rows:
+            content.append({
+                "id": str(row[0]), 
+                "name": row[1], 
+                "created_at": str(row[2]),
+                "type": "test"
             })
 
         # Get the folder's files
