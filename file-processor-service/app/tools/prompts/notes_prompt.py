@@ -21,7 +21,7 @@ def get_notes_system_prompt():
     Your task is to write notes based only on the given extracted text. Even if a person 
     is not familiar with the information at all, he has to be able to understand it on a high level just
     by reading your notes. If a word that you want to use in the notes is difficult, rare, or specific,
-    you have to write a short explanation for this word.
+    you have to write a short explanation for this word. For difficult concepts, give examples.
     The output has to have three sections: Summary, Bullet points, and Detailed notes.
 
     ###Constraints###

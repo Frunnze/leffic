@@ -38,6 +38,8 @@ services:
       - CM_DB_HOST=postgres
       - CM_DB_PORT=5432
       - SCHEDULER_SERVICE=http://scheduler-service:8000
+    volumes:
+      - files:/app/files
     depends_on:
       - postgres
 

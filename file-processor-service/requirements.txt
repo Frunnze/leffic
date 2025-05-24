@@ -10,7 +10,8 @@ psycopg2-binary==2.9.9
 celery[redis]
 tiktoken
 openai
-textract==1.6.3
+textract==1.6.5
 python-multipart
 PyJWT
 pyclamd
+setuptools==80.8.0

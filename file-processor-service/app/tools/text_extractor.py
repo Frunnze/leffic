@@ -27,7 +27,7 @@ def register_extractor(extensions: list):
         return cls
     return decorator
 
-# Text extractors
+
 @register_extractor([
     "csv", "doc", "docx", "eml", "epub", "gif", "jpg", "jpeg", "json",
     "html", "htm", "mp3", "msg", "odt", "ogg", "pdf", "png", "pptx", "ps",
@@ -35,12 +35,12 @@ def register_extractor(extensions: list):
 ])
 class GeneralTextExtractor(TextExtractor):
     def extract_text(self, filename: str, extension: str):
+        print("FILENAME: ", filename)
+        print("EXTENSION: ", extension)
         text_bytes = textract.process(
             filename, 
-            output_encoding="UTF-8", 
             extension=extension
         )
-        return text_bytes.decode("UTF-8")
-
-if __name__ == "__main__":
-    print(text_extractor_factory.get_text_extractor("docx").extract_text("thesis1.docx"))
+        text = text_bytes.decode('utf-8', errors='ignore').strip()
+        print("TEXT FROM FILE: ", text)
+        return text

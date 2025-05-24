@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Header, Request
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional, List
@@ -7,6 +7,9 @@ import traceback
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timezone
+from sqlalchemy import select, func
+from sqlalchemy.orm import Session, aliased
+import os
 
 from ..models import Folder, FlashcardDeck, File, Note, Test
 from ..database import get_db
@@ -61,25 +64,51 @@ async def create_folder(request_data: CreateFolderRequest, user_id: str = Depend
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def delete_file_from_storage(filename):
+    if os.path.exists("files" + "/" + filename):
+        os.remove("files" + "/" + filename)
+        print("File deleted successfully.")
+    else:
+        print("File does not exist.")
+
 @file_system_manager.delete("/delete-folder/")
 async def delete_folder(folder_id: str, db: Session = Depends(get_db)):
     try:
-        # Get all file storage ids for this folder
-        # ...
-
-        # Delete all files from the storage
-        # ...
-
-        # Delete folder from db
         folder = (
             db.query(Folder)
             .filter_by(id=folder_id)
             .first()
         )
+
+        files_storage_ids = []
+        folder_cte = (
+            select(Folder.id)
+            .where(Folder.id == folder_id)
+            .cte(name="subfolders", recursive=True)
+        )
+        subfolder = aliased(Folder)
+        folder_cte = folder_cte.union_all(
+            select(subfolder.id).where(subfolder.parent_id == folder_cte.c.id)
+        )
+        files = (
+            db.query(File)
+            .where(File.folder_id.in_(folder_cte))
+            .all()
+        )
+        for file in files:
+            files_storage_ids.append(str(file.id) + "." + file.extension)
+
+        # Delete the main folder
         db.delete(folder)
         db.commit()
+
+        # Delete the files
+        for file_storage_id in files_storage_ids:
+            delete_file_from_storage(file_storage_id)
+
         return JSONResponse(content={"msg": "Folder deleted!"})
     except Exception as e:
+        db.session.rollback()
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
     
