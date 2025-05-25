@@ -5,7 +5,7 @@ from typing import Optional
 import uuid
 import traceback
 from sqlalchemy.orm import Session, aliased
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, exists
 import requests
 from datetime import datetime, timezone
 
@@ -244,14 +244,17 @@ async def review_flashcard(
 @study_units.get("/note")
 async def get_note(note_id: str, db: Session = Depends(get_db), user_id: str = Depends(get_user_id_from_jwt)):
     try:
-        result = (
+        note = (
             db.query(Note)
             .filter(
                 Note.id == note_id
             )
             .first()
         )
-        return JSONResponse(content={"content": result.content, "name": result.name})
+        if note.read == False:
+            note.read = True
+            db.commit()
+        return JSONResponse(content={"content": note.content, "name": note.name})
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
@@ -313,6 +316,130 @@ async def get_test_items(
                 "created_at": date_to_str(test_item.created_at),
             } for test_item in test_items
         ]})
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@study_units.get("/flashcards-stats")
+async def get_flashcards_stats(
+    folder_id: Optional[str] = None, 
+    user_id: str = Depends(get_user_id_from_jwt), 
+    db: Session = Depends(get_db)
+):
+    try:
+        folder_id = folder_id if folder_id != "home" else user_id
+
+        user_folder_exists = db.query(
+            exists().where(Folder.user_id == user_id, Folder.id == folder_id)
+        ).scalar()
+        if not user_folder_exists:
+            raise HTTPException(status_code=404, detail="Folder does not exist!")
+
+        folder_cte = (
+            select(Folder.id)
+            .where(
+                Folder.id == folder_id,
+                Folder.user_id == user_id
+            )
+            .cte(name="subfolders", recursive=True)
+        )
+        subfolder = aliased(Folder)
+        folder_cte = folder_cte.union_all(
+            select(subfolder.id).where(subfolder.parent_id == folder_cte.c.id)
+        )
+        deck_ids_subquery = (
+            select(FlashcardDeck.id)
+            .where(FlashcardDeck.folder_id.in_(folder_cte))
+        )
+
+        due_flashcards = (
+            db.query(func.count(Flashcard.id))
+            .filter(
+                Flashcard.deck_id.in_(deck_ids_subquery),
+                or_(
+                    Flashcard.next_review <= datetime.now(timezone.utc),
+                    Flashcard.next_review == None
+                )
+            )
+            .scalar()
+        )
+
+        done_flashcards = (
+            db.query(func.count(Flashcard.id))
+            .filter(
+                Flashcard.deck_id.in_(deck_ids_subquery),
+                Flashcard.next_review > datetime.now(timezone.utc),
+                Flashcard.next_review != None
+            )
+            .scalar()
+        )
+
+        if due_flashcards == 0 and done_flashcards == 0:
+            raise HTTPException(status_code=404, detail="No flashcards!")
+
+        return JSONResponse(content={
+            "due": due_flashcards,
+            "done": done_flashcards
+        })
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@study_units.get("/notes-stats")
+async def get_notes_stats(
+    folder_id: Optional[str] = None, 
+    user_id: str = Depends(get_user_id_from_jwt), 
+    db: Session = Depends(get_db)
+):
+    try:
+        folder_id = folder_id if folder_id != "home" else user_id
+
+        user_folder_exists = db.query(
+            exists().where(Folder.user_id == user_id, Folder.id == folder_id)
+        ).scalar()
+        if not user_folder_exists:
+            raise HTTPException(status_code=404, detail="Folder does not exist!")
+
+        folder_cte = (
+            select(Folder.id)
+            .where(
+                Folder.id == folder_id,
+                Folder.user_id == user_id
+            )
+            .cte(name="subfolders", recursive=True)
+        )
+        subfolder = aliased(Folder)
+        folder_cte = folder_cte.union_all(
+            select(subfolder.id).where(subfolder.parent_id == folder_cte.c.id)
+        )
+
+        due_notes = (
+            db.query(func.count(Note.id))
+            .filter(
+                Note.folder_id.in_(folder_cte),
+                Note.read == False
+            )
+            .scalar()
+        )
+
+        read_notes = (
+            db.query(func.count(Note.id))
+            .filter(
+                Note.folder_id.in_(folder_cte),
+                Note.read == True
+            )
+            .scalar()
+        )
+     
+        if read_notes == 0 and due_notes == 0:
+            raise HTTPException(status_code=404, detail="No notes!")
+        
+        return JSONResponse(content={
+            "due": due_notes,
+            "read": read_notes
+        })
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

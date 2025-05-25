@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     swig \
     python3-distutils \
+    libreoffice \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

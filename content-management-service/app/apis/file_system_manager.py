@@ -108,7 +108,6 @@ async def delete_folder(folder_id: str, db: Session = Depends(get_db)):
 
         return JSONResponse(content={"msg": "Folder deleted!"})
     except Exception as e:
-        db.session.rollback()
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
     
@@ -271,6 +270,72 @@ async def save_file_names(request_data: SaveFileNamesRequest, db: Session = Depe
             )
         db.commit()
         return JSONResponse(content={"msg": "File names saved!"})
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@file_system_manager.delete("/delete-deck/")
+async def delete_deck(deck_id: str, db: Session = Depends(get_db)):
+    try:
+        deck = (
+            db.query(FlashcardDeck)
+            .filter_by(id=deck_id)
+            .first()
+        )
+        db.delete(deck)
+        db.commit()
+        return JSONResponse(content={"msg": "Deck deleted!"})
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@file_system_manager.delete("/delete-test/")
+async def delete_test(test_id: str, db: Session = Depends(get_db)):
+    try:
+        test = (
+            db.query(Test)
+            .filter_by(id=test_id)
+            .first()
+        )
+        db.delete(test)
+        db.commit()
+        return JSONResponse(content={"msg": "Test deleted!"})
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@file_system_manager.delete("/delete-note/")
+async def delete_test(note_id: str, db: Session = Depends(get_db)):
+    try:
+        note = (
+            db.query(Note)
+            .filter_by(id=note_id)
+            .first()
+        )
+        db.delete(note)
+        db.commit()
+        return JSONResponse(content={"msg": "Note deleted!"})
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@file_system_manager.delete("/delete-file/")
+async def delete_file(file_id: str, db: Session = Depends(get_db)):
+    try:
+        file = (
+            db.query(File)
+            .filter_by(id=file_id)
+            .first()
+        )
+        file_storage_id = str(file.id) + "." + file.extension
+        db.delete(file)
+        db.commit()
+        delete_file_from_storage(file_storage_id)
+        return JSONResponse(content={"msg": "File deleted!"})
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

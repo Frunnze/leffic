@@ -5,8 +5,7 @@ import FileUploader from "../components/FileUploader";
 import NewFolder from "../components/NewFolder";
 import FlashcardsMixedReview from "../components/FlashcardsMixedReview";
 import { apiRequest } from "../utils/apiRequest";
-import { useNavigate } from '@solidjs/router';
-// import { setRedirectToLogin } from "../utils/apiRequest"
+import DoughnutDiagram from "../components/DoughnutDiagram";
 
 
 function sortUnitsByCreatedTime(units) {
@@ -28,11 +27,39 @@ const getFolders = async (folderId) => {
     return data;
 };
 
+const getFlashcardsStats = async (folderId) => {
+    const response = await apiRequest({
+        endpoint: `/api/content/flashcards-stats?folder_id=${folderId}`,
+    });
+    const data = await response.json();
+    if (!response.ok) return undefined;  
+    console.log("getFlashcardsStats", data)
+    return data;
+};
+
+const getNotesStats = async (folderId) => {
+    const response = await apiRequest({
+        endpoint: `/api/content/notes-stats?folder_id=${folderId}`,
+    });
+    const data = await response.json();
+    if (!response.ok) return undefined;    
+    console.log("getNotesStats", data)
+    return data;
+};
+
 export default function Home() {    
     const params = useParams();
     const [folderContent, {mutate: mutateFolderContent, refetch}] = createResource(
         () => params.id,
         getFolders
+    );
+    const [flashcardsStats, {refetch: refetchFlashcardsStats}] = createResource(
+        () => params.id,
+        getFlashcardsStats
+    );
+    const [notesItemsStats] = createResource(
+        () => params.id,
+        getNotesStats
     );
     const [flashcardsReview, setFlashcardsReview] = createSignal(false);
     const [unitIdSignal, setUnitIdSignal] = createSignal();
@@ -45,13 +72,37 @@ export default function Home() {
                 endpoint: `/api/content/delete-folder/?folder_id=${unitId}`,
                 method: "DELETE"
             })
-            const updatedContent = {
-                content: folderContent().content.filter(unit => unit.id !== unitId),
-                parent_folder_name: folderContent().parent_folder_name
-            }
-            mutateFolderContent(updatedContent);
-            setUnitDropdownState(null);
+        } else 
+        if (unitType == "flashcard_deck") {
+            await apiRequest({
+                endpoint: `/api/content/delete-deck/?deck_id=${unitId}`,
+                method: "DELETE"
+            })
+        } else 
+        if (unitType == "test") {
+            await apiRequest({
+                endpoint: `/api/content/delete-test/?test_id=${unitId}`,
+                method: "DELETE"
+            })
+        } else 
+        if (unitType == "note") {
+            await apiRequest({
+                endpoint: `/api/content/delete-note/?note_id=${unitId}`,
+                method: "DELETE"
+            })
+        } else 
+        if (unitType == "file") {
+            await apiRequest({
+                endpoint: `/api/content/delete-file/?file_id=${unitId}`,
+                method: "DELETE"
+            })
         };
+        const updatedContent = {
+            content: folderContent().content.filter(unit => unit.id !== unitId),
+            parent_folder_name: folderContent().parent_folder_name
+        }
+        mutateFolderContent(updatedContent);
+        setUnitDropdownState(null);
     }
 
     function displayUnits(newUnits) {
@@ -102,7 +153,11 @@ export default function Home() {
     return (
         <>
         <Show when={flashcardsReview()}>
-            <FlashcardsMixedReview setFlashcardsReview={setFlashcardsReview} folderId={unitIdSignal()} />
+            <FlashcardsMixedReview 
+                refetchFlashcardsStats={refetchFlashcardsStats} 
+                setFlashcardsReview={setFlashcardsReview} 
+                folderId={unitIdSignal()} 
+            />
         </Show>
         <div class="pl-17 relative flex text-tertiary-100 h-full">
             <LeftNavBar/>
@@ -175,17 +230,59 @@ export default function Home() {
                             <span>New file</span>
                         </button> */}
                     </div>
-                <button class="btn-primary">
-                    <svg class="flex-none" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <path d="M2.25 11.25C1.63125 11.25 1.10156 11.0297 0.660937 10.5891C0.220312 10.1484 0 9.61875 0 9C0 8.38125 0.220312 7.85156 0.660937 7.41094C1.10156 6.97031 1.63125 6.75 2.25 6.75C2.86875 6.75 3.39844 6.97031 3.83906 7.41094C4.27969 7.85156 4.5 8.38125 4.5 9C4.5 9.61875 4.27969 10.1484 3.83906 10.5891C3.39844 11.0297 2.86875 11.25 2.25 11.25ZM9 11.25C8.38125 11.25 7.85156 11.0297 7.41094 10.5891C6.97031 10.1484 6.75 9.61875 6.75 9C6.75 8.38125 6.97031 7.85156 7.41094 7.41094C7.85156 6.97031 8.38125 6.75 9 6.75C9.61875 6.75 10.1484 6.97031 10.5891 7.41094C11.0297 7.85156 11.25 8.38125 11.25 9C11.25 9.61875 11.0297 10.1484 10.5891 10.5891C10.1484 11.0297 9.61875 11.25 9 11.25ZM15.75 11.25C15.1312 11.25 14.6016 11.0297 14.1609 10.5891C13.7203 10.1484 13.5 9.61875 13.5 9C13.5 8.38125 13.7203 7.85156 14.1609 7.41094C14.6016 6.97031 15.1312 6.75 15.75 6.75C16.3687 6.75 16.8984 6.97031 17.3391 7.41094C17.7797 7.85156 18 8.38125 18 9C18 9.61875 17.7797 10.1484 17.3391 10.5891C16.8984 11.0297 16.3687 11.25 15.75 11.25Z" fill="#39393A"/>
-                    </svg>
-                </button>
+                    <button class="btn-primary">
+                        <svg class="flex-none" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <path d="M2.25 11.25C1.63125 11.25 1.10156 11.0297 0.660937 10.5891C0.220312 10.1484 0 9.61875 0 9C0 8.38125 0.220312 7.85156 0.660937 7.41094C1.10156 6.97031 1.63125 6.75 2.25 6.75C2.86875 6.75 3.39844 6.97031 3.83906 7.41094C4.27969 7.85156 4.5 8.38125 4.5 9C4.5 9.61875 4.27969 10.1484 3.83906 10.5891C3.39844 11.0297 2.86875 11.25 2.25 11.25ZM9 11.25C8.38125 11.25 7.85156 11.0297 7.41094 10.5891C6.97031 10.1484 6.75 9.61875 6.75 9C6.75 8.38125 6.97031 7.85156 7.41094 7.41094C7.85156 6.97031 8.38125 6.75 9 6.75C9.61875 6.75 10.1484 6.97031 10.5891 7.41094C11.0297 7.85156 11.25 8.38125 11.25 9C11.25 9.61875 11.0297 10.1484 10.5891 10.5891C10.1484 11.0297 9.61875 11.25 9 11.25ZM15.75 11.25C15.1312 11.25 14.6016 11.0297 14.1609 10.5891C13.7203 10.1484 13.5 9.61875 13.5 9C13.5 8.38125 13.7203 7.85156 14.1609 7.41094C14.6016 6.97031 15.1312 6.75 15.75 6.75C16.3687 6.75 16.8984 6.97031 17.3391 7.41094C17.7797 7.85156 18 8.38125 18 9C18 9.61875 17.7797 10.1484 17.3391 10.5891C16.8984 11.0297 16.3687 11.25 15.75 11.25Z" fill="#39393A"/>
+                        </svg>
+                    </button>
                 </div>
 
-                <div class="relative flex flex-col gap-4">
+                <Show when={flashcardsStats() || notesItemsStats() || flashcardsStats()}>
                     <hr class="border-tertiary-10"/>
+                    <div class="flex justify-between items-center w-full gap-4">
+                        <Show when={!flashcardsStats.loading}>
+                            <div class="flex flex-col justify-center items-center flex-1 min-w-0">
+                                <span class="mb-1">Flashcards</span>
+                                <div class="flex justify-center items-center w-full max-h-35">
+                                    <DoughnutDiagram 
+                                        data1={flashcardsStats().due} 
+                                        data2={flashcardsStats().done} 
+                                    />
+                                </div>
+                            </div>
+                        </Show>
+
+                        <Show when={!flashcardsStats.loading}>
+                            <div class="flex flex-col justify-center items-center flex-1 min-w-0">
+                                <span class="mb-1">Test items</span>
+                                <div class="flex justify-center items-center w-full max-h-35"> 
+                                    <DoughnutDiagram 
+                                        data1={1} 
+                                        data2={0} 
+                                    />
+                                </div>
+                            </div>
+                        </Show>
+
+                        <Show when={!notesItemsStats.loading}>
+                            <div class="flex flex-col justify-center items-center flex-1 min-w-0">
+                                <span class="mb-1">Notes</span>
+                                <div class="flex justify-center items-center w-full max-h-35"> 
+                                    <DoughnutDiagram 
+                                        data2Name="Read"
+                                        data1={notesItemsStats().due} 
+                                        data2={notesItemsStats().read} 
+                                    />
+                                </div>
+                            </div>
+                        </Show>
+                    </div>
+                </Show>
+
+                <hr class="border-tertiary-10"/>
+                <div class="relative flex flex-col gap-4">
                     <Show when={folderContent() && folderContent().content.length == 0}>
-                        <span class="absolute text-tertiary-40 top-50 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                        <span class="absolute text-tertiary-40 top-20 left-1/2 -translate-x-1/2 -translate-y-1/2">
                             Empty folder
                         </span>
                     </Show>
@@ -265,10 +362,10 @@ export default function Home() {
                                                     Practice flashcards
                                                 </div>
                                             </Show>
-                                            <div onClick={() => deleteUnit(unit.id, unit.type)} class="rounded-bl-md rounded-br-md flex gap-2 items-center cursor-pointer hover:bg-tertiary-2  w-full h-full p-3">
-                                                <svg class="flex-none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 18 18" fill="none">
+                                            <div onClick={() => deleteUnit(unit.id, unit.type)} class="text-tertiary-red-80 rounded-bl-md rounded-br-md flex gap-2 items-center cursor-pointer hover:bg-tertiary-2  w-full h-full p-3">
+                                                <svg class="fill-tertiary-red-80 flex-none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 18 18" fill="none">
                                                     <g clip-path="url(#clip0_145_212)">
-                                                    <path d="M3.84375 18C3.27656 18 2.79102 17.8042 2.38711 17.4125C1.9832 17.0208 1.78125 16.55 1.78125 16V3C1.48906 3 1.24414 2.90417 1.04648 2.7125C0.848828 2.52083 0.75 2.28333 0.75 2C0.75 1.71667 0.848828 1.47917 1.04648 1.2875C1.24414 1.09583 1.48906 1 1.78125 1H5.90625C5.90625 0.716667 6.00508 0.479167 6.20273 0.2875C6.40039 0.0958333 6.64531 0 6.9375 0H11.0625C11.3547 0 11.5996 0.0958333 11.7973 0.2875C11.9949 0.479167 12.0937 0.716667 12.0937 1H16.2187C16.5109 1 16.7559 1.09583 16.9535 1.2875C17.1512 1.47917 17.25 1.71667 17.25 2C17.25 2.28333 17.1512 2.52083 16.9535 2.7125C16.7559 2.90417 16.5109 3 16.2187 3V16C16.2187 16.55 16.0168 17.0208 15.6129 17.4125C15.209 17.8042 14.7234 18 14.1562 18H3.84375ZM14.1562 3H3.84375V16H14.1562V3ZM6.9375 14C7.22969 14 7.47461 13.9042 7.67227 13.7125C7.86992 13.5208 7.96875 13.2833 7.96875 13V6C7.96875 5.71667 7.86992 5.47917 7.67227 5.2875C7.47461 5.09583 7.22969 5 6.9375 5C6.64531 5 6.40039 5.09583 6.20273 5.2875C6.00508 5.47917 5.90625 5.71667 5.90625 6V13C5.90625 13.2833 6.00508 13.5208 6.20273 13.7125C6.40039 13.9042 6.64531 14 6.9375 14ZM11.0625 14C11.3547 14 11.5996 13.9042 11.7973 13.7125C11.9949 13.5208 12.0937 13.2833 12.0937 13V6C12.0937 5.71667 11.9949 5.47917 11.7973 5.2875C11.5996 5.09583 11.3547 5 11.0625 5C10.7703 5 10.5254 5.09583 10.3277 5.2875C10.1301 5.47917 10.0312 5.71667 10.0312 6V13C10.0312 13.2833 10.1301 13.5208 10.3277 13.7125C10.5254 13.9042 10.7703 14 11.0625 14Z" fill="#39393A"/>
+                                                    <path d="M3.84375 18C3.27656 18 2.79102 17.8042 2.38711 17.4125C1.9832 17.0208 1.78125 16.55 1.78125 16V3C1.48906 3 1.24414 2.90417 1.04648 2.7125C0.848828 2.52083 0.75 2.28333 0.75 2C0.75 1.71667 0.848828 1.47917 1.04648 1.2875C1.24414 1.09583 1.48906 1 1.78125 1H5.90625C5.90625 0.716667 6.00508 0.479167 6.20273 0.2875C6.40039 0.0958333 6.64531 0 6.9375 0H11.0625C11.3547 0 11.5996 0.0958333 11.7973 0.2875C11.9949 0.479167 12.0937 0.716667 12.0937 1H16.2187C16.5109 1 16.7559 1.09583 16.9535 1.2875C17.1512 1.47917 17.25 1.71667 17.25 2C17.25 2.28333 17.1512 2.52083 16.9535 2.7125C16.7559 2.90417 16.5109 3 16.2187 3V16C16.2187 16.55 16.0168 17.0208 15.6129 17.4125C15.209 17.8042 14.7234 18 14.1562 18H3.84375ZM14.1562 3H3.84375V16H14.1562V3ZM6.9375 14C7.22969 14 7.47461 13.9042 7.67227 13.7125C7.86992 13.5208 7.96875 13.2833 7.96875 13V6C7.96875 5.71667 7.86992 5.47917 7.67227 5.2875C7.47461 5.09583 7.22969 5 6.9375 5C6.64531 5 6.40039 5.09583 6.20273 5.2875C6.00508 5.47917 5.90625 5.71667 5.90625 6V13C5.90625 13.2833 6.00508 13.5208 6.20273 13.7125C6.40039 13.9042 6.64531 14 6.9375 14ZM11.0625 14C11.3547 14 11.5996 13.9042 11.7973 13.7125C11.9949 13.5208 12.0937 13.2833 12.0937 13V6C12.0937 5.71667 11.9949 5.47917 11.7973 5.2875C11.5996 5.09583 11.3547 5 11.0625 5C10.7703 5 10.5254 5.09583 10.3277 5.2875C10.1301 5.47917 10.0312 5.71667 10.0312 6V13C10.0312 13.2833 10.1301 13.5208 10.3277 13.7125C10.5254 13.9042 10.7703 14 11.0625 14Z"/>
                                                     </g>
                                                     <defs>
                                                     <clipPath id="clip0_145_212">

@@ -18,7 +18,9 @@ import { Router } from "@solidjs/router"
 function App() {
   const { 
     displayStartGenerationNotification, setDisplayStartGenerationNotification,
-    flashcardsTaskStatus, setFlashcardsTaskStatus, noteTaskStatus, setNoteTaskStatus
+    flashcardsTaskStatus, setFlashcardsTaskStatus, 
+    noteTaskStatus, setNoteTaskStatus,
+    testTaskStatus, setTestTaskStatus
   } = useNotificationContext();
 
 
@@ -61,6 +63,23 @@ function App() {
             closeNotification={() => setNoteTaskStatus()}
             primaryLabel="Task failure"
             secondaryLabel="The note was not created. Try again!"
+          />
+        </Match>
+      </Switch>
+
+      <Switch>
+        <Match when={testTaskStatus() === "SUCCESS"}>
+          <SuccessNotification 
+                closeNotification={() => setTestTaskStatus()}
+                primaryLabel="Task completed"
+                secondaryLabel="Test successfully created!"
+            />
+        </Match>
+        <Match when={testTaskStatus() === "FAILURE"}>
+          <FailureNotification 
+            closeNotification={() => setTestTaskStatus()}
+            primaryLabel="Task failure"
+            secondaryLabel="The test was not created. Try again!"
           />
         </Match>
       </Switch>

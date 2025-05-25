@@ -122,3 +122,4 @@ class Note(Base):
     type = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
     public = Column(Boolean, default=False, nullable=False)
+    read = Column(Boolean, default=False)
