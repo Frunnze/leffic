@@ -88,7 +88,7 @@ function App() {
         <Route path="/folder/:id" component={Home} />
         <Route path="/flashcard_deck/:id" component={FlashcardsReview} />
         <Route path="/note/:id" component={NotesReview} />
-        <Route path="/file/:id" component={FileReview} />
+        <Route path="/file/:id/:extension" component={FileReview} />
         <Route path="/test/:id" component={TestReview} />
         <Route path="/login" component={Login} />
         <Route path="/sign-up" component={SignUp} />

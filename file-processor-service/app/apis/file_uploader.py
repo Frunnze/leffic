@@ -81,42 +81,39 @@ async def upload_files(
     
 
 @file_uploader.get("/file")
-async def get_file(file_id: str):
-    base_dir = "files"
-    supported_extensions = ["ppt", "pptx", "docx", "doc", "ppt", "rtf", "jpg", "jpeg", "png"]
+async def get_file(file_id: str, file_extension: str):
+    input_path = os.path.join("files", f"{file_id}.{file_extension}")
 
-    for ext in supported_extensions + ["pdf"]:
-        input_path = os.path.join(base_dir, f"{file_id}.{ext}")
-        if os.path.exists(input_path):
-            if ext == "pdf":
-                return FileResponse(
-                    path=input_path,
-                    media_type="application/pdf",
-                    filename=f"{file_id}.pdf"
-                )
-            else:
-                with tempfile.TemporaryDirectory() as tmp_dir:
-                    result = subprocess.run([
-                        "libreoffice", "--headless", "--convert-to", "pdf",
-                        "--outdir", tmp_dir, input_path
-                    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if os.path.exists(input_path):
+        if file_extension == "pdf":
+            return FileResponse(
+                path=input_path,
+                media_type="application/pdf",
+                filename=f"{file_id}.pdf"
+            )
+        else:
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                result = subprocess.run([
+                    "libreoffice", "--headless", "--convert-to", "pdf",
+                    "--outdir", tmp_dir, input_path
+                ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-                    if result.returncode != 0:
-                        raise HTTPException(
-                            status_code=400,
-                            detail=f"Conversion failed: {result.stderr.decode()}"
-                        )
+                if result.returncode != 0:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Conversion failed: {result.stderr.decode()}"
+                    )
 
-                    temp_pdf_path = os.path.join(tmp_dir, f"{file_id}.pdf")
-                    with open(temp_pdf_path, "rb") as f:
-                        pdf_content = f.read()
+                temp_pdf_path = os.path.join(tmp_dir, f"{file_id}.pdf")
+                with open(temp_pdf_path, "rb") as f:
+                    pdf_content = f.read()
 
-                return Response(
-                    content=pdf_content,
-                    media_type="application/pdf",
-                    headers={
-                        "Content-Disposition": f"attachment; filename={file_id}.pdf"
-                    }
-                )
+            return Response(
+                content=pdf_content,
+                media_type="application/pdf",
+                headers={
+                    "Content-Disposition": f"attachment; filename={file_id}.pdf"
+                }
+            )
 
     raise HTTPException(status_code=404, detail="File not found")

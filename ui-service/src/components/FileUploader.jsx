@@ -158,6 +158,7 @@ export default function FileUploader(props) {
                 (data.file_metadata || []).map(file => ({
                     id: file.file_id,
                     name: file.name,
+                    extension: file.extension,
                     type: "file",
                     created_at: file.created_at
                 }))

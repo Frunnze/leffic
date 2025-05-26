@@ -25,8 +25,9 @@ def get_notes_system_prompt():
     The output has to have three sections: Summary, Bullet points, and Detailed notes.
 
     ###Constraints###
-    - At the start of the notes do not add any title.
+    - Assume that the reader does not know anything about the concepts and ideas from the extracted text.
     - Explain everything as clearly as possible.
+    - At the start of the notes do not add any title.
     - The output has to be in simple HTML without any styles;
     - It is highly important that you escape special characters or strings such as code or math formulas so they would look properly to the user.
 

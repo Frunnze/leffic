@@ -3,27 +3,22 @@ import { useParams } from "@solidjs/router";
 import { apiRequest } from "../utils/apiRequest";
 import LeftNavBar from "../components/LeftNavBar";
 
-const getFile = async (fileId) => {
-  // Fetch the PDF file from the API
+const getFile = async (fileMeta) => {
+  console.log(fileMeta)
   const res = await apiRequest({
-    endpoint: `/api/files/file?file_id=${fileId}`,
+    endpoint: `/api/files/file?file_id=${fileMeta.fileId}&file_extension=${fileMeta.fileExtension}`,
     headers: {
       Accept: "application/pdf",
     },
   });
-
-  // Convert the response to a Blob (binary data)
   const blob = await res.blob();
-
-  // Create an Object URL from the Blob
   const pdfUrl = URL.createObjectURL(blob);
-
-  return { url: pdfUrl };  // Return the Object URL
+  return { url: pdfUrl };
 };
 
 export default function FileViewer() {
   const params = useParams();
-  const [file] = createResource(() => params.id, getFile);
+  const [file] = createResource(() => ({fileId: params.id, fileExtension: params.extension}), getFile);
 
   return (
     <div class="pl-17 h-screen w-screen flex justify-center items-center bg-secondary/10">

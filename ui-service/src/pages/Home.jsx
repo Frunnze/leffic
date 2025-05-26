@@ -290,7 +290,7 @@ export default function Home() {
                         <For each={folderContent().content}>
                             {(unit) => (
                                 <div class="relative">
-                                    <A href={`/${unit.type}/` + unit.id} class="flex gap-2 items-center w-full justify-between py-1.5 px-3 border border-tertiary-40 rounded-md hover:bg-secondary hover:fill-primary hover:text-primary hover:border-transparent hover:shadow-sm cursor-pointer truncate">
+                                    <A href={`/${unit.type}/` + unit.id + (unit.type === "file" && unit.extension ? `/${unit.extension}` : '')} class="flex gap-2 items-center w-full justify-between py-1.5 px-3 border border-tertiary-40 rounded-md hover:bg-secondary hover:fill-primary hover:text-primary hover:border-transparent hover:shadow-sm cursor-pointer truncate">
                                         <div class="flex items-center gap-2 w-[80%]">
                                             <Switch>
                                                 <Match when={unit.type === "folder"}>

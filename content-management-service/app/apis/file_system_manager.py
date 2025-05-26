@@ -201,7 +201,7 @@ async def access_folder(
 
         # Get the folder's files
         file_rows = (
-            db.query(File.id, File.name, File.created_at)
+            db.query(File.id, File.name, File.created_at, File.extension)
             .join(
                 Folder,
                 File.folder_id == Folder.id
@@ -217,6 +217,7 @@ async def access_folder(
                 "id": str(row[0]), 
                 "name": row[1], 
                 "created_at": str(row[2]),
+                "extension": str(row[3]),
                 "type": "file"
             })
 
