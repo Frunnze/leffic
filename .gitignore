@@ -7,9 +7,8 @@ build
 *.db
 .vscode/settings.json
 myenv
-test*
+test
 templates
-
 node_modules
 dist
 index.html

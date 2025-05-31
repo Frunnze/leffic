@@ -1,4 +1,4 @@
-from fastapi import APIRouter, File, Form, UploadFile, HTTPException, Depends, Query
+from fastapi import APIRouter, File, Form, UploadFile, HTTPException, Depends
 from fastapi.responses import FileResponse, Response
 from typing import List, Optional
 import os
@@ -10,7 +10,6 @@ import pyclamd
 import shutil
 import subprocess
 import tempfile
-from pathlib import Path
 
 
 from .. import CONTENT_MANAGEMENT_SERVICE

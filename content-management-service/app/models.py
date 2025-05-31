@@ -99,16 +99,32 @@ class TestItem(Base):
     type = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
 
-    test_item_reviews = relationship("TestItemReview", backref="test_item", cascade="all, delete-orphan")
+    test_item_reviews = relationship(
+        "TestItemReview", 
+        backref="test_item", 
+        cascade="all, delete-orphan",
+        order_by="TestItemReview.reviewed_at"
+    )
+
+
+class TestSession(Base):
+    __tablename__ = "test_sessions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
+    origin_id = Column(UUID(as_uuid=True), nullable=False) # test/folder id
+    status = Column(String, nullable=False) # done/ongoing
+    created_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=True)
 
 
 class TestItemReview(Base):
     __tablename__ = "test_item_reviews"
 
     id = Column(Integer, primary_key=True, nullable=False)
+    test_session = Column(UUID(as_uuid=True), ForeignKey("test_sessions.id"), nullable=False)
     test_item_id = Column(Integer, ForeignKey("test_items.id"), nullable=False)
     reviewed_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=True)
     accuracy = Column(Float, nullable=False)
+    answers = Column(JSONB, nullable=False)
     duration = Column(Float, nullable=True)
 
 

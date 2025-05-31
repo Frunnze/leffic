@@ -5,13 +5,15 @@ from typing import Optional
 import uuid
 import traceback
 from sqlalchemy.orm import Session, aliased
-from sqlalchemy import select, func, or_, exists
+from sqlalchemy import select, func, or_, exists, case
 import requests
 from datetime import datetime, timezone
+import random
 
 from ..models import (
     Folder, FlashcardDeck, Flashcard, 
-    FlashcardReview, Note, Test, TestItem
+    FlashcardReview, Note, Test, TestItem,
+    TestItemReview, TestSession
 )
 from ..database import get_db
 from .. import SCHEDULER_SERVICE
@@ -258,33 +260,103 @@ async def get_note(note_id: str, db: Session = Depends(get_db), user_id: str = D
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+
+def get_items_test_session_answers(test_item, db, test_session):
+    test_item_review = (
+        db.query(TestItemReview)
+        .filter(
+            TestItemReview.test_session == test_session,
+            TestItemReview.test_item_id == test_item.id
+        )
+        .first()
+    )
+    return test_item_review.answers if test_item_review else None
+
+def prepare_content(content):
+    new_content = {}
+    new_content["question"] = content.get("question")
+    options = []
+    true_options = [content.get("true_option")]
+    for index, option in enumerate(true_options):
+        options.append({
+            "id": index,
+            "option": option
+        })
+    for index, option in enumerate(content.get("false_options")):
+        options.append({
+            "id": index + len(true_options),
+            "option": option
+        })
+    #random.shuffle(options)
+    new_content["shuffled_options"] = options
+    return new_content
 
 @study_units.get("/test-items")
 async def get_test_items(
-    test_id: Optional[str] = None, 
-    folder_id: Optional[str] = None, 
+    test_id: Optional[str] = None,
+    folder_id: Optional[str] = None,
+    per_page: int = 10,
+    page: int = 1,
+    test_session: Optional[str] = None,
     user_id: str = Depends(get_user_id_from_jwt), 
     db: Session = Depends(get_db)
 ):
     try:
         folder_id = folder_id if folder_id != "home" else user_id
 
+        # Check if this origin has any unfinished test session
+        if not test_session:
+            test_session_obj = (
+                db.query(TestSession)
+                .filter(
+                    TestSession.origin_id == test_id if test_id else folder_id,
+                    TestSession.status == "ongoing"
+                )
+                .first()
+            )
+            if not test_session_obj:
+                new_test_session_obj = TestSession(
+                    origin_id=test_id if test_id else folder_id,
+                    status="ongoing"
+                )
+                db.add(new_test_session_obj)
+                db.flush()
+                test_session = new_test_session_obj.id
+                db.commit()
+            else:
+                test_session = test_session_obj.id
+
         test_items = []
         if test_id:
+            total_items = (
+                db.query(func.count(TestItem.id))
+                .filter(TestItem.test_id == uuid.UUID(test_id))
+                .scalar()
+            )
+
             test_items = (
                 db.query(TestItem)
                 .filter(TestItem.test_id == uuid.UUID(test_id))
+                .offset((page-1)*per_page)
+                .limit(per_page)
                 .all()
             )
-            return JSONResponse(content={"test_items": [
-                {
-                    "id": test_item.id,
-                    "type": test_item.type,
-                    "content": test_item.content,
-                    "created_at": date_to_str(test_item.created_at),
-                } for test_item in test_items
-            ]})
+            return JSONResponse(content={
+                "test_items": [
+                    {
+                        "id": test_item.id,
+                        "type": test_item.type,
+                        "content": prepare_content(test_item.content),
+                        "created_at": date_to_str(test_item.created_at),
+                        "last_answers": get_items_test_session_answers(test_item, db, test_session)
+                    } for test_item in test_items
+                ], 
+                "total_items": total_items,
+                "test_session": str(test_session),
+                "page": page,
+                "per_page": per_page
+            })
 
         folder_cte = (
             select(Folder.id)
@@ -302,24 +374,163 @@ async def get_test_items(
             select(Test.id)
             .where(Test.folder_id.in_(folder_cte))
         )
+        total_items = (
+            db.query(func.count(TestItem.id))
+            .filter(TestItem.test_id.in_(test_ids_subquery))
+            .scalar()
+        )
         test_items = (
             db.query(TestItem)
             .filter(TestItem.test_id.in_(test_ids_subquery))
+            .offset((page-1)*per_page)
+            .limit(per_page)
             .all()
         )
 
-        return JSONResponse(content={"test_items": [
-            {
-                "id": test_item.id,
-                "type": test_item.type,
-                "content": test_item.content,
-                "created_at": date_to_str(test_item.created_at),
-            } for test_item in test_items
-        ]})
+        return JSONResponse(content={
+            "test_items": [
+                {
+                    "id": test_item.id,
+                    "type": test_item.type,
+                    "content": prepare_content(test_item.content),
+                    "created_at": date_to_str(test_item.created_at),
+                    "last_answers": get_items_test_session_answers(test_item, db, test_session)
+                } for test_item in test_items
+            ], 
+            "total_items": total_items,
+            "test_session": str(test_session),
+            "page": page,
+            "per_page": per_page
+        })
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class ReviewTestItemRequest(BaseModel):
+    test_item_id: int
+    test_session: str
+    answers: list
+
+def evaluate_accuracy(user_answers, db):
+    if user_answers[0] == 0:
+        return 1
+    return 0
+
+@study_units.post("/review-test-item")
+async def review_test_item(
+    req_data: ReviewTestItemRequest,
+    db: Session = Depends(get_db)
+):
+    try:
+        test_item = db.query(TestItem).filter_by(id=req_data.test_item_id).first()
+        test_item_review = (
+            db.query(TestItemReview)
+            .filter(
+                TestItemReview.test_item_id == req_data.test_item_id,
+                TestItemReview.test_session == req_data.test_session
+            )
+            .first()
+        )
+        if not test_item_review:
+            db.add(TestItemReview(
+                test_session=uuid.UUID(req_data.test_session),
+                test_item_id=req_data.test_item_id,
+                accuracy=evaluate_accuracy(req_data.answers, db),
+                answers=req_data.answers,
+                reviewed_at=datetime.now(timezone.utc)
+            ))
+        else:
+            test_item_review.answers = req_data.answers
+            test_item_review.reviewed_at = datetime.now(timezone.utc)
+            test_item_review.accuracy = evaluate_accuracy(req_data.answers, db)
+
+        db.commit()
+        return JSONResponse(content={"msg": "Saved!"})
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
     
+
+@study_units.post("/end-test-session")
+async def end_test_session(
+    test_session: str,
+    db: Session = Depends(get_db)
+):
+    try:
+        test_session = db.query(TestSession).filter_by(id=test_session).first()
+        test_session.status = "done"
+        db.commit()
+        return JSONResponse(content={"msg": "Saved!"})
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@study_units.get("/test-session-results")
+async def test_session_results(
+    folder_id: Optional[str] = None,
+    test_id: Optional[str] = None,
+    test_session: Optional[str] = None,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_user_id_from_jwt)
+):
+    try:
+        folder_id = folder_id if folder_id != "home" else user_id
+        query = (
+            db.query(
+                func.avg(TestItemReview.accuracy).label('avg_accuracy'),
+                func.count(TestItemReview.id).label('total'),
+                func.sum(
+                    case(
+                        (TestItemReview.accuracy == 1.0, 1),
+                        else_=0
+                    )
+                ).label('correct')
+            )
+            .join(TestSession, TestSession.id == TestItemReview.test_session)
+            .filter(TestItemReview.accuracy != None)
+        )
+        if folder_id:
+            folder_cte = (
+                select(Folder.id)
+                .where(
+                    Folder.id == folder_id,
+                    Folder.user_id == user_id
+                )
+                .cte(name="subfolders", recursive=True)
+            )
+            subfolder = aliased(Folder)
+            folder_cte = folder_cte.union_all(
+                select(subfolder.id).where(subfolder.parent_id == folder_cte.c.id)
+            )
+            test_ids_subquery = (
+                select(Test.id)
+                .where(Test.folder_id.in_(folder_cte))
+            )
+            query = query.filter(
+                or_(
+                    TestSession.origin_id.in_(test_ids_subquery),
+                    TestSession.origin_id == folder_id
+                )
+            )
+        else:
+            query = query.filter(TestSession.origin_id == test_id)
+
+        if test_session:
+            query = query.filter(TestItemReview.test_session == test_session)
+        result = query.one()
+        if result:
+            return JSONResponse(content={
+                "avg_accuracy": result.avg_accuracy,
+                "total": result.total,
+                "correct": result.correct
+            })
+        return JSONResponse(content={"msg": "No test stats!"}, status_code=404)
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @study_units.get("/flashcards-stats")
 async def get_flashcards_stats(

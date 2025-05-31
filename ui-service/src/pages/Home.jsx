@@ -47,6 +47,16 @@ const getNotesStats = async (folderId) => {
     return data;
 };
 
+const getTestsStats = async (folderId) => {
+    const res = await apiRequest({
+        endpoint: `/api/content/test-session-results?folder_id=${folderId}`,
+    });
+    if (!res.ok) return undefined;
+    const data = await res.json();
+    console.log("getTestsStats", data)
+    return data;
+};
+
 export default function Home() {    
     const params = useParams();
     const [folderContent, {mutate: mutateFolderContent, refetch}] = createResource(
@@ -60,6 +70,10 @@ export default function Home() {
     const [notesItemsStats] = createResource(
         () => params.id,
         getNotesStats
+    );
+    const [testItemsStats] = createResource(
+        () => params.id,
+        getTestsStats
     );
     const [flashcardsReview, setFlashcardsReview] = createSignal(false);
     const [unitIdSignal, setUnitIdSignal] = createSignal();
@@ -237,7 +251,7 @@ export default function Home() {
                     </button>
                 </div>
 
-                <Show when={flashcardsStats() || notesItemsStats() || flashcardsStats()}>
+                <Show when={flashcardsStats() || notesItemsStats() || testItemsStats()}>
                     <hr class="border-tertiary-10"/>
                     <div class="flex justify-between items-center w-full gap-4">
                         <Show when={!flashcardsStats.loading}>
@@ -252,13 +266,15 @@ export default function Home() {
                             </div>
                         </Show>
 
-                        <Show when={!flashcardsStats.loading}>
+                        <Show when={!testItemsStats.loading}>
                             <div class="flex flex-col justify-center items-center flex-1 min-w-0">
                                 <span class="mb-1">Test items</span>
                                 <div class="flex justify-center items-center w-full max-h-35"> 
                                     <DoughnutDiagram 
-                                        data1={1} 
-                                        data2={0} 
+                                        data2Name="Correct (%)"
+                                        data1Name="Incorrect"
+                                        data2={(testItemsStats().avg_accuracy*100).toFixed(1)} 
+                                        data1={(100-testItemsStats().avg_accuracy*100).toFixed(1)}
                                     />
                                 </div>
                             </div>
