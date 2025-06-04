@@ -128,7 +128,7 @@ def flashcard_results(flashcards):
             "next_review": date_to_str(flashcard.next_review) if flashcard.next_review else None,
             "content": flashcard.content,
             "created_at": date_to_str(flashcard.created_at),
-            "future_ratings_time": flashcard.future_ratings_time if flashcard.future_ratings_time else {1: 59, 2: 329, 3: 599, 4: 86399}
+            "fsrs_card": flashcard.fsrs_card
         } for flashcard in flashcards
     ]
 
@@ -137,7 +137,8 @@ async def get_flashcards(
     flashcard_deck_id: Optional[str] = None, 
     folder_id: Optional[str] = None, 
     user_id: str = Depends(get_user_id_from_jwt), 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    per_page: Optional[int] = 10
 ):
     try:
         folder_id = folder_id if folder_id != "home" else user_id
@@ -145,6 +146,17 @@ async def get_flashcards(
         # Get the flashcards from a specific deck
         flashcards = []
         if flashcard_deck_id:
+            total_flashcards = (
+                db.query(func.count(Flashcard.id))
+                .filter(
+                    Flashcard.deck_id == uuid.UUID(flashcard_deck_id),
+                    or_(
+                        func.date(Flashcard.next_review) <= datetime.now(timezone.utc).date(),
+                        Flashcard.next_review.is_(None)
+                    )
+                )
+                .scalar()
+            )
             flashcards = (
                 db.query(Flashcard)
                 .filter(
@@ -154,10 +166,15 @@ async def get_flashcards(
                         Flashcard.next_review.is_(None)
                     )
                 )
-                .order_by(Flashcard.next_review.asc())
+                .order_by(Flashcard.next_review.asc().nullsfirst())
+                .limit(per_page)
                 .all()
             )
-            return JSONResponse(content={"flashcards": flashcard_results(flashcards)})
+            print("(*****)", flashcard_results(flashcards))
+            return JSONResponse(content={
+                "flashcards": flashcard_results(flashcards),
+                "total_flashcards": total_flashcards
+            })
 
         # Get the flashcards from a folder and its subfolders
         folder_cte = (
@@ -176,6 +193,17 @@ async def get_flashcards(
             select(FlashcardDeck.id)
             .where(FlashcardDeck.folder_id.in_(folder_cte))
         )
+        total_flashcards = (
+            db.query(func.count(Flashcard.id))
+            .filter(
+                Flashcard.deck_id.in_(deck_ids_subquery),
+                or_(
+                    func.date(Flashcard.next_review) <= datetime.now(timezone.utc).date(),
+                    Flashcard.next_review.is_(None)
+                )
+            )
+            .scalar()
+        )
         flashcards = (
             db.query(Flashcard)
             .filter(
@@ -185,11 +213,14 @@ async def get_flashcards(
                     Flashcard.next_review.is_(None)
                 )
             )
-            .order_by(Flashcard.next_review.asc())
+            .order_by(Flashcard.next_review.asc().nullsfirst())
+            .limit(per_page)
             .all()
         )
-
-        return JSONResponse(content={"flashcards": flashcard_results(flashcards)})
+        return JSONResponse(content={
+            "flashcards": flashcard_results(flashcards),
+            "total_flashcards": total_flashcards
+        })
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
@@ -224,19 +255,19 @@ async def review_flashcard(
         response_data = response.json()
         card.fsrs_card = response_data.get("new_card")
         due_str = response_data.get("new_card").get("due")
-        card.next_review = datetime.fromisoformat(due_str)
-        card.future_ratings_time = response_data.get("ratings_time")
+        next_review_date = datetime.fromisoformat(due_str).replace(tzinfo=None)
+        card.next_review = next_review_date
 
         # Add new card review log
         card.flashcard_reviews.append(
             FlashcardReview(fsrs_review=response_data.get("review_log"))
         )
-
         db.commit()
+
         return JSONResponse(content={
-            "due_date": response_data.get("new_card").get("due"), 
-            "future_ratings_time": response_data.get("ratings_time")}
-        )
+            "due_date": date_to_str(next_review_date),
+            "new_fsrs_card": response_data.get("new_card")
+        })
     except Exception as e:
         db.rollback()
         traceback.print_exc()
@@ -288,7 +319,7 @@ def prepare_content(content):
             "id": index + len(true_options),
             "option": option
         })
-    #random.shuffle(options)
+    random.shuffle(options)
     new_content["shuffled_options"] = options
     return new_content
 
@@ -310,14 +341,14 @@ async def get_test_items(
             test_session_obj = (
                 db.query(TestSession)
                 .filter(
-                    TestSession.origin_id == test_id if test_id else folder_id,
+                    TestSession.origin_id == (test_id if test_id else folder_id),
                     TestSession.status == "ongoing"
                 )
                 .first()
             )
             if not test_session_obj:
                 new_test_session_obj = TestSession(
-                    origin_id=test_id if test_id else folder_id,
+                    origin_id=(test_id if test_id else folder_id),
                     status="ongoing"
                 )
                 db.add(new_test_session_obj)
@@ -452,35 +483,74 @@ async def review_test_item(
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@study_units.post("/end-test-session")
-async def end_test_session(
-    test_session: str,
-    db: Session = Depends(get_db)
-):
-    try:
-        test_session = db.query(TestSession).filter_by(id=test_session).first()
-        test_session.status = "done"
-        db.commit()
-        return JSONResponse(content={"msg": "Saved!"})
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
-    
-
-@study_units.get("/test-session-results")
-async def test_session_results(
-    folder_id: Optional[str] = None,
-    test_id: Optional[str] = None,
-    test_session: Optional[str] = None,
+@study_units.get("/test-items-stats")
+async def test_items_stats(
+    folder_id: str,
     db: Session = Depends(get_db),
     user_id: str = Depends(get_user_id_from_jwt)
 ):
     try:
         folder_id = folder_id if folder_id != "home" else user_id
-        query = (
+        
+        # Recursive CTE to get all subfolder IDs
+        folder_cte = (
+            select(Folder.id)
+            .where(
+                Folder.id == folder_id,
+                Folder.user_id == user_id
+            )
+            .cte(name="subfolders", recursive=True)
+        )
+        subfolder = aliased(Folder)
+        folder_cte = folder_cte.union_all(
+            select(subfolder.id)
+            .where(subfolder.parent_id == folder_cte.c.id)
+        )
+        
+        total_items = (
+            db.query(func.count(TestItem.id))
+            .join(Test, Test.id == TestItem.test_id)
+            .filter(Test.folder_id.in_(folder_cte))
+            .scalar()
+        )
+
+        avg_accuracy_subquery = (
             db.query(
-                func.avg(TestItemReview.accuracy).label('avg_accuracy'),
-                func.count(TestItemReview.id).label('total'),
+                TestItemReview.test_item_id.label("test_item_id"),
+                func.avg(TestItemReview.accuracy).label("avg_accuracy")
+            )
+            .join(TestItem, TestItem.id == TestItemReview.test_item_id)
+            .join(Test, Test.id == TestItem.test_id)
+            .filter(TestItemReview.accuracy != None)
+            .filter(Test.folder_id.in_(folder_cte))
+            .group_by(TestItemReview.test_item_id)
+            .subquery()
+        )
+        correct_items = (
+            db.query(func.count())
+            .select_from(avg_accuracy_subquery)
+            .filter(avg_accuracy_subquery.c.avg_accuracy >= 0.9)
+            .scalar()
+        )
+        if total_items > 0:
+            return JSONResponse(content={
+                "total": total_items,
+                "correct": correct_items if correct_items else 0
+            })
+        return JSONResponse(content={"msg": "No test stats!"}, status_code=404)
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@study_units.get("/test-session-results")
+async def test_session_results(
+    test_session: str,
+    db: Session = Depends(get_db)
+):
+    try:
+        result = (
+            db.query(
                 func.sum(
                     case(
                         (TestItemReview.accuracy == 1.0, 1),
@@ -488,44 +558,20 @@ async def test_session_results(
                     )
                 ).label('correct')
             )
-            .join(TestSession, TestSession.id == TestItemReview.test_session)
-            .filter(TestItemReview.accuracy != None)
+            .filter(
+                TestItemReview.accuracy != None,
+                TestItemReview.test_session == test_session
+            )
+            .one()
         )
-        if folder_id:
-            folder_cte = (
-                select(Folder.id)
-                .where(
-                    Folder.id == folder_id,
-                    Folder.user_id == user_id
-                )
-                .cte(name="subfolders", recursive=True)
-            )
-            subfolder = aliased(Folder)
-            folder_cte = folder_cte.union_all(
-                select(subfolder.id).where(subfolder.parent_id == folder_cte.c.id)
-            )
-            test_ids_subquery = (
-                select(Test.id)
-                .where(Test.folder_id.in_(folder_cte))
-            )
-            query = query.filter(
-                or_(
-                    TestSession.origin_id.in_(test_ids_subquery),
-                    TestSession.origin_id == folder_id
-                )
-            )
-        else:
-            query = query.filter(TestSession.origin_id == test_id)
 
-        if test_session:
-            query = query.filter(TestItemReview.test_session == test_session)
-        result = query.one()
-        if result:
-            return JSONResponse(content={
-                "avg_accuracy": result.avg_accuracy,
-                "total": result.total,
-                "correct": result.correct
-            })
+        # End the test session
+        test_session = db.query(TestSession).filter_by(id=test_session).first()
+        test_session.status = "done"
+        db.commit()
+        
+        if result.correct:
+            return JSONResponse(content={"correct": result.correct})
         return JSONResponse(content={"msg": "No test stats!"}, status_code=404)
     except Exception as e:
         traceback.print_exc()
@@ -569,7 +615,7 @@ async def get_flashcards_stats(
             .filter(
                 Flashcard.deck_id.in_(deck_ids_subquery),
                 or_(
-                    Flashcard.next_review <= datetime.now(timezone.utc),
+                    func.date(Flashcard.next_review) <= datetime.now(timezone.utc).date(),
                     Flashcard.next_review == None
                 )
             )
@@ -580,14 +626,14 @@ async def get_flashcards_stats(
             db.query(func.count(Flashcard.id))
             .filter(
                 Flashcard.deck_id.in_(deck_ids_subquery),
-                Flashcard.next_review > datetime.now(timezone.utc),
+                func.date(Flashcard.next_review) > datetime.now(timezone.utc).date(),
                 Flashcard.next_review != None
             )
             .scalar()
         )
 
         if due_flashcards == 0 and done_flashcards == 0:
-            raise HTTPException(status_code=404, detail="No flashcards!")
+            return JSONResponse(content={"msg": "No flashcards!"}, status_code=404)
 
         return JSONResponse(content={
             "due": due_flashcards,
@@ -645,7 +691,7 @@ async def get_notes_stats(
         )
      
         if read_notes == 0 and due_notes == 0:
-            raise HTTPException(status_code=404, detail="No notes!")
+            return JSONResponse(content={"msg": "No notes!"}, status_code=404)
         
         return JSONResponse(content={
             "due": due_notes,

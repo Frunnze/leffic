@@ -25,19 +25,28 @@ def schedule_flashcard_fsrs(card, scheduler, rating):
     rating_obj = rating_map[rating]
     new_card, review_log = scheduler.review_card(card, rating_obj)
 
-    # Ratings time for future review
-    future_ratings_time = get_ratings_time(new_card, scheduler, timestamp)
-
-    return new_card.to_dict(), review_log.to_dict(), future_ratings_time
+    return new_card.to_dict(), review_log.to_dict()
 
 
-def get_ratings_time(card, scheduler, timestamp):
-    ratings_time = {}
+def get_ratings_times(card, scheduler):
+    timestamp = datetime.now(timezone.utc)
+
+    if card:
+        card = Card.from_dict(card)
+    else:
+        card = Card()
+
+    if scheduler:
+        scheduler = Scheduler.from_dict(scheduler)
+    else:
+        scheduler = Scheduler()
+
+    ratings_times = {}
     for r, val in rating_map.items():
         temp_card, _ = scheduler.review_card(card, val)
-        ratings_time[r] = max(0, int((temp_card.due - timestamp).total_seconds()))
+        ratings_times[r] = max(0, int((temp_card.due - timestamp).total_seconds()))
 
-    return ratings_time
+    return ratings_times
 
 # celery task
 def optimize_scheduler(scheduler, user_id):

@@ -6,6 +6,7 @@ import NewFolder from "../components/NewFolder";
 import FlashcardsMixedReview from "../components/FlashcardsMixedReview";
 import { apiRequest } from "../utils/apiRequest";
 import DoughnutDiagram from "../components/DoughnutDiagram";
+import TestMixedReview from "../components/TestMixedReview";
 
 
 function sortUnitsByCreatedTime(units) {
@@ -49,7 +50,7 @@ const getNotesStats = async (folderId) => {
 
 const getTestsStats = async (folderId) => {
     const res = await apiRequest({
-        endpoint: `/api/content/test-session-results?folder_id=${folderId}`,
+        endpoint: `/api/content/test-items-stats?folder_id=${folderId}`,
     });
     if (!res.ok) return undefined;
     const data = await res.json();
@@ -76,7 +77,7 @@ export default function Home() {
         getTestsStats
     );
     const [flashcardsReview, setFlashcardsReview] = createSignal(false);
-    const [unitIdSignal, setUnitIdSignal] = createSignal();
+    const [testMixedReview, setTestMixedReview] = createSignal(false);
 
     const [unitDropdownState, setUnitDropdownState] = createSignal(null);
     const [dropdownState, setDropdownState] = createSignal(false);
@@ -142,7 +143,6 @@ export default function Home() {
     }
 
     function openFlashcardsReview(unitId) {
-        setUnitIdSignal(unitId);
         setFlashcardsReview(true);
     }
 
@@ -170,9 +170,15 @@ export default function Home() {
             <FlashcardsMixedReview 
                 refetchFlashcardsStats={refetchFlashcardsStats} 
                 setFlashcardsReview={setFlashcardsReview} 
-                folderId={unitIdSignal()} 
             />
         </Show>
+
+        <Show when={testMixedReview()}>
+            <TestMixedReview
+                setTestMixedReview={setTestMixedReview} 
+            />
+        </Show>
+
         <div class="pl-17 relative flex text-tertiary-100 h-full">
             <LeftNavBar/>
             <div class="flex flex-col w-full h-full py-17 px-10 md:px-40 lg:px-80 gap-y-4">
@@ -218,7 +224,7 @@ export default function Home() {
                                         </svg>
                                         Flashcards
                                     </div>
-                                    <div class="rounded-bl-md rounded-br-md flex gap-2 items-center cursor-pointer hover:bg-tertiary-2  w-full h-full p-3">
+                                    <div onClick={() => setTestMixedReview(true)} class="rounded-bl-md rounded-br-md flex gap-2 items-center cursor-pointer hover:bg-tertiary-2  w-full h-full p-3">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
                                             <g clip-path="url(#clip0_166_8)">
                                             <path d="M10.8 11.7C11.055 11.7 11.2763 11.6063 11.4638 11.4188C11.6513 11.2313 11.745 11.01 11.745 10.755C11.745 10.5 11.6513 10.2788 11.4638 10.0913C11.2763 9.90375 11.055 9.81 10.8 9.81C10.545 9.81 10.3238 9.90375 10.1363 10.0913C9.94875 10.2788 9.855 10.5 9.855 10.755C9.855 11.01 9.94875 11.2313 10.1363 11.4188C10.3238 11.6063 10.545 11.7 10.8 11.7ZM10.125 8.82H11.475C11.475 8.385 11.52 8.06625 11.61 7.86375C11.7 7.66125 11.91 7.395 12.24 7.065C12.69 6.615 12.99 6.25125 13.14 5.97375C13.29 5.69625 13.365 5.37 13.365 4.995C13.365 4.32 13.1288 3.76875 12.6563 3.34125C12.1838 2.91375 11.565 2.7 10.8 2.7C10.185 2.7 9.64875 2.8725 9.19125 3.2175C8.73375 3.5625 8.415 4.02 8.235 4.59L9.45 5.085C9.585 4.71 9.76875 4.42875 10.0013 4.24125C10.2338 4.05375 10.5 3.96 10.8 3.96C11.16 3.96 11.4525 4.06125 11.6775 4.26375C11.9025 4.46625 12.015 4.74 12.015 5.085C12.015 5.295 11.955 5.49375 11.835 5.68125C11.715 5.86875 11.505 6.105 11.205 6.39C10.71 6.825 10.4063 7.16625 10.2938 7.41375C10.1813 7.66125 10.125 8.13 10.125 8.82ZM5.4 14.4C4.905 14.4 4.48125 14.2238 4.12875 13.8713C3.77625 13.5188 3.6 13.095 3.6 12.6V1.8C3.6 1.305 3.77625 0.88125 4.12875 0.52875C4.48125 0.17625 4.905 0 5.4 0H16.2C16.695 0 17.1188 0.17625 17.4713 0.52875C17.8238 0.88125 18 1.305 18 1.8V12.6C18 13.095 17.8238 13.5188 17.4713 13.8713C17.1188 14.2238 16.695 14.4 16.2 14.4H5.4ZM5.4 12.6H16.2V1.8H5.4V12.6ZM1.8 18C1.305 18 0.88125 17.8238 0.52875 17.4713C0.17625 17.1188 0 16.695 0 16.2V3.6H1.8V16.2H14.4V18H1.8Z" fill="#39393A"/>
@@ -271,10 +277,10 @@ export default function Home() {
                                 <span class="mb-1">Test items</span>
                                 <div class="flex justify-center items-center w-full max-h-35"> 
                                     <DoughnutDiagram 
-                                        data2Name="Correct (%)"
-                                        data1Name="Incorrect"
-                                        data2={(testItemsStats().avg_accuracy*100).toFixed(1)} 
-                                        data1={(100-testItemsStats().avg_accuracy*100).toFixed(1)}
+                                        data2Name="Done"
+                                        data1Name="Due"
+                                        data2={(testItemsStats().correct).toFixed(1)} 
+                                        data1={(testItemsStats().total-testItemsStats().correct).toFixed(1)}
                                     />
                                 </div>
                             </div>
@@ -362,7 +368,7 @@ export default function Home() {
                                     </A>
                                     <Show when={unitDropdownState() == unit.id}>
                                         <div ref={setDropdownRef} class="font-medium border border-tertiary-10 bg-primary flex flex-col justify-content items-center text-sm absolute z-50 right-0 mt-2 w-56 origin-top-right rounded-md shadow-lg">
-                                            <Show when={unit.type === "folder"}>
+                                            {/* <Show when={unit.type === "folder"}>
                                                 <div onClick={() => openFlashcardsReview(unit.id)} class="rounded-tl-md rounded-tr-md flex gap-2 items-center cursor-pointer hover:bg-tertiary-2  w-full h-full border-b border-tertiary-10 p-3">
                                                     <svg class="flex-none" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20">
                                                         <g clip-path="url(#clip0_125_7)">
@@ -377,7 +383,7 @@ export default function Home() {
                                                     </svg>
                                                     Practice flashcards
                                                 </div>
-                                            </Show>
+                                            </Show> */}
                                             <div onClick={() => deleteUnit(unit.id, unit.type)} class="text-tertiary-red-80 rounded-bl-md rounded-br-md flex gap-2 items-center cursor-pointer hover:bg-tertiary-2  w-full h-full p-3">
                                                 <svg class="fill-tertiary-red-80 flex-none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 18 18" fill="none">
                                                     <g clip-path="url(#clip0_145_212)">

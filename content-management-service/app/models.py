@@ -62,7 +62,6 @@ class Flashcard(Base):
     content = Column(JSONB, nullable=False)
     created_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
     fsrs_card = Column(JSONB, nullable=True)
-    future_ratings_time = Column(JSONB, nullable=True)
 
     flashcard_reviews = relationship("FlashcardReview", backref="flashcard", cascade="all, delete-orphan")
 

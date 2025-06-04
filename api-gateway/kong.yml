@@ -32,9 +32,16 @@ services:
 
   - name: scheduler-service
     url: http://scheduler-service:8000
+    plugins:
+      - name: jwt
+      - name: cors
+        config:
+          origins:
+            - http://localhost:3000
+          credentials: true
     routes:
       - name: scheduler-route
-        paths: ["/api/scheduler"]
+        paths: ["/api/scheduler/public"]
         strip_path: true
 
   - name: user-service
