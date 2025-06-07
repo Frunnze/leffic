@@ -158,7 +158,7 @@ export default function FlashcardsMainReview(props) {
                             class={`h-full transition-width duration-500 rounded-tl-md bg-secondary
                                     ${((completedFlahscards()/flashcardDeck().total_flashcards) * 100 == 100) ? 'rounded-tr-md': ''}`}
                             style={{
-                                width: `${(completedFlahscards()/flashcardDeck().total_flashcards) * 100}%`
+                                width: `${Math.min(100, (completedFlahscards() / flashcardDeck().total_flashcards) * 100)}%`
                             }}
                         />
                 </div>

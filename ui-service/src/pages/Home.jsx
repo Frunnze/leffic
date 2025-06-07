@@ -1,7 +1,7 @@
 import { createResource, createSignal, createEffect, Switch, Match, onCleanup, Show } from "solid-js";
 import { A, useParams } from "@solidjs/router";
 import LeftNavBar from "../components/LeftNavBar";
-import FileUploader from "../components/FileUploader";
+import AIImport from "../components/AIImport";
 import NewFolder from "../components/NewFolder";
 import FlashcardsMixedReview from "../components/FlashcardsMixedReview";
 import { apiRequest } from "../utils/apiRequest";
@@ -241,7 +241,7 @@ export default function Home() {
                             </Show>
                         </div>
 
-                        <FileUploader displayUnits={displayUnits}/>
+                        <AIImport displayUnits={displayUnits}/>
                         <NewFolder displayUnits={displayUnits}/>
                         {/* <button class="btn-primary">
                             <svg class="flex-none" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">

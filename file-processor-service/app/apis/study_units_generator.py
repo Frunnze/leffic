@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 from typing import List
 import traceback
 import tempfile
@@ -19,6 +20,7 @@ from ..tools.prompts.flashcards_prompt import get_flashcards_system_prompt
 from ..tools.prompts.notes_prompt import get_notes_system_prompt
 from ..tools.prompts.tests_prompt import get_test_system_prompt
 from ..tools.claims_extractor import get_user_id_from_jwt
+from ..tools.link_extractor import extract_link_main_content
 
 
 study_units_generator = APIRouter()
@@ -172,7 +174,9 @@ class TestMetadata(BaseModel):
 
 class StudyUnitsMetadata(BaseModel):
     folder_id: Optional[str] = None
-    file_metadata: List[FileMetadata]
+    file_metadata: Optional[List[FileMetadata]] = None
+    link_metadata: Optional[str] = None
+    topic_metadata: Optional[str] = None
     flashcards: Optional[FlashcardsMetadata] = None
     note: Optional[NoteMetadata] = None
     test: Optional[TestMetadata] = None
@@ -187,15 +191,28 @@ async def generate_study_units(
         folder_id = request_data.folder_id if request_data.folder_id != "home" else user_id
 
         extracted_text = ""
-        for file_meta in request_data.file_metadata:
-            file_bytes = get_file_from_storage(file_meta.file_id + "." + file_meta.extension)
+        if request_data.file_metadata:
+            for file_meta in request_data.file_metadata:
+                file_bytes = get_file_from_storage(file_meta.file_id + "." + file_meta.extension)
 
-            with tempfile.NamedTemporaryFile(suffix=file_meta.file_id, delete=True, dir="temp_files") as temp_file:
-                temp_file.write(file_bytes)
-                temp_file.flush()
+                with tempfile.NamedTemporaryFile(suffix=file_meta.file_id, delete=True, dir="temp_files") as temp_file:
+                    temp_file.write(file_bytes)
+                    temp_file.flush()
 
-                text_extractor = text_extractor_factory.get_text_extractor(file_meta.extension)
-                extracted_text += text_extractor.extract_text(temp_file.name, file_meta.extension) + "\n"
+                    text_extractor = text_extractor_factory.get_text_extractor(file_meta.extension)
+                    extracted_text += text_extractor.extract_text(temp_file.name, file_meta.extension) + "\n"
+        elif request_data.link_metadata:
+            extracted_text = extract_link_main_content(request_data.link_metadata)
+        elif request_data.topic_metadata:
+            extracted_text += f"Topic: {request_data.topic_metadata}"
+
+        if not extracted_text:
+            return JSONResponse(
+                content={"msg": "Could not extract text!"},
+                status_code=400
+            )
+        if request_data.link_metadata:
+            extracted_text += f"The source link to mention in notes: {request_data.link_metadata}"
 
         response_data = {}
         if request_data.flashcards:

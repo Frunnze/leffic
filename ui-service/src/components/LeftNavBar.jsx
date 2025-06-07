@@ -131,8 +131,11 @@ export default function LeftNavBar() {
         <span>Profile</span>
         <GeneralDropdown 
           dropdownState={dropdownState} setDropdownState={setDropdownState}
-          optionOneFun={logoutUser} optionOneLabel="Logout" optionOneSvg={logoutSvg}
-          option2Fun={logoutUser} option2Label="Settings" option2Svg={settingsSvg}
+          dropDownItems={[
+            {trigger: logoutUser, label: "Logout", svg: logoutSvg},
+            {trigger: logoutUser, label: "Settings", svg: settingsSvg},
+          ]}
+          position="left-17 bottom-1"
         />
       </div>
     </nav>
