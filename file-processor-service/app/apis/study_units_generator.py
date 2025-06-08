@@ -214,7 +214,16 @@ async def generate_study_units(
         if request_data.link_metadata:
             extracted_text += f"The source link to mention in notes: {request_data.link_metadata}"
 
-        response_data = {}
+        response_data = {}        
+        if request_data.note:
+            note_task = generate_note_task.delay(
+                ai_model=request_data.ai_model, 
+                extracted_text=extracted_text,
+                folder_id=folder_id,
+                user_id=user_id
+            )
+            response_data["note_task_id"] = note_task.id
+
         if request_data.flashcards:
             flashcard_task = generate_flashcards_task.delay(
                 ai_model=request_data.ai_model,
@@ -224,15 +233,6 @@ async def generate_study_units(
                 user_id=user_id
             )
             response_data["task_id"] = flashcard_task.id
-        
-        if request_data.note:
-            note_task = generate_note_task.delay(
-                ai_model=request_data.ai_model, 
-                extracted_text=extracted_text,
-                folder_id=folder_id,
-                user_id=user_id
-            )
-            response_data["note_task_id"] = note_task.id
 
         if request_data.test:
             test_task = generate_test_task.delay(

@@ -26,6 +26,7 @@ export default function NewFolder(props) {
             type: "folder",
         }])
         setOpen(false);
+        setFolderName("");
     }
 
     return (

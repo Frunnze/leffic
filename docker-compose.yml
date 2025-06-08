@@ -1,4 +1,10 @@
 services:
+  frontend:
+    build: ./ui-service
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+
   kong:
     image: kong:3.9
     ports:
