@@ -1,5 +1,5 @@
 from fastapi import APIRouter, File, Form, UploadFile, HTTPException, Depends
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, Response, JSONResponse
 from typing import List, Optional
 import os
 import shutil
@@ -26,14 +26,14 @@ def save_file_to_storage(file, unique_name):
 
 
 def scan_file_in_memory(file: UploadFile):
-    cd = pyclamd.ClamdNetworkSocket()
+    cd = pyclamd.ClamdNetworkSocket(host='clamav', port=3310)
     if not cd.ping():
         raise RuntimeError("Could not connect to ClamAV daemon")
     file.file.seek(0)
-    result = cd.instream(file.file)
+    file_bytes = file.file.read()
+    result = cd.scan_stream(file_bytes)
     file.file.seek(0)
     return result
-    
 
 @file_uploader.post("/upload-files")
 async def upload_files(
@@ -46,9 +46,9 @@ async def upload_files(
         uploaded_files = []
         for file in files:
             try:
-                # scan_result = scan_file_in_memory(file)
-                # if scan_result:
-                #     raise HTTPException(status_code=400, detail=f"Malicious file detected: {scan_result}")
+                scan_result = scan_file_in_memory(file)
+                if scan_result:
+                    return JSONResponse(status_code=403, content="Malicious file!")
 
                 file_id = str(uuid4())
                 _, extension = os.path.splitext(file.filename)
@@ -60,7 +60,7 @@ async def upload_files(
                     "name": file.filename
                 })
             except Exception as e:
-                return {"error": f"Failed to upload {file.filename}: {str(e)}"}
+                raise HTTPException(status_code=400, detail=f"Failed to upload {file.filename}: {str(e)}")
 
         # Save the file names
         response = requests.post(

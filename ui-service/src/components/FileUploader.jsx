@@ -1,10 +1,13 @@
 import { useParams } from "@solidjs/router";
 import { createSignal } from "solid-js";
 import { apiRequest } from "../utils/apiRequest";
+import FailureNotification from "./notifications/FailureNotification";
 
 
 export default function FileUploader(props) {
     const [file, setFile] = createSignal();
+    const [fileTooLargeNotification, setFileTooLargeNotification] = createSignal(false);
+    const [maliciousFileNotification, setMaliciousFileNotification] = createSignal(false);
     const params = useParams();
 
     const uploadFile = async () => {
@@ -18,6 +21,10 @@ export default function FileUploader(props) {
                 method: "POST",
                 body: formData
             })
+            if (response.status === 403) {
+                setMaliciousFileNotification(true);
+                return;
+            }
             const data = await response.json()
             props.displayUnits(
                 (data.file_metadata || []).map(file => ({
@@ -52,18 +59,43 @@ export default function FileUploader(props) {
     const handleFileChange = (e) => {
         const target = e.target;
         const selectedFile = target.files?.[0] || null;
-        setFile(selectedFile);
+
+        // Check file's size
         if (selectedFile) {
+            const sizeInMB = selectedFile.size / (1024 * 1024);
+            if (sizeInMB > 100) {
+                setFileTooLargeNotification(true);
+                return;
+            }
+            setFile(selectedFile);
             uploadFile();
-        }
+        };
     };
 
     return (
-        <input
-            type="file"
-            class="hidden"
-            ref={props.fileInputRef}
-            onChange={handleFileChange}
-        />
+        <>
+            <Show when={fileTooLargeNotification()}>
+                <FailureNotification 
+                    closeNotification={() => setFileTooLargeNotification(false)}
+                    primaryLabel="Error"
+                    secondaryLabel="File is too large. Please select a file under 100 MB."
+                />
+            </Show>
+
+            <Show when={maliciousFileNotification()}>
+                <FailureNotification 
+                    closeNotification={() => setMaliciousFileNotification(false)}
+                    primaryLabel="Warning"
+                    secondaryLabel="This file contains malicious content."
+                />
+            </Show>
+            
+            <input
+                type="file"
+                class="hidden"
+                ref={props.fileInputRef}
+                onChange={handleFileChange}
+            />
+        </>
     );
 }

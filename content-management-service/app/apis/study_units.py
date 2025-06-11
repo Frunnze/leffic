@@ -146,7 +146,7 @@ async def get_flashcards(
         # Get the flashcards from a specific deck
         flashcards = []
         if flashcard_deck_id:
-            total_flashcards = (
+            total_flashcards = ( # bug
                 db.query(func.count(Flashcard.id))
                 .filter(
                     Flashcard.deck_id == uuid.UUID(flashcard_deck_id),
@@ -170,7 +170,6 @@ async def get_flashcards(
                 .limit(per_page)
                 .all()
             )
-            print("(*****)", flashcard_results(flashcards))
             return JSONResponse(content={
                 "flashcards": flashcard_results(flashcards),
                 "total_flashcards": total_flashcards

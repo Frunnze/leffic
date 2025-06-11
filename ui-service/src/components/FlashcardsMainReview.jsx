@@ -33,10 +33,12 @@ export default function FlashcardsMainReview(props) {
     const [completedFlahscards, setCompletedFlahscards] = createSignal(0);
     const [ratingsTimes, setRatingsTimes ] = createSignal();
     const getFlashcardsReqParams = {[`${props.flashcardsOrigin}_id`]: params.id};
+    const [initialTotal, setInitialTotal] = createSignal(0);
 
     onMount(async () => {
         const flashcardDeck = await getFlashcards(getFlashcardsReqParams);
         if (flashcardDeck) {
+            setInitialTotal(flashcardDeck.total_flashcards);
             const firstFlashcardRatingsTimes = await getRatingsTimes(flashcardDeck.flashcards[0].fsrs_card);
             setRatingsTimes(firstFlashcardRatingsTimes);
             setFlashcardDeck(flashcardDeck);
@@ -91,6 +93,7 @@ export default function FlashcardsMainReview(props) {
     }
 
     const reviewFlashcard = async (rating) => {
+        console.log("flashcard before review", flashcardDeck().flashcards[0])
         // Review the flashcard
         const res = await apiRequest({
             endpoint: "/api/content/review-flashcard",
@@ -153,18 +156,18 @@ export default function FlashcardsMainReview(props) {
         <div class="shadow-lg flex flex-col justify-end items-end w-[85%] lg:w-[65%] h-[75%] border border-tertiary-40 rounded-lg bg-primary">
             <Show when={flashcardDeck()}>
                 <div class="relative bg-primary border-b border-tertiary-40 w-full h-5 rounded-tl-md rounded-tr-md">
-                        <span class="absolute font-black bg-black right-1/2 left-1/2 top-0 text-xs text-tertiary-100/50">{completedFlahscards()}/{flashcardDeck().total_flashcards}</span>
+                        <span class="absolute font-black bg-black right-1/2 left-1/2 top-0 text-xs text-tertiary-100/50">{completedFlahscards()}/{initialTotal()}</span>
                         <div
                             class={`h-full transition-width duration-500 rounded-tl-md bg-secondary
-                                    ${((completedFlahscards()/flashcardDeck().total_flashcards) * 100 == 100) ? 'rounded-tr-md': ''}`}
+                                    ${((completedFlahscards()/initialTotal()) * 100 == 100) ? 'rounded-tr-md': ''}`}
                             style={{
-                                width: `${Math.min(100, (completedFlahscards() / flashcardDeck().total_flashcards) * 100)}%`
+                                width: `${Math.min(100, (completedFlahscards() / initialTotal()) * 100)}%`
                             }}
                         />
                 </div>
             </Show>
             <Switch>
-                <Match when={!flashcardDeck() || flashcardDeck().total_flashcards === completedFlahscards()}>
+                <Match when={!flashcardDeck() || initialTotal() === completedFlahscards()}>
                     <div class="text-center flex flex-col w-full h-full justify-center items-center text-tertiary-100 font-medium text-lg">
                         <span class="flex w-full h-full justify-center items-center text-tertiary-100 font-medium text-xl">
                             Deck is empty!
@@ -183,27 +186,35 @@ export default function FlashcardsMainReview(props) {
                     <div class="text-primary flex w-full">
                         <button onClick={() => reviewFlashcard(1)} class="bg-tertiary-red-75 rounded-bl-md w-full h-20 cursor-pointer hover:bg-tertiary-red-80">
                             Again<br/>
-                            <span class="text-xs">
-                                {getTimeAtNextReview(ratingsTimes()[1])}
-                            </span>
+                            <Show when={ratingsTimes()}>
+                                <span class="text-xs">
+                                    {getTimeAtNextReview(ratingsTimes()[1])}
+                                </span>
+                            </Show>
                         </button>
                         <button onClick={() => reviewFlashcard(2)} class="bg-tertiary-red-60 w-full h-20 cursor-pointer hover:bg-tertiary-red-65">
                             Hard<br/>
-                            <span class="text-xs">
-                                {getTimeAtNextReview(ratingsTimes()[2])}
-                            </span>
+                            <Show when={ratingsTimes()}>
+                                <span class="text-xs">
+                                    {getTimeAtNextReview(ratingsTimes()[2])}
+                                </span>
+                            </Show>
                         </button>
                         <button onClick={() => reviewFlashcard(3)} class="bg-tertiary-green-60 w-full h-20 cursor-pointer hover:bg-tertiary-green-65">
                             Good<br/>
-                            <span class="text-xs">
-                                {getTimeAtNextReview(ratingsTimes()[3])}
-                            </span>
+                            <Show when={ratingsTimes()}>
+                                <span class="text-xs">
+                                    {getTimeAtNextReview(ratingsTimes()[3])}
+                                </span>
+                            </Show>
                         </button>
                         <button onClick={() => reviewFlashcard(4)} class="rounded-br-md bg-tertiary-green-95 w-full h-20 cursor-pointer hover:bg-tertiary-green-100">
                             Easy<br/>
-                            <span class="text-xs">
-                                {getTimeAtNextReview(ratingsTimes()[4])}
-                            </span>
+                            <Show when={ratingsTimes()}>
+                                <span class="text-xs">
+                                    {getTimeAtNextReview(ratingsTimes()[4])}
+                                </span>
+                            </Show>
                         </button>
                     </div>
                 </Match>

@@ -1,6 +1,6 @@
 from fsrs import Scheduler, Card, Rating
 from datetime import datetime, timezone
-
+import copy
 
 rating_map = {
     1: Rating.Again,
@@ -43,7 +43,10 @@ def get_ratings_times(card, scheduler):
 
     ratings_times = {}
     for r, val in rating_map.items():
-        temp_card, _ = scheduler.review_card(card, val)
+        temp_card = copy.deepcopy(card)
+        scheduler = copy.deepcopy(scheduler)
+
+        temp_card, _ = scheduler.review_card(temp_card, val)
         ratings_times[r] = max(0, int((temp_card.due - timestamp).total_seconds()))
 
     return ratings_times

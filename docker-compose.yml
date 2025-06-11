@@ -1,9 +1,9 @@
 services:
-  frontend:
-    build: ./ui-service
-    ports:
-      - "3000:80"
-    restart: unless-stopped
+  # frontend:
+  #   build: ./ui-service
+  #   ports:
+  #     - "3000:80"
+  #   restart: unless-stopped
 
   kong:
     image: kong:3.9
@@ -28,11 +28,14 @@ services:
       - REDIS_HOST=redis:6379
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - CONTENT_MANAGEMENT_SERVICE=http://content-management-service:8000
+      - CLAMD_HOST=clamav
+      - CLAMD_PORT=3310
     volumes:
       - files:/app/files
     depends_on:
       - postgres
       - content-management-service
+      - clamav
 
   content-management-service:
     build: ./content-management-service
@@ -107,6 +110,11 @@ services:
       celery -A app
       worker
       --loglevel info
+
+  clamav:
+    image: mkodockx/docker-clamav:alpine
+    ports:
+      - "3310:3310"
 
 volumes:
   redis-data:

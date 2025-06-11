@@ -44,3 +44,7 @@ class GeneralTextExtractor(TextExtractor):
         text = text_bytes.decode('utf-8', errors='ignore').strip()
         print("TEXT FROM FILE: ", text)
         return text
+    
+
+if __name__ == "__main__":
+    print(text_extractor_factory.get_text_extractor("pptx").extract_text("PPT-FCIM-IS-25-1-ENG-FRUNZE-VLADISLAV.pptx", "pptx"))
