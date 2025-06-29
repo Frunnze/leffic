@@ -20,7 +20,7 @@ from ..tools.prompts.flashcards_prompt import get_flashcards_system_prompt
 from ..tools.prompts.notes_prompt import get_notes_system_prompt
 from ..tools.prompts.tests_prompt import get_test_system_prompt
 from ..tools.claims_extractor import get_user_id_from_jwt
-from ..tools.link_extractor import extract_link_main_content
+from ..tools.link_extractor import extract_link_main_content, get_youtube_transcript_auto
 
 
 study_units_generator = APIRouter()
@@ -202,7 +202,10 @@ async def generate_study_units(
                     text_extractor = text_extractor_factory.get_text_extractor(file_meta.extension)
                     extracted_text += text_extractor.extract_text(temp_file.name, file_meta.extension) + "\n"
         elif request_data.link_metadata:
-            extracted_text = extract_link_main_content(request_data.link_metadata)
+            if "youtube.com" in request_data.link_metadata:
+                extracted_text = get_youtube_transcript_auto(request_data.link_metadata)
+            if not extracted_text:
+                extracted_text = extract_link_main_content(request_data.link_metadata)
         elif request_data.topic_metadata:
             extracted_text += f"Topic: {request_data.topic_metadata}"
 

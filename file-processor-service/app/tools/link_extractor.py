@@ -1,6 +1,61 @@
 import requests
 from bs4 import BeautifulSoup
 import re
+from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound
+from urllib.parse import urlparse, parse_qs
+
+
+def extract_video_id(url):
+    parsed_url = urlparse(url)
+    
+    if parsed_url.hostname in ['www.youtube.com', 'youtube.com']:
+        query = parse_qs(parsed_url.query)
+        return query.get('v', [None])[0]
+    elif parsed_url.hostname == 'youtu.be':
+        return parsed_url.path.lstrip('/')
+    
+    return None
+
+
+def get_youtube_transcript_auto(link, preferred_langs=['en']):
+    try:
+        video_id = extract_video_id(link)
+        if not video_id: return None
+
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+
+        # Try manually created transcripts in preferred languages
+        for lang in preferred_langs:
+            try:
+                transcript = transcript_list.find_manually_created_transcript([lang])
+                return ' '.join([entry.text for entry in transcript.fetch()])
+            except:
+                pass
+
+        # Try auto-generated transcripts in preferred languages
+        for lang in preferred_langs:
+            try:
+                transcript = transcript_list.find_generated_transcript([lang])
+                return ' '.join([entry.text for entry in transcript.fetch()])
+            except:
+                pass
+
+        # Fallback: any manually created transcript
+        if transcript_list._manually_created_transcripts:
+            transcript = list(transcript_list._manually_created_transcripts.values())[0]
+            return ' '.join([entry.text for entry in transcript.fetch()])
+
+        # Fallback: any auto-generated transcript
+        if transcript_list._generated_transcripts:
+            transcript = list(transcript_list._generated_transcripts.values())[0]
+            return ' '.join([entry.text for entry in transcript.fetch()])
+
+    except (TranscriptsDisabled, NoTranscriptFound):
+        print("No transcript available.")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+
+    return None
 
 
 def extract_link_main_content(url, headers=None):
