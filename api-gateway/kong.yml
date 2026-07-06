@@ -13,7 +13,7 @@ services:
           - name: cors
             config:
               origins:
-                - http://localhost:3000
+                - http://localhost:3009
               credentials: true
 
   - name: file-processor-service
@@ -23,7 +23,7 @@ services:
       - name: cors
         config:
           origins:
-            - http://localhost:3000
+            - http://localhost:3009
           credentials: true
     routes:
       - name: files-route
@@ -37,7 +37,7 @@ services:
       - name: cors
         config:
           origins:
-            - http://localhost:3000
+            - http://localhost:3009
           credentials: true
     routes:
       - name: scheduler-route
@@ -50,7 +50,7 @@ services:
       - name: cors
         config:
           origins:
-            - http://localhost:3000
+            - http://localhost:3009
           credentials: true
     routes:
       - name: user-route

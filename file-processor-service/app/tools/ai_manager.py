@@ -99,11 +99,17 @@ class GPT41Nano(OpenAIManager):
         super().__init__(client)
 
 
+class GPT5Mini(OpenAIManager):
+    def __init__(self, client):
+        self.model_name = "gpt-5-mini"
+        super().__init__(client)
+
+
 class AIFactory:
     def __init__(self):
         self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     def get_ai(self, model=None):
-        if model == "gpt-4.1-nano":
-            return GPT41Nano(self.openai_client)
-        return GPT41Nano(self.openai_client)
+        # if model == "gpt-4.1-nano":
+        #     return GPT41Nano(self.openai_client)
+        return GPT5Mini(self.openai_client)

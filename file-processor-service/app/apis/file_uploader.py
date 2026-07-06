@@ -6,7 +6,7 @@ import shutil
 import requests
 from uuid import uuid4
 import traceback
-import pyclamd
+#import pyclamd
 import shutil
 import subprocess
 import tempfile
@@ -46,9 +46,9 @@ async def upload_files(
         uploaded_files = []
         for file in files:
             try:
-                scan_result = scan_file_in_memory(file)
-                if scan_result:
-                    return JSONResponse(status_code=403, content="Malicious file!")
+                # scan_result = scan_file_in_memory(file)
+                # if scan_result:
+                #     return JSONResponse(status_code=403, content="Malicious file!")
 
                 file_id = str(uuid4())
                 _, extension = os.path.splitext(file.filename)

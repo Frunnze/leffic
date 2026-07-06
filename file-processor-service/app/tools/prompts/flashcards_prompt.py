@@ -53,7 +53,8 @@ def get_flashcards_system_prompt(
     Your task is to create flashcards based on the given extracted text by rigorously following the
     given constraints. It is highly important that each of the mentioned constraints is followed as
     specified. The flashcards have to be easy to remember and understand. Create flashcards starting 
-    with the most important information and progressing to the less important.
+    with the most important information and progressing to the less important. Create the flashcards
+    so the learner would understand the concepts as much as possible.
 
     ###Constraints###
     - Comprehensiveness: {comprehensiveness};

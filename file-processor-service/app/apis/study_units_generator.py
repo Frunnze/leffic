@@ -207,7 +207,7 @@ async def generate_study_units(
             if not extracted_text:
                 extracted_text = extract_link_main_content(request_data.link_metadata)
         elif request_data.topic_metadata:
-            extracted_text += f"Topic: {request_data.topic_metadata}"
+            extracted_text += f"Topic/Text: {request_data.topic_metadata}"
 
         if not extracted_text:
             return JSONResponse(

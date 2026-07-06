@@ -2,7 +2,7 @@ services:
   frontend:
     build: ./ui-service
     ports:
-      - "3000:80"
+      - "3009:80"
     restart: unless-stopped
 
   kong:
@@ -19,6 +19,7 @@ services:
       KONG_LOG_LEVEL: debug
     volumes:
       - ./api-gateway/kong.yml:/kong/kong.yml
+    restart: unless-stopped
 
   file-processor-service:
     build: ./file-processor-service
@@ -28,14 +29,15 @@ services:
       - REDIS_HOST=redis:6379
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - CONTENT_MANAGEMENT_SERVICE=http://content-management-service:8000
-      - CLAMD_HOST=clamav
+      #- CLAMD_HOST=clamav
       - CLAMD_PORT=3310
     volumes:
       - files:/app/files
     depends_on:
       - postgres
       - content-management-service
-      - clamav
+      #- clamav
+    restart: unless-stopped
 
   content-management-service:
     build: ./content-management-service
@@ -51,6 +53,7 @@ services:
       - files:/app/files
     depends_on:
       - postgres
+    restart: unless-stopped
 
   user-service:
     build: ./user-service
@@ -63,6 +66,7 @@ services:
       - DB_PORT=5432
     depends_on:
       - postgres
+    restart: unless-stopped
 
   scheduler-service:
     build: ./scheduler-service
@@ -72,6 +76,7 @@ services:
       - MONGODB_HOST=mongodb:27017
     depends_on:
       - mongodb
+    restart: unless-stopped
 
   redis:
     image: redis:6.2
@@ -79,6 +84,7 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+    restart: unless-stopped
 
   postgres:
     image: postgres:15
@@ -89,6 +95,7 @@ services:
       - postgres:/var/lib/postgresql/data
     ports:
       - "5450:5432"
+    restart: unless-stopped
 
   mongodb:
     image: mongo:latest
@@ -96,6 +103,7 @@ services:
       - mongodb:/data/db
     ports:
       - "27017:27017"
+    restart: unless-stopped
 
   celery-worker:
     build: ./file-processor-service
@@ -110,11 +118,13 @@ services:
       celery -A app
       worker
       --loglevel info
+    restart: unless-stopped
 
-  clamav:
-    image: mkodockx/docker-clamav:alpine
-    ports:
-      - "3310:3310"
+  # clamav:
+  #   image: mkodockx/docker-clamav:alpine
+  #   ports:
+  #     - "3310:3310"
+  #   restart: unless-stopped
 
 volumes:
   redis-data:

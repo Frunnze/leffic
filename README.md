@@ -1,5 +1,16 @@
+## Overview
+Thesis link: link
+
 ## Demo
 [Video](https://drive.google.com/file/d/1QQh3qZqyipiuo7TKyoSCjWW-QDhHSaZe/view?usp=sharing)
+
+## Teck stack
+
+## Architecture
+
+## Functional and non-functional requirements
+
+## Tasks
 
 ## License
 
