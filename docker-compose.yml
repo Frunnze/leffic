@@ -58,6 +58,7 @@ services:
       - DB_PASS=postgres
       - DB_HOST=postgres
       - DB_PORT=5432
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
     depends_on:
       - postgres
     restart: unless-stopped
