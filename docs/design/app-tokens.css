@@ -36,6 +36,8 @@
 
 .screen {
   position: relative;
+  display: flex;
+  flex-direction: column;
   min-height: 100%;
   background: var(--primary);
   color: var(--tertiary-100);
@@ -43,6 +45,10 @@
     "Helvetica Neue", Arial, sans-serif;
   font-size: 16px;
   line-height: 1.5;
+}
+
+.screen > * {
+  flex: 1;
 }
 
 .screen-fixed {

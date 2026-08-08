@@ -1,7 +1,6 @@
-from typing import cast
-
 import requests
 
+from shared.json_extraction import get_dict_from_text
 from shared.settings import CONTENT_MANAGEMENT_SERVICE
 
 _TIMEOUT_SECONDS = 60
@@ -17,4 +16,4 @@ def save_study_unit(
     )
     response.raise_for_status()
 
-    return cast("dict[str, object]", response.json())
+    return get_dict_from_text(response.text)

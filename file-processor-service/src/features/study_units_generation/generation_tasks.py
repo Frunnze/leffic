@@ -1,4 +1,4 @@
-from typing import TypedDict, cast
+from typing import TypedDict
 
 from features.study_units_generation.content_management_client import (
     save_study_unit,
@@ -33,7 +33,7 @@ def _generate_flashcards_task(
     user_id: str,
 ) -> dict[str, object]:
     ai = ai_factory.get_ai(ai_model)
-    answer, _ = ai.get_ai_res(
+    flashcards, _ = ai.get_ai_res(
         system_prompt=get_flashcards_system_prompt(
             comprehensiveness=flashcards_metadata["comprehensiveness"],
             verbosity=flashcards_metadata["verbosity"],
@@ -42,7 +42,6 @@ def _generate_flashcards_task(
         ),
         user_prompt=extracted_text,
     )
-    flashcards = cast("dict[str, object]", answer)
     deck_name = flashcards.pop(_DECK_NAME)
 
     # Save the flashcards in the content's db
@@ -69,11 +68,10 @@ def _generate_note_task(
     user_id: str,
 ) -> dict[str, object]:
     ai = ai_factory.get_ai(ai_model)
-    answer, _ = ai.get_ai_res(
+    note, _ = ai.get_ai_res(
         system_prompt=get_notes_system_prompt(),
         user_prompt=extracted_text,
     )
-    note = cast("dict[str, object]", answer)
 
     # Save the flashcards in the content's db
     saved = save_study_unit(
@@ -99,11 +97,10 @@ def _generate_test_task(
     user_id: str,
 ) -> dict[str, object]:
     ai = ai_factory.get_ai(ai_model)
-    answer, _ = ai.get_ai_res(
+    test, _ = ai.get_ai_res(
         system_prompt=get_test_system_prompt(),
         user_prompt=extracted_text,
     )
-    test = cast("dict[str, object]", answer)
 
     saved = save_study_unit(
         "/save-test",

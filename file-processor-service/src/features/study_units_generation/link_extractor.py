@@ -1,5 +1,4 @@
 import re
-from typing import cast
 from urllib.parse import parse_qs, urlparse
 
 import requests
@@ -130,9 +129,7 @@ def extract_link_main_content(
     except requests.RequestException:
         return None
 
-    soup = BeautifulSoup(
-        cast("str", response.content), "html.parser"
-    )
+    soup = BeautifulSoup(response.text, "html.parser")
 
     for candidate in _main_content_candidates(soup):
         text = _long_enough_text(candidate)
@@ -142,13 +139,15 @@ def extract_link_main_content(
 
     # Fallback: largest div by text length
     divs = [
-        div
-        for div in cast("list[object]", soup.find_all("div"))
-        if isinstance(div, Tag)
+        div for div in _elements(soup, "div") if isinstance(div, Tag)
     ]
     largest_div = max(divs, key=_text_length, default=None)
 
     return _long_enough_text(largest_div)
+
+
+def _elements(soup: BeautifulSoup, name: str) -> list[object]:
+    return list(soup.find_all(name))
 
 
 def _text_length(candidate: Tag) -> int:

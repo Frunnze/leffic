@@ -34,14 +34,15 @@ def save_file_to_storage(file: UploadFile, unique_name: str) -> None:
 
 
 def _stored_file(file: UploadFile) -> dict[str, str]:
+    filename = file.filename or ""
     file_id = str(uuid4())
-    extension = Path(file.filename or "").suffix
+    extension = Path(filename).suffix
     save_file_to_storage(file, file_id + extension)
 
     return {
         "file_id": file_id,
         "extension": extension.lstrip("."),
-        "name": file.filename or "",
+        "name": filename,
     }
 
 

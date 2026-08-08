@@ -46,7 +46,7 @@ def _text_from_bytes(file_bytes: bytes, file_meta: FileMetadata) -> str:
         return ""
 
     with tempfile.NamedTemporaryFile(
-        suffix=file_meta.file_id, delete=True, dir=_TEMPORARY_DIRECTORY
+        suffix=file_meta.file_id, dir=_TEMPORARY_DIRECTORY
     ) as temp_file:
         _ = temp_file.write(file_bytes)
         temp_file.flush()
@@ -58,12 +58,10 @@ def _text_from_bytes(file_bytes: bytes, file_meta: FileMetadata) -> str:
 
 
 def text_from_link(link: str) -> str:
-    extracted_text = ""
-
     if _YOUTUBE_HOST in link:
-        extracted_text = get_youtube_transcript_auto(link)
+        transcript = get_youtube_transcript_auto(link)
 
-    if not extracted_text:
-        extracted_text = extract_link_main_content(link)
+        if transcript:
+            return transcript
 
-    return extracted_text or ""
+    return extract_link_main_content(link) or ""

@@ -1,4 +1,3 @@
-import os
 from abc import ABC, abstractmethod
 from typing import override
 
@@ -12,7 +11,6 @@ from openai.types.responses import (
 from shared.json_extraction import get_dict_from_text
 from shared.model_rates import GPT_5_MINI, MODEL_RATES, ModelRates
 
-JSON_FORMAT = "JSON"
 _ATTEMPTS = 2
 _ALL_ATTEMPTS_FAILED = "The AI model did not answer"
 
@@ -22,11 +20,8 @@ AiMessage = ResponseInputItemParam
 class AIManager(ABC):
     @abstractmethod
     def get_ai_res(
-        self,
-        system_prompt: str,
-        user_prompt: str,
-        output_format_type: str = JSON_FORMAT,
-    ) -> tuple[object, float | None]: ...
+        self, system_prompt: str, user_prompt: str
+    ) -> tuple[dict[str, object], float | None]: ...
 
     @abstractmethod
     def get_ai_res_hist(
@@ -65,11 +60,8 @@ class OpenAIManager(AIManager):
 
     @override
     def get_ai_res(
-        self,
-        system_prompt: str,
-        user_prompt: str,
-        output_format_type: str = JSON_FORMAT,
-    ) -> tuple[object, float | None]:
+        self, system_prompt: str, user_prompt: str
+    ) -> tuple[dict[str, object], float | None]:
         history: list[AiMessage] = [
             EasyInputMessageParam(
                 role="developer", content=system_prompt
@@ -85,12 +77,10 @@ class OpenAIManager(AIManager):
                 last_error = error
                 continue
 
-            request_cost = self.request_cost.of(response)
-
-            if output_format_type == JSON_FORMAT:
-                return get_dict_from_text(response.output_text), request_cost
-
-            return response.output_text, request_cost
+            return (
+                get_dict_from_text(response.output_text),
+                self.request_cost.of(response),
+            )
 
         raise RuntimeError(_ALL_ATTEMPTS_FAILED) from last_error
 
@@ -116,9 +106,7 @@ class OpenAIManager(AIManager):
 class AIFactory:
     def __init__(self) -> None:
         super().__init__()
-        self.openai_client: OpenAI = OpenAI(
-            api_key=os.getenv("OPENAI_API_KEY")
-        )
+        self.openai_client: OpenAI = OpenAI()
 
     def get_ai(self, model: str | None = None) -> AIManager:
         model_name = model or GPT_5_MINI

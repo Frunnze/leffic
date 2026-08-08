@@ -95,8 +95,9 @@
 }
 
 .donut svg {
-  width: 96px;
-  height: 96px;
+  width: 100%;
+  max-width: 96px;
+  height: auto;
 }
 
 .donut-track {
@@ -115,7 +116,9 @@
 
 .donut-legend {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 12px;
   margin-top: 8px;
   font-size: 12px;
 }

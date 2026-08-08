@@ -24,10 +24,18 @@ class IconSprite {
 }
 
 class ViewportSwitcher {
+  static isKnown(name) {
+    return VIEWPORTS.some((viewport) => viewport.name === name);
+  }
+
   static read() {
+    const requested = new URLSearchParams(window.location.search).get("viewport");
+    if (ViewportSwitcher.isKnown(requested)) return requested;
+
     const stored = localStorage.getItem(VIEWPORT_STORAGE_KEY);
-    const known = VIEWPORTS.some((viewport) => viewport.name === stored);
-    return known ? stored : VIEWPORTS[0].name;
+    if (ViewportSwitcher.isKnown(stored)) return stored;
+
+    return VIEWPORTS[0].name;
   }
 
   static apply(name) {

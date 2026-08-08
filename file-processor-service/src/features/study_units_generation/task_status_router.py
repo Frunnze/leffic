@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from typing import cast
+from typing import TypeGuard
 
 from celery.result import AsyncResult
 from fastapi import APIRouter
@@ -7,6 +7,12 @@ from fastapi import APIRouter
 from shared.celery_app import celery_app
 
 task_status_router = APIRouter()
+
+_UNEXPECTED_RESULT = "The task did not finish with a result object"
+
+
+def _is_object_dict(value: object) -> TypeGuard[dict[str, object]]:
+    return isinstance(value, dict)
 
 
 def _finished_result(task_id: str) -> tuple[str, dict[str, object] | None]:
@@ -16,7 +22,12 @@ def _finished_result(task_id: str) -> tuple[str, dict[str, object] | None]:
     if not task_result.ready():
         return status, None
 
-    return status, cast("dict[str, object]", task_result.result)
+    finished: object = task_result.result
+
+    if _is_object_dict(finished):
+        return status, finished
+
+    raise TypeError(_UNEXPECTED_RESULT)
 
 
 @task_status_router.get("/flashcards-status/{task_id}")
