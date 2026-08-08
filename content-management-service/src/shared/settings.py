@@ -1,0 +1,4 @@
+import os
+
+
+SCHEDULER_SERVICE = os.getenv("SCHEDULER_SERVICE")

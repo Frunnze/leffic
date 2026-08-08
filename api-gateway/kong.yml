@@ -61,5 +61,5 @@ consumers:
   - username: api-user
     jwt_secrets:
       - key: "my-issuer"
-        secret: "my-secret"
+        secret: "__JWT_SECRET_KEY__"
         algorithm: HS256

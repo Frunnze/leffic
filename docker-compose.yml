@@ -58,6 +58,7 @@ services:
       - DB_PASS=postgres
       - DB_HOST=postgres
       - DB_PORT=5432
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
     depends_on:
       - postgres
     restart: unless-stopped
@@ -101,7 +102,7 @@ services:
       - redis
       - file-processor-service
     command: >
-      celery -A app
+      celery -A src.shared.celery_app
       worker
       --loglevel info
     restart: unless-stopped
