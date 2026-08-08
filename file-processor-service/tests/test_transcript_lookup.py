@@ -1,16 +1,16 @@
 from collections.abc import Iterator
+from contextlib import AbstractContextManager
+from typing import override
 from unittest import mock
 
 import requests
 from youtube_transcript_api import NoTranscriptFound
 
 from features.study_units_generation.link_extractor import (
-    extract_link_main_content,
+    get_youtube_transcript_auto,
 )
 
 _LONG_TEXT = "B" * 250
-_OTHER_TEXT = "E" * 260
-_HUGE_TEXT = "F" * 400
 _VIDEO_ID = "dQw4w9WgXcQ"
 _TRANSCRIPT_API_LIST = (
     "features.study_units_generation.link_extractor"
@@ -21,7 +21,7 @@ _TRANSCRIPT_API_LIST = (
 class FakeResponse:
     def __init__(self, html: str, status_code: int = 200) -> None:
         super().__init__()
-        self.text: str = html
+        self.content: bytes = html.encode("utf-8")
         self.status_code: int = status_code
 
     def raise_for_status(self) -> None:
@@ -40,9 +40,12 @@ class FakeTranscript:
         super().__init__()
         self.text: str = text
         self.is_generated: bool = is_generated
+        self.extra_snippets: list[str] = []
 
     def fetch(self) -> list[FakeSnippet]:
-        return [FakeSnippet(self.text)]
+        snippets = [self.text, *self.extra_snippets]
+
+        return [FakeSnippet(snippet) for snippet in snippets]
 
 
 class FakeTranscriptList:
@@ -78,33 +81,61 @@ class FakeTranscriptList:
         return self.generated_found
 
 
-def test_reads_the_article_element() -> None:
-    html = f"<html><body><article>{_LONG_TEXT}</article></body></html>"
+class RecordingTranscriptList(FakeTranscriptList):
+    def __init__(self) -> None:
+        super().__init__([], manual_found=None)
+        self.asked: list[list[str]] = []
 
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
-        assert extract_link_main_content("http://test.com") == _LONG_TEXT
+    @override
+    def find_manually_created_transcript(
+        self, language_codes: list[str]
+    ) -> FakeTranscript:
+        self.asked.append(language_codes)
+
+        return super().find_manually_created_transcript(language_codes)
 
 
-def test_reads_a_content_div_when_there_is_no_article() -> None:
-    html = (
-        f'<html><body><div class="main-content">{_LONG_TEXT}'
-        "</div></body></html>"
+def _patch_transcripts(
+    transcript_list: object,
+) -> AbstractContextManager[object]:
+    return mock.patch(
+        _TRANSCRIPT_API_LIST,
+        return_value=transcript_list,
     )
 
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
-        assert extract_link_main_content("http://test.com") == _LONG_TEXT
 
-
-def test_falls_back_to_the_largest_div() -> None:
-    html = (
-        f"<html><body><div>short</div><div>{_LONG_TEXT}</div></body></html>"
+def test_the_video_id_is_passed_to_the_transcript_api() -> None:
+    listing = FakeTranscriptList(
+        [], manual_found=FakeTranscript("words", is_generated=False)
     )
 
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
-        assert extract_link_main_content("http://test.com") == _LONG_TEXT
+    with mock.patch(
+        _TRANSCRIPT_API_LIST, return_value=listing
+    ) as listed:
+        _ = get_youtube_transcript_auto(f"https://youtu.be/{_VIDEO_ID}")
+
+    assert listed.call_args.args[0] == _VIDEO_ID
+
+
+def test_the_preferred_language_is_asked_for() -> None:
+    listing = RecordingTranscriptList()
+
+    with _patch_transcripts(listing):
+        _ = get_youtube_transcript_auto(
+            f"https://youtu.be/{_VIDEO_ID}", ("de", "en")
+        )
+
+    assert listing.asked == [["de"], ["en"]]
+
+
+def test_a_generated_transcript_is_not_mistaken_for_a_manual_one() -> None:
+    generated = FakeTranscript("generated", is_generated=True)
+    manual = FakeTranscript("manual", is_generated=False)
+    listing = FakeTranscriptList([generated, manual])
+
+    with _patch_transcripts(listing):
+        transcript = get_youtube_transcript_auto(
+            f"https://youtu.be/{_VIDEO_ID}"
+        )
+
+    assert transcript == "manual"

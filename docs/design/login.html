@@ -14,28 +14,49 @@
   <div class="frame">
     <div class="screen">
       <div class="auth">
-        <div class="auth-card">
-          <div class="auth-head">
+        <aside class="auth-aside">
+          <span class="auth-brand"><svg aria-hidden="true"><use href="#icon-logo"/></svg>Leffic</span>
+
+          <div class="auth-pitch">
+            <h2>Everything you imported is waiting.</h2>
+            <ul class="auth-points">
+              <li><svg aria-hidden="true"><use href="#icon-check"/></svg>Today's cards are already scheduled</li>
+              <li><svg aria-hidden="true"><use href="#icon-check"/></svg>Your notes and tests stay in sync</li>
+              <li><svg aria-hidden="true"><use href="#icon-check"/></svg>Pick up on any device</li>
+            </ul>
+          </div>
+
+          <span class="auth-aside-note">Learn efficiently.</span>
+        </aside>
+
+        <div class="auth-main">
+          <form class="auth-card">
             <span class="auth-mark"><svg aria-hidden="true"><use href="#icon-logo"/></svg></span>
-            <h1 class="auth-title">Log in to Leffic</h1>
-            <span class="auth-subtitle">Pick up where you left off.</span>
-          </div>
 
-          <div class="auth-alert"><svg aria-hidden="true"><use href="#icon-failure"/></svg><span>That email and password don't match. Check both and try again.</span></div>
+            <div class="auth-head">
+              <h1 class="auth-title">Log in</h1>
+              <span class="auth-subtitle">Pick up where you left off.</span>
+            </div>
 
-          <div class="field">
-            <label for="email">Email</label>
-            <input class="input" id="email" type="email" autocomplete="email">
-          </div>
+            <p class="auth-alert" role="alert"><svg aria-hidden="true"><use href="#icon-failure"/></svg>That email and password don't match.</p>
 
-          <div class="field">
-            <label for="password">Password</label>
-            <input class="input" id="password" type="password" autocomplete="current-password">
-          </div>
+            <div class="field">
+              <label for="email">Email</label>
+              <input class="input" id="email" type="email" autocomplete="email" value="vlad@leffic.app">
+            </div>
 
-          <button class="btn btn-primary btn-block btn-lg" type="button">Log in</button>
+            <div class="field">
+              <div class="field-row">
+                <label for="password">Password</label>
+                <a class="auth-link" href="login.html">Forgot?</a>
+              </div>
+              <input class="input" id="password" type="password" autocomplete="current-password">
+            </div>
 
-          <p class="auth-foot">New here? <a href="sign-up.html">Create an account</a></p>
+            <button class="btn btn-primary btn-block btn-lg" type="button">Log in</button>
+
+            <p class="auth-foot">New to Leffic? <a href="sign-up.html">Create an account</a></p>
+          </form>
         </div>
       </div>
     </div>

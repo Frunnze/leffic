@@ -78,33 +78,32 @@ class FakeTranscriptList:
         return self.generated_found
 
 
-def test_reads_the_article_element() -> None:
-    html = f"<html><body><article>{_LONG_TEXT}</article></body></html>"
+def test_a_page_of_exactly_the_minimum_length_is_too_short() -> None:
+    html = f"<html><body><article>{'D' * 200}</article></body></html>"
 
     with mock.patch.object(
         requests, "get", return_value=FakeResponse(html)
     ):
-        assert extract_link_main_content("http://test.com") == _LONG_TEXT
+        assert extract_link_main_content("http://test.com") is None
 
 
-def test_reads_a_content_div_when_there_is_no_article() -> None:
-    html = (
-        f'<html><body><div class="main-content">{_LONG_TEXT}'
-        "</div></body></html>"
-    )
+def test_one_character_over_the_minimum_is_long_enough() -> None:
+    body = "D" * 201
+    html = f"<html><body><article>{body}</article></body></html>"
 
     with mock.patch.object(
         requests, "get", return_value=FakeResponse(html)
     ):
-        assert extract_link_main_content("http://test.com") == _LONG_TEXT
+        assert extract_link_main_content("http://test.com") == body
 
 
-def test_falls_back_to_the_largest_div() -> None:
-    html = (
-        f"<html><body><div>short</div><div>{_LONG_TEXT}</div></body></html>"
-    )
+def test_the_page_is_fetched_from_the_given_url_with_a_timeout() -> None:
+    html = f"<html><body><main>{_LONG_TEXT}</main></body></html>"
 
     with mock.patch.object(
         requests, "get", return_value=FakeResponse(html)
-    ):
-        assert extract_link_main_content("http://test.com") == _LONG_TEXT
+    ) as fetch:
+        _ = extract_link_main_content("http://test.com/page")
+
+    assert fetch.call_args.args[0] == "http://test.com/page"
+    assert fetch.call_args.kwargs["timeout"] == 10

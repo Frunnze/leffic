@@ -1,10 +1,9 @@
-import uuid
+import subprocess
 from collections.abc import Iterator
 from pathlib import Path
 from typing import cast
 from unittest import mock
 
-import jwt
 import pytest
 from fastapi.testclient import TestClient
 
@@ -69,58 +68,59 @@ def client() -> Iterator[TestClient]:
         yield test_client
 
 
-def _authorization() -> dict[str, str]:
-    token = jwt.encode({"user_id": _USER_ID}, "secret", algorithm="HS256")
+def test_downloading_a_missing_file_is_not_found(client: TestClient) -> None:
+    response = client.get(
+        "/file", params={"file_id": "x", "file_extension": "pdf"}
+    )
 
-    return {"Authorization": f"Bearer {token}"}
+    assert response.status_code == 404
 
 
-def test_uploading_stores_each_file_and_registers_the_names(
+def test_downloading_a_pdf_returns_it_directly(
     client: TestClient, tmp_path: Path
 ) -> None:
+    _ = (tmp_path / "doc.pdf").write_bytes(b"%PDF-1.4")
+
+    with mock.patch.object(upload_module, "_FILES_DIRECTORY", str(tmp_path)):
+        response = client.get(
+            "/file", params={"file_id": "doc", "file_extension": "pdf"}
+        )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+
+
+def test_downloading_another_format_converts_it(
+    client: TestClient, tmp_path: Path
+) -> None:
+    _ = (tmp_path / "doc.docx").write_bytes(b"docx bytes")
+    converted = subprocess.CompletedProcess(args=[], returncode=0, stderr=b"")
+
     with (
         mock.patch.object(upload_module, "_FILES_DIRECTORY", str(tmp_path)),
         mock.patch.object(
-            upload_module, "save_study_unit", return_value={}
-        ) as save,
+            subprocess, "run", return_value=converted
+        ) as convert,
+        mock.patch.object(Path, "read_bytes", return_value=b"%PDF-converted"),
     ):
-        response = client.post(
-            "/upload-files",
-            files={"files": ("notes.pdf", b"payload", "application/pdf")},
-            data={"folder_id": _FOLDER_ID},
-            headers=_authorization(),
+        response = client.get(
+            "/file", params={"file_id": "doc", "file_extension": "docx"}
         )
 
-    body = cast("dict[str, object]", response.json())
-    metadata = cast("list[dict[str, str]]", body["file_metadata"])
-    stored = metadata[0]
+    command = cast("list[str]", convert.call_args.args[0])
 
-    assert body["msg"] == "Files uploaded!"
-    assert stored["extension"] == "pdf"
-    assert stored["name"] == "notes.pdf"
-    assert uuid.UUID(stored["file_id"]).version == 4
-    assert save.call_args.args[0] == "/save-file-names"
-    assert save.call_args.args[1] == {
-        "file_metadata": [stored],
-        "folder_id": _FOLDER_ID,
+    assert response.status_code == 200
+    assert response.content == b"%PDF-converted"
+    assert command[:4] == [
+        "libreoffice",
+        "--headless",
+        "--convert-to",
+        "pdf",
+    ]
+    assert command[4] == "--outdir"
+    assert command[6] == str(tmp_path / "doc.docx")
+    assert convert.call_args.kwargs == {
+        "capture_output": True,
+        "check": False,
+        "timeout": 120,
     }
-    assert (tmp_path / f"{stored['file_id']}.pdf").read_bytes() == b"payload"
-
-
-def test_uploading_to_home_uses_the_caller_folder(
-    client: TestClient, tmp_path: Path
-) -> None:
-    with (
-        mock.patch.object(upload_module, "_FILES_DIRECTORY", str(tmp_path)),
-        mock.patch.object(
-            upload_module, "save_study_unit", return_value={}
-        ) as save,
-    ):
-        _ = client.post(
-            "/upload-files",
-            files={"files": ("notes.pdf", b"payload", "application/pdf")},
-            data={"folder_id": "home"},
-            headers=_authorization(),
-        )
-
-    assert save.call_args.args[1]["folder_id"] == _USER_ID

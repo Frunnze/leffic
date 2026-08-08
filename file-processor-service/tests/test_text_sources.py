@@ -1,4 +1,3 @@
-from collections.abc import Callable
 from pathlib import Path
 from unittest import mock
 
@@ -26,16 +25,19 @@ def _read_the_document(filename: str, **_: object) -> bytes:
     return Path(filename).read_bytes()
 
 
-def _recording_extractor(
-    seen: list[str], extensions: list[str]
-) -> Callable[..., bytes]:
-    def extract(filename: str, extension: str = "", **_: object) -> bytes:
-        seen.append(filename)
-        extensions.append(extension)
+class RecordingExtractor:
+    def __init__(self, seen: list[str], extensions: list[str]) -> None:
+        super().__init__()
+        self.seen: list[str] = seen
+        self.extensions: list[str] = extensions
+
+    def __call__(
+        self, filename: str, extension: str = "", **_: object
+    ) -> bytes:
+        self.seen.append(filename)
+        self.extensions.append(extension)
 
         return Path(filename).read_bytes()
-
-    return extract
 
 
 def test_the_factory_knows_the_registered_extensions() -> None:
@@ -107,7 +109,7 @@ def test_the_document_is_written_where_the_extractor_can_read_it(
             text_sources, "_TEMPORARY_DIRECTORY", str(tmp_path)
         ),
         mock.patch.object(
-            textract, "process", _recording_extractor(seen, extensions)
+            textract, "process", RecordingExtractor(seen, extensions)
         ),
     ):
         _ = text_from_files([_PDF])

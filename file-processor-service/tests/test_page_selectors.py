@@ -1,3 +1,4 @@
+import warnings
 from collections.abc import Iterator
 from unittest import mock
 
@@ -78,33 +79,64 @@ class FakeTranscriptList:
         return self.generated_found
 
 
-def test_reads_the_article_element() -> None:
-    html = f"<html><body><article>{_LONG_TEXT}</article></body></html>"
-
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
-        assert extract_link_main_content("http://test.com") == _LONG_TEXT
-
-
-def test_reads_a_content_div_when_there_is_no_article() -> None:
+def test_a_content_span_is_not_mistaken_for_a_content_div() -> None:
     html = (
-        f'<html><body><div class="main-content">{_LONG_TEXT}'
-        "</div></body></html>"
+        f'<html><body><span class="content">{_HUGE_TEXT}</span>'
+        f'<div class="content">{_OTHER_TEXT}</div>'
+        f'<div class="advert">{_HUGE_TEXT}</div></body></html>'
     )
 
     with mock.patch.object(
         requests, "get", return_value=FakeResponse(html)
     ):
-        assert extract_link_main_content("http://test.com") == _LONG_TEXT
+        assert extract_link_main_content("http://test.com") == _OTHER_TEXT
 
 
-def test_falls_back_to_the_largest_div() -> None:
+def test_a_div_without_the_content_class_is_skipped() -> None:
     html = (
-        f"<html><body><div>short</div><div>{_LONG_TEXT}</div></body></html>"
+        f'<html><body><div class="advert">{_HUGE_TEXT}</div>'
+        f'<div class="content">{_OTHER_TEXT}</div></body></html>'
     )
 
     with mock.patch.object(
         requests, "get", return_value=FakeResponse(html)
     ):
+        assert extract_link_main_content("http://test.com") == _OTHER_TEXT
+
+
+def test_a_content_span_is_not_mistaken_for_a_content_section() -> None:
+    html = (
+        f'<html><body><span class="content">{_HUGE_TEXT}</span>'
+        f'<section class="content">{_OTHER_TEXT}</section>'
+        f'<div class="advert">{_HUGE_TEXT}</div></body></html>'
+    )
+
+    with mock.patch.object(
+        requests, "get", return_value=FakeResponse(html)
+    ):
+        assert extract_link_main_content("http://test.com") == _OTHER_TEXT
+
+
+def test_the_html_parser_is_pinned_so_bs4_does_not_guess() -> None:
+    html = f"<html><body><main>{_LONG_TEXT}</main></body></html>"
+
+    with (
+        warnings.catch_warnings(),
+        mock.patch.object(requests, "get", return_value=FakeResponse(html)),
+    ):
+        warnings.simplefilter("error", DeprecationWarning)
+
         assert extract_link_main_content("http://test.com") == _LONG_TEXT
+
+
+def test_a_section_without_the_content_class_is_skipped() -> None:
+    html = (
+        f'<html><body><section class="advert">{_HUGE_TEXT}</section>'
+        f'<section class="content">{_OTHER_TEXT}</section>'
+        f'<div class="advert">{_HUGE_TEXT}</div></body></html>'
+    )
+
+    with mock.patch.object(
+        requests, "get", return_value=FakeResponse(html)
+    ):
+        assert extract_link_main_content("http://test.com") == _OTHER_TEXT
