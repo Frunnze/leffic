@@ -1,19 +1,28 @@
+from typing import cast
+
 from fastapi import APIRouter
 from pydantic import BaseModel
-from src.shared.ai_manager import ai_factory
 
+from src.shared.ai_manager import AiMessage, ai_factory
 
 chatbot = APIRouter()
 
+_SYSTEM_PROMPT = (
+    "You are a very helpful assistant! "
+    "You always answer shortly and clearly"
+)
+
 
 class ChatbotRequest(BaseModel):
-    conversation: list[dict]
+    conversation: list[dict[str, str]]
+
 
 @chatbot.post("/chat")
-def chat(req_data: ChatbotRequest):
+def chat(req_data: ChatbotRequest) -> dict[str, str]:
     ai = ai_factory.get_ai()
-    ans = ai.get_ai_res_hist(
-        system_prompt="You are a very helpful assistant! You always answer shortly and clearly",
-        history=req_data.conversation
+    answer = ai.get_ai_res_hist(
+        system_prompt=_SYSTEM_PROMPT,
+        history=cast("list[AiMessage]", req_data.conversation),
     )
-    return {"answer": ans}
+
+    return {"answer": answer}

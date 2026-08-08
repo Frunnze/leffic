@@ -1,11 +1,10 @@
 import uuid
 from datetime import UTC, datetime
-from typing import cast
 
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from sqlalchemy import case, func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Query, Session
 
 from src.features.study_units.formatting import (
@@ -28,11 +27,7 @@ _HOME_FOLDER = "home"
 _DEFAULT_PER_PAGE = 10
 _FIRST_PAGE = 1
 _ONGOING = "ongoing"
-_DONE = "done"
-_NO_TEST_STATS = "No test stats!"
 _MISSING_ORIGIN = "Test or folder is required!"
-_CORRECT_ACCURACY = 0.9
-_FULLY_CORRECT = 1.0
 
 
 def _session_answers(
@@ -175,86 +170,3 @@ async def review_test_item(
 
     return JSONResponse(content={"msg": "Saved!"})
 
-
-@assessment_router.get("/test-items-stats")
-async def test_items_stats(
-    folder_id: str, db: DatabaseSession, user_id: AuthenticatedUserId
-) -> JSONResponse:
-    resolved_folder_id = user_id if folder_id == _HOME_FOLDER else folder_id
-
-    # Recursive CTE to get all subfolder IDs
-    folder_ids = subfolder_ids(resolved_folder_id, user_id)
-    total_items = (
-        db.query(TestItem)
-        .join(Test, Test.id == TestItem.test_id)
-        .filter(Test.folder_id.in_(folder_ids))
-        .count()
-    )
-
-    average_accuracy = (
-        db.query(
-            TestItemReview.test_item_id.label("test_item_id"),
-            func.avg(TestItemReview.accuracy).label("avg_accuracy"),
-        )
-        .join(TestItem, TestItem.id == TestItemReview.test_item_id)
-        .join(Test, Test.id == TestItem.test_id)
-        .filter(TestItemReview.accuracy.is_not(None))
-        .filter(Test.folder_id.in_(folder_ids))
-        .group_by(TestItemReview.test_item_id)
-        .subquery()
-    )
-    correct_items = (
-        db.query(average_accuracy)
-        .filter(average_accuracy.c.avg_accuracy >= _CORRECT_ACCURACY)
-        .count()
-    )
-
-    if total_items > 0:
-        return JSONResponse(
-            content={"total": total_items, "correct": correct_items}
-        )
-
-    return JSONResponse(
-        content={"msg": _NO_TEST_STATS},
-        status_code=status.HTTP_404_NOT_FOUND,
-    )
-
-
-@assessment_router.get("/test-session-results")
-async def test_session_results(
-    test_session: str, db: DatabaseSession
-) -> JSONResponse:
-    correct = cast(
-        "int | None",
-        db.query(
-            func.sum(
-                case((TestItemReview.accuracy == _FULLY_CORRECT, 1), else_=0)
-            )
-        )
-        .filter(
-            TestItemReview.accuracy.is_not(None),
-            TestItemReview.test_session == test_session,
-        )
-        .scalar(),
-    )
-
-    # End the test session
-    session_row = (
-        db.query(TestSession).filter_by(id=test_session).first()
-    )
-
-    if session_row is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=_NO_TEST_STATS
-        )
-
-    session_row.status = _DONE
-    db.commit()
-
-    if correct:
-        return JSONResponse(content={"correct": correct})
-
-    return JSONResponse(
-        content={"msg": _NO_TEST_STATS},
-        status_code=status.HTTP_404_NOT_FOUND,
-    )

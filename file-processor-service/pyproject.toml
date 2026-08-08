@@ -5,6 +5,7 @@ venvPath = ".."
 venv = ".venv"
 include = ["src", "run.py"]
 extraPaths = ["."]
+stubPath = "stubs"
 
 reportMissingTypeStubs = "none"
 
