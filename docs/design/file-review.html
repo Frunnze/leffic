@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>File review · Leffic design</title>
+<link rel="stylesheet" href="shell.css">
+<link rel="stylesheet" href="app-tokens.css">
+<link rel="stylesheet" href="app-rail.css">
+<link rel="stylesheet" href="app-reading.css">
+</head>
+<body class="shell" data-screen="file-review">
+<main class="shell-stage">
+  <div class="frame">
+    <div class="screen screen-fixed">
+      <nav class="rail">
+        <ul class="rail-list">
+          <li class="rail-logo"><svg><use href="#icon-logo"/></svg></li>
+          <li><a class="rail-item" href="home.html"><svg class="icon"><use href="#icon-home"/></svg>Home</a></li>
+          <li><button class="rail-item" type="button"><svg class="icon"><use href="#icon-ask"/></svg><span>Ask</span></button></li>
+        </ul>
+        <div class="rail-foot">
+          <svg class="icon"><use href="#icon-profile"/></svg>
+          <span>Profile</span>
+        </div>
+      </nav>
+
+      <div class="file-stage">
+        <div class="file-viewer">
+          <div class="file-page">
+            <h1>Action potentials</h1>
+            <p>The action potential is the electrical signal a neuron uses to carry information along its axon. It is all-or-nothing: once the membrane crosses threshold, the full spike follows.</p>
+            <p>This document covers the resting state, the rising and falling phases, the refractory period, and how myelination changes conduction velocity.</p>
+            <p>Figure 1 plots membrane potential against time for a single spike recorded from a squid giant axon.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="screens.js"></script>
+<script src="icons.js"></script>
+<script src="shell.js"></script>
+</body>
+</html>

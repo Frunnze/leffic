@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test — no items · Leffic design</title>
+<link rel="stylesheet" href="shell.css">
+<link rel="stylesheet" href="app-tokens.css">
+<link rel="stylesheet" href="app-rail.css">
+<link rel="stylesheet" href="app-test.css">
+</head>
+<body class="shell" data-screen="test-empty">
+<main class="shell-stage">
+  <div class="frame">
+    <div class="screen">
+      <nav class="rail">
+        <ul class="rail-list">
+          <li class="rail-logo"><svg><use href="#icon-logo"/></svg></li>
+          <li><a class="rail-item" href="home.html"><svg class="icon"><use href="#icon-home"/></svg>Home</a></li>
+          <li><button class="rail-item" type="button"><svg class="icon"><use href="#icon-ask"/></svg><span>Ask</span></button></li>
+        </ul>
+        <div class="rail-foot">
+          <svg class="icon"><use href="#icon-profile"/></svg>
+          <span>Profile</span>
+        </div>
+      </nav>
+
+      <div class="test-stage">
+        <div class="test-card">
+          <span class="test-empty">This test has no items!</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="screens.js"></script>
+<script src="icons.js"></script>
+<script src="shell.js"></script>
+</body>
+</html>

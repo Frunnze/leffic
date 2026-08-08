@@ -40,7 +40,6 @@ def _issue_refresh_cookie(response: Response, user_id: str) -> None:
             data={"user_id": user_id, "iss": _ISSUER}
         ),
         httponly=True,  # Prevent JavaScript access
-        secure=False,  # Set to True in production (only for HTTPS)
         samesite="strict",
     )
 
@@ -169,7 +168,6 @@ def logout_user(response: Response) -> dict[str, str]:
     response.delete_cookie(
         key=_REFRESH_COOKIE,
         httponly=True,
-        secure=False,  # use True in production
         samesite="strict",
         path="/",
     )

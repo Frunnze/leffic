@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Note review · Leffic design</title>
+<link rel="stylesheet" href="shell.css">
+<link rel="stylesheet" href="app-tokens.css">
+<link rel="stylesheet" href="app-rail.css">
+<link rel="stylesheet" href="app-controls.css">
+<link rel="stylesheet" href="app-reading.css">
+</head>
+<body class="shell" data-screen="notes-review">
+<main class="shell-stage">
+  <div class="frame">
+    <div class="screen">
+      <nav class="rail">
+        <ul class="rail-list">
+          <li class="rail-logo"><svg><use href="#icon-logo"/></svg></li>
+          <li><a class="rail-item" href="home.html"><svg class="icon"><use href="#icon-home"/></svg>Home</a></li>
+          <li><button class="rail-item" type="button"><svg class="icon"><use href="#icon-ask"/></svg><span>Ask</span></button></li>
+        </ul>
+        <div class="rail-foot">
+          <svg class="icon"><use href="#icon-profile"/></svg>
+          <span>Profile</span>
+        </div>
+      </nav>
+
+      <div class="notes-stage">
+        <div class="note-card">
+          <span class="note-title">Action potentials — note</span>
+          <br>
+          <hr class="divider">
+          <br>
+          <div class="note-body">
+            <h2>Resting state</h2>
+            <p>A neuron at rest sits near −70 mV. The sodium–potassium pump moves three sodium ions out for every two potassium ions in, and potassium leak channels let potassium drift back out.</p>
+
+            <h2>Depolarisation</h2>
+            <p>When a stimulus pushes the membrane past roughly −55 mV, voltage-gated sodium channels open and sodium floods in. The membrane potential swings positive, peaking near +40 mV.</p>
+
+            <h2>Repolarisation</h2>
+            <ul>
+              <li>Sodium channels inactivate.</li>
+              <li>Voltage-gated potassium channels open.</li>
+              <li>Potassium leaves, driving the potential back down.</li>
+            </ul>
+
+            <h2>Refractory period</h2>
+            <p>Potassium channels close slowly, so the membrane briefly overshoots below rest. During this window the neuron cannot fire again, which is what keeps signals travelling in one direction.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="screens.js"></script>
+<script src="icons.js"></script>
+<script src="shell.js"></script>
+</body>
+</html>

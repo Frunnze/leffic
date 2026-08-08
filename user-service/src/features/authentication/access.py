@@ -32,7 +32,7 @@ def create_access_token(
     )
     to_encode["exp"] = expire
 
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, SECRET_KEY)
 
 
 def create_refresh_token(data: dict[str, str]) -> str:
@@ -40,4 +40,4 @@ def create_refresh_token(data: dict[str, str]) -> str:
     to_encode: dict[str, object] = dict(data)
     to_encode["exp"] = expire
 
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, SECRET_KEY)

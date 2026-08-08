@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test — question · Leffic design</title>
+<link rel="stylesheet" href="shell.css">
+<link rel="stylesheet" href="app-tokens.css">
+<link rel="stylesheet" href="app-rail.css">
+<link rel="stylesheet" href="app-controls.css">
+<link rel="stylesheet" href="app-test.css">
+</head>
+<body class="shell" data-screen="test-question">
+<main class="shell-stage">
+  <div class="frame">
+    <div class="screen">
+      <nav class="rail">
+        <ul class="rail-list">
+          <li class="rail-logo"><svg><use href="#icon-logo"/></svg></li>
+          <li><a class="rail-item" href="home.html"><svg class="icon"><use href="#icon-home"/></svg>Home</a></li>
+          <li><button class="rail-item" type="button"><svg class="icon"><use href="#icon-ask"/></svg><span>Ask</span></button></li>
+        </ul>
+        <div class="rail-foot">
+          <svg class="icon"><use href="#icon-profile"/></svg>
+          <span>Profile</span>
+        </div>
+      </nav>
+
+      <div class="test-stage">
+        <div class="test-card">
+          <span class="test-question">Which ion rushes into the neuron during the rising phase of an action potential?</span>
+          <hr class="divider">
+
+          <div class="test-options">
+            <div class="test-option">Potassium</div>
+            <div class="test-option is-chosen">Sodium</div>
+            <div class="test-option">Chloride</div>
+            <div class="test-option">Calcium</div>
+          </div>
+
+          <hr class="divider">
+
+          <div class="test-nav">
+            <div class="test-nav-btn">Back</div>
+            <div class="test-counter">3/24</div>
+            <div class="test-nav-btn">Next</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="screens.js"></script>
+<script src="icons.js"></script>
+<script src="shell.js"></script>
+</body>
+</html>

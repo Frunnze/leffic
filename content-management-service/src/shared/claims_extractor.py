@@ -6,6 +6,7 @@ from fastapi import Header, HTTPException, status
 _BEARER_SCHEME = "bearer"
 _BEARER_HEADER_PARTS = 2
 _MISSING_USER_ID = "Token carries no user_id"
+_MISSING_SCHEME = "Invalid token: expected a bearer scheme"
 
 
 def get_user_id_from_jwt(
@@ -36,7 +37,13 @@ def _decode_claims(authorization: str | None) -> dict[str, object]:
 
 
 def _bearer_token(authorization: str | None) -> str:
-    parts = (authorization or "").split()
+    if authorization is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=_MISSING_SCHEME,
+        )
+
+    parts = authorization.split()
 
     if (
         len(parts) != _BEARER_HEADER_PARTS
@@ -44,7 +51,7 @@ def _bearer_token(authorization: str | None) -> str:
     ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token: expected a bearer scheme",
+            detail=_MISSING_SCHEME,
         )
 
     return parts[1]
