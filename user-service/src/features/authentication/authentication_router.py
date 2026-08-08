@@ -54,7 +54,7 @@ def _session_payload(user: User, access_token: str) -> dict[str, str]:
     }
 
 
-@auth.post("/sign-up")
+@auth.post("/sign-up", response_model=None)
 def register_user(
     user: UserCreate, response: Response, db: DatabaseSession
 ) -> JSONResponse | dict[str, str]:
@@ -93,7 +93,7 @@ def register_user(
     )
 
 
-@auth.post("/login")
+@auth.post("/login", response_model=None)
 def login_user(
     user_login: UserLogin, response: Response, db: DatabaseSession
 ) -> JSONResponse | dict[str, str]:
