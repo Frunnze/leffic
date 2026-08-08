@@ -1,11 +1,18 @@
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.shared.database import Base
+from src.shared.models.columns import FlexibleUuid
 
 _CASCADE_ORPHANS = "all, delete-orphan"
 
@@ -14,13 +21,13 @@ class FlashcardDeck(Base):
     __tablename__: str = "flashcard_decks"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        FlexibleUuid(),
         primary_key=True,
         default=uuid.uuid4,
         nullable=False,
     )
     folder_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("folders.id"), nullable=False
+        FlexibleUuid(), ForeignKey("folders.id"), nullable=False
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -42,7 +49,7 @@ class Flashcard(Base):
         Integer, primary_key=True, nullable=False
     )
     deck_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        FlexibleUuid(),
         ForeignKey("flashcard_decks.id"),
         nullable=False,
         index=True,
@@ -51,12 +58,12 @@ class Flashcard(Base):
     next_review: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True, index=True
     )
-    content: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    content: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.now(UTC), nullable=False
     )
     fsrs_card: Mapped[dict[str, object] | None] = mapped_column(
-        JSONB, nullable=True
+        JSON, nullable=True
     )
 
     flashcard_reviews: Mapped[list["FlashcardReview"]] = relationship(
@@ -74,5 +81,5 @@ class FlashcardReview(Base):
         Integer, ForeignKey("flashcards.id"), nullable=False
     )
     fsrs_review: Mapped[dict[str, object]] = mapped_column(
-        JSONB, nullable=False
+        JSON, nullable=False
     )

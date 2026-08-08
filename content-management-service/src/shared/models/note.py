@@ -2,23 +2,23 @@ import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.shared.database import Base
+from src.shared.models.columns import FlexibleUuid
 
 
 class Note(Base):
     __tablename__: str = "notes"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        FlexibleUuid(),
         primary_key=True,
         default=uuid.uuid4,
         nullable=False,
     )
     folder_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("folders.id"), nullable=False
+        FlexibleUuid(), ForeignKey("folders.id"), nullable=False
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
     content: Mapped[str] = mapped_column(String, nullable=False)

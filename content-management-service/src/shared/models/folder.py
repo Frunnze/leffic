@@ -3,10 +3,10 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.shared.database import Base
+from src.shared.models.columns import FlexibleUuid
 
 if TYPE_CHECKING:
     from src.shared.models.assessment import Test
@@ -21,13 +21,13 @@ class Folder(Base):
     __tablename__: str = "folders"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        FlexibleUuid(),
         primary_key=True,
         default=uuid.uuid4,
         nullable=False,
     )
     parent_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+        FlexibleUuid(),
         ForeignKey("folders.id"),
         nullable=True,
         index=True,
@@ -37,7 +37,7 @@ class Folder(Base):
         DateTime, default=datetime.now(UTC), nullable=False
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False
+        FlexibleUuid(), nullable=False
     )
     public: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False

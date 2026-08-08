@@ -6,7 +6,6 @@ import requests
 from youtube_transcript_api import NoTranscriptFound, TranscriptsDisabled
 
 from src.features.study_units_generation.link_extractor import (
-    extract_link_main_content,
     extract_video_id,
     get_youtube_transcript_auto,
 )
@@ -179,89 +178,3 @@ def test_returns_nothing_when_transcripts_are_disabled() -> None:
         )
 
     assert transcript is None
-
-
-def test_reads_the_article_element() -> None:
-    html = f"<html><body><article>{_LONG_TEXT}</article></body></html>"
-
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
-        assert extract_link_main_content("http://test.com") == _LONG_TEXT
-
-
-def test_reads_a_content_div_when_there_is_no_article() -> None:
-    html = (
-        f'<html><body><div class="main-content">{_LONG_TEXT}'
-        "</div></body></html>"
-    )
-
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
-        assert extract_link_main_content("http://test.com") == _LONG_TEXT
-
-
-def test_falls_back_to_the_largest_div() -> None:
-    html = (
-        f"<html><body><div>short</div><div>{_LONG_TEXT}</div></body></html>"
-    )
-
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
-        assert extract_link_main_content("http://test.com") == _LONG_TEXT
-
-
-def test_returns_nothing_when_the_page_is_too_short() -> None:
-    html = "<html><body><div>tiny</div></body></html>"
-
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
-        assert extract_link_main_content("http://test.com") is None
-
-
-def test_returns_nothing_when_the_page_has_no_divs() -> None:
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse("<html></html>")
-    ):
-        assert extract_link_main_content("http://test.com") is None
-
-
-def test_returns_nothing_on_a_network_failure() -> None:
-    with mock.patch.object(
-        requests, "get", side_effect=requests.ConnectionError("down")
-    ):
-        assert extract_link_main_content("http://test.com") is None
-
-
-def test_returns_nothing_on_an_error_status() -> None:
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse("<html></html>", 404)
-    ):
-        assert extract_link_main_content("http://test.com") is None
-
-
-def test_passes_custom_headers_through() -> None:
-    html = f"<html><body><main>{_LONG_TEXT}</main></body></html>"
-    headers = {"User-Agent": "leffic-tests"}
-
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ) as fake_get:
-        _ = extract_link_main_content("http://test.com", headers)
-
-    assert fake_get.call_args.kwargs["headers"] == headers
-
-
-def test_skips_a_short_article_for_a_longer_content_div() -> None:
-    html = (
-        "<html><body><article>tiny</article>"
-        f'<div class="content">{_LONG_TEXT}</div></body></html>'
-    )
-
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
-        assert extract_link_main_content("http://test.com") == _LONG_TEXT

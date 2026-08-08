@@ -1,3 +1,4 @@
+import re
 import uuid
 from datetime import UTC, datetime
 
@@ -26,14 +27,18 @@ class CreateFolderRequest(BaseModel):
 def _available_folder_name(
     db: Session, parent_folder_id: str, folder_name: str
 ) -> str:
-    # Count folders with the same name
-    same_name_folders_num = (
+    numbered_name = re.compile(
+        rf"^{re.escape(folder_name)}\s*(\d+)?\s*$"
+    )
+    siblings = (
         db.query(Folder)
-        .filter(
-            Folder.name.op("~")(f"^{folder_name}(\\s*)(\\d+)?(\\s*)$"),
-            Folder.parent_id == parent_folder_id,
-        )
-        .count()
+        .filter(Folder.parent_id == parent_folder_id)
+        .all()
+    )
+
+    # Count folders with the same name
+    same_name_folders_num = sum(
+        1 for sibling in siblings if numbered_name.match(sibling.name)
     )
 
     # Set the name

@@ -12,9 +12,10 @@ db_user = os.getenv("CM_DB_USER", "postgres")
 db_pass = os.getenv("CM_DB_PASS", "postgres")
 db_host = os.getenv("CM_DB_HOST", "localhost")
 db_port = os.getenv("CM_DB_PORT", "5455")
-SQLALCHEMY_DATABASE_URL = (
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL") or (
     f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
 )
+_POSTGRES_SCHEME = "postgresql"
 
 
 def create_database_if_not_exists() -> None:
@@ -40,7 +41,9 @@ def create_database_if_not_exists() -> None:
                 )
 
 
-create_database_if_not_exists()
+if SQLALCHEMY_DATABASE_URL.startswith(_POSTGRES_SCHEME):
+    create_database_if_not_exists()
+
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

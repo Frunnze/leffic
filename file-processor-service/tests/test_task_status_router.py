@@ -1,13 +1,11 @@
 from collections.abc import Iterator
-from typing import cast
 from unittest import mock
 
-import jwt
 import pytest
 from fastapi.testclient import TestClient
 
 from src.app_factory import create_app
-from src.features.chatbot import chatbot as chatbot_module
+from src.features.study_units_generation import task_status_router
 
 _USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"
 _FOLDER_ID = "6f1c7d4e-0000-4000-8000-000000000002"
@@ -67,37 +65,46 @@ def client() -> Iterator[TestClient]:
         yield test_client
 
 
-def _authorization() -> dict[str, str]:
-    token = jwt.encode({"user_id": _USER_ID}, "secret", algorithm="HS256")
-
-    return {"Authorization": f"Bearer {token}"}
-
-
-def test_chat_answers_with_the_model_reply(client: TestClient) -> None:
-    with mock.patch.object(chatbot_module, "ai_factory", FakeFactory()):
-        response = client.post(
-            "/chat", json={"conversation": [{"role": "user", "content": "x"}]}
-        )
-
-    body = cast("dict[str, str]", response.json())
-
-    assert body["answer"].startswith("answered 1")
-
-
-def test_generation_requires_a_token(client: TestClient) -> None:
-    response = client.post("/generate-study-units", json={})
-
-    assert response.status_code == 401
-
-
-def test_generation_rejects_a_request_with_no_source(
+@pytest.mark.parametrize(
+    ("path", "stored", "expected_key"),
+    [
+        (
+            "/flashcards-status",
+            {"flashcard_deck_id": "d1"},
+            "flashcard_deck_id",
+        ),
+        ("/test-task-status", {"test_id": "t1"}, "test_id"),
+        ("/note-task-status", {"note_id": "n1"}, "note_id"),
+    ],
+)
+def test_a_finished_task_reports_its_study_unit(
     client: TestClient,
+    path: str,
+    stored: dict[str, object],
+    expected_key: str,
 ) -> None:
-    response = client.post(
-        "/generate-study-units",
-        json={"folder_id": _FOLDER_ID},
-        headers=_authorization(),
-    )
+    with mock.patch.object(
+        task_status_router,
+        "AsyncResult",
+        return_value=FakeAsyncResult("SUCCESS", stored),
+    ):
+        response = client.get(f"{path}/task-1")
 
-    assert response.status_code == 400
-    assert response.json()["msg"] == "Could not extract text!"
+    assert response.json()[expected_key] == stored[expected_key]
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["/flashcards-status", "/test-task-status", "/note-task-status"],
+)
+def test_a_pending_task_reports_only_its_status(
+    client: TestClient, path: str
+) -> None:
+    with mock.patch.object(
+        task_status_router,
+        "AsyncResult",
+        return_value=FakeAsyncResult("PENDING", None),
+    ):
+        response = client.get(f"{path}/task-1")
+
+    assert response.json() == {"status": "PENDING"}

@@ -1,0 +1,158 @@
+import uuid
+from collections.abc import Iterator
+from typing import cast
+
+import pytest
+import requests
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session, sessionmaker
+
+from src.app_factory import create_app
+from src.shared.database import get_db
+from src.shared.models import Flashcard, FlashcardDeck, Folder, Note
+from src.shared.settings import SCHEDULER_SERVICE
+from tests.support import (
+    USER_ID,
+    SessionProvider,
+    authorization,
+    in_memory_sessions,
+)
+
+_HOME_ID = uuid.UUID(USER_ID)
+
+
+class FakeResponse:
+    def __init__(
+        self, payload: dict[str, object], status_code: int = 200
+    ) -> None:
+        super().__init__()
+        self.payload: dict[str, object] = payload
+        self.status_code: int = status_code
+
+    def raise_for_status(self) -> None:
+        if self.status_code >= 400:
+            raise requests.HTTPError(f"status {self.status_code}")
+
+    def json(self) -> dict[str, object]:
+        return self.payload
+
+
+@pytest.fixture
+def sessions() -> sessionmaker[Session]:
+    return in_memory_sessions()
+
+
+@pytest.fixture
+def client(sessions: sessionmaker[Session]) -> Iterator[TestClient]:
+    app = create_app()
+    app.dependency_overrides[get_db] = SessionProvider(sessions)
+
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+@pytest.fixture
+def deck_id(sessions: sessionmaker[Session]) -> str:
+    with sessions() as session:
+        folder = Folder(id=_HOME_ID, name="Home", user_id=_HOME_ID)
+        session.add(folder)
+        deck = FlashcardDeck(folder_id=folder.id, name="Deck")
+        deck.flashcards.append(Flashcard(type="basic", content={"q": "a"}))
+        session.add(deck)
+        session.commit()
+
+        return str(deck.id)
+
+
+def test_reading_a_note_marks_it_read(
+    client: TestClient, sessions: sessionmaker[Session]
+) -> None:
+    with sessions() as session:
+        folder = Folder(id=_HOME_ID, name="Home", user_id=_HOME_ID)
+        session.add(folder)
+        note = Note(
+            folder_id=folder.id, name="N", content="body", type="general"
+        )
+        session.add(note)
+        session.commit()
+        note_id = str(note.id)
+
+    first = client.get("/note", params={"note_id": note_id})
+    _ = client.get("/note", params={"note_id": note_id})
+
+    with sessions() as session:
+        assert session.query(Note).one().read
+
+    assert cast("dict[str, str]", first.json())["content"] == "body"
+
+
+def test_reading_an_unknown_note_is_not_found(client: TestClient) -> None:
+    response = client.get("/note", params={"note_id": str(uuid.uuid4())})
+
+    assert response.status_code == 404
+
+
+def test_note_stats_count_read_and_due(
+    client: TestClient, sessions: sessionmaker[Session]
+) -> None:
+    with sessions() as session:
+        folder = Folder(id=_HOME_ID, name="Home", user_id=_HOME_ID)
+        session.add(folder)
+        session.add(
+            Note(
+                folder_id=folder.id,
+                name="A",
+                content="a",
+                type="general",
+                read=True,
+            )
+        )
+        session.add(
+            Note(
+                folder_id=folder.id,
+                name="B",
+                content="b",
+                type="general",
+                read=False,
+            )
+        )
+        session.commit()
+
+    response = client.get(
+        "/notes-stats",
+        params={"folder_id": "home"},
+        headers=authorization(),
+    )
+
+    assert cast("dict[str, int]", response.json()) == {"due": 1, "read": 1}
+
+
+def test_note_stats_need_an_owned_folder(client: TestClient) -> None:
+    response = client.get(
+        "/notes-stats",
+        params={"folder_id": str(uuid.uuid4())},
+        headers=authorization(),
+    )
+
+    assert response.status_code == 404
+
+
+def test_note_stats_report_nothing_for_an_empty_folder(
+    client: TestClient, sessions: sessionmaker[Session]
+) -> None:
+    with sessions() as session:
+        session.add(Folder(id=_HOME_ID, name="Home", user_id=_HOME_ID))
+        session.commit()
+
+    response = client.get(
+        "/notes-stats",
+        params={"folder_id": "home"},
+        headers=authorization(),
+    )
+
+    assert response.status_code == 404
+    assert cast("dict[str, str]", response.json())["msg"] == "No notes!"
+
+
+def test_the_scheduler_url_comes_from_settings() -> None:
+    assert SCHEDULER_SERVICE == "http://scheduler"

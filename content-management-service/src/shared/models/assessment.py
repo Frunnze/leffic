@@ -2,6 +2,7 @@ import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     DateTime,
     Float,
@@ -9,10 +10,10 @@ from sqlalchemy import (
     Integer,
     String,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.shared.database import Base
+from src.shared.models.columns import FlexibleUuid
 
 _CASCADE_ORPHANS = "all, delete-orphan"
 
@@ -21,13 +22,13 @@ class Test(Base):
     __tablename__: str = "tests"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        FlexibleUuid(),
         primary_key=True,
         default=uuid.uuid4,
         nullable=False,
     )
     folder_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("folders.id"), nullable=False
+        FlexibleUuid(), ForeignKey("folders.id"), nullable=False
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -49,9 +50,9 @@ class TestItem(Base):
         Integer, primary_key=True, nullable=False
     )
     test_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("tests.id"), nullable=False
+        FlexibleUuid(), ForeignKey("tests.id"), nullable=False
     )
-    content: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    content: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
     type: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.now(UTC), nullable=False
@@ -68,13 +69,13 @@ class TestSession(Base):
     __tablename__: str = "test_sessions"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        FlexibleUuid(),
         primary_key=True,
         default=uuid.uuid4,
         nullable=False,
     )
     origin_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False
+        FlexibleUuid(), nullable=False
     )  # test/folder id
     status: Mapped[str] = mapped_column(
         String, nullable=False
@@ -91,7 +92,7 @@ class TestItemReview(Base):
         Integer, primary_key=True, nullable=False
     )
     test_session: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("test_sessions.id"), nullable=False
+        FlexibleUuid(), ForeignKey("test_sessions.id"), nullable=False
     )
     test_item_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("test_items.id"), nullable=False
@@ -100,5 +101,5 @@ class TestItemReview(Base):
         DateTime, default=datetime.now(UTC), nullable=True
     )
     accuracy: Mapped[float] = mapped_column(Float, nullable=False)
-    answers: Mapped[list[object]] = mapped_column(JSONB, nullable=False)
+    answers: Mapped[list[object]] = mapped_column(JSON, nullable=False)
     duration: Mapped[float | None] = mapped_column(Float, nullable=True)
