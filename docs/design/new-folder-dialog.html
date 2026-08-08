@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New folder dialog · Leffic design</title>
+<link rel="stylesheet" href="shell.css">
+<link rel="stylesheet" href="app-tokens.css">
+<link rel="stylesheet" href="app-shell.css">
+<link rel="stylesheet" href="app-folder.css">
+<link rel="stylesheet" href="app-overlays.css">
+</head>
+<body class="shell" data-screen="new-folder-dialog">
+<main class="shell-stage">
+  <div class="frame">
+    <div class="screen screen-fixed">
+      <div class="page">
+        <nav class="rail">
+          <ul class="rail-list">
+            <li class="rail-logo"><svg><use href="#icon-logo"/></svg></li>
+            <li><a class="rail-item" href="home.html"><svg class="icon"><use href="#icon-home"/></svg>Home</a></li>
+            <li><button class="rail-item" type="button"><svg class="icon"><use href="#icon-ask"/></svg><span>Ask</span></button></li>
+          </ul>
+          <div class="rail-foot">
+            <svg class="icon"><use href="#icon-profile"/></svg>
+            <span>Profile</span>
+          </div>
+        </nav>
+
+        <div class="folder">
+          <div class="folder-head">
+            <svg><use href="#icon-folderOpen"/></svg>
+            <span class="folder-name">Home</span>
+          </div>
+
+          <div class="folder-toolbar">
+            <div class="folder-actions">
+              <div class="folder-action">
+                <button class="btn btn-solid" type="button"><svg class="icon-sm"><use href="#icon-study"/></svg><span>Study</span></button>
+              </div>
+              <div class="folder-action">
+                <button class="btn" type="button"><svg class="icon-sm"><use href="#icon-aiImport"/></svg><span>AI Import</span></button>
+              </div>
+              <div class="folder-action">
+                <button class="btn" type="button"><svg class="icon-sm"><use href="#icon-newFolder"/></svg><span>New folder</span></button>
+              </div>
+            </div>
+            <button class="btn" type="button"><svg class="icon-sm"><use href="#icon-dots"/></svg></button>
+          </div>
+
+          <hr class="divider">
+        </div>
+      </div>
+
+      <div class="modal-backdrop">
+        <div class="modal">
+          <h2 class="modal-title">Create New Folder</h2>
+          <input class="modal-input" type="text" placeholder="Folder name">
+          <div class="modal-actions">
+            <button class="btn-ghost" type="button">Cancel</button>
+            <button class="btn-cta" type="button">Create</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="screens.js"></script>
+<script src="icons.js"></script>
+<script src="shell.js"></script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flashcards — answer · Leffic design</title>
+<link rel="stylesheet" href="shell.css">
+<link rel="stylesheet" href="app-tokens.css">
+<link rel="stylesheet" href="app-shell.css">
+<link rel="stylesheet" href="app-review.css">
+</head>
+<body class="shell" data-screen="flashcards-answer">
+<main class="shell-stage">
+  <div class="frame">
+    <div class="screen screen-fixed">
+      <nav class="rail">
+        <ul class="rail-list">
+          <li class="rail-logo"><svg><use href="#icon-logo"/></svg></li>
+          <li><a class="rail-item" href="home.html"><svg class="icon"><use href="#icon-home"/></svg>Home</a></li>
+          <li><button class="rail-item" type="button"><svg class="icon"><use href="#icon-ask"/></svg><span>Ask</span></button></li>
+        </ul>
+        <div class="rail-foot">
+          <svg class="icon"><use href="#icon-profile"/></svg>
+          <span>Profile</span>
+        </div>
+      </nav>
+
+      <div class="review">
+        <div class="flashcard">
+          <div class="flashcard-progress">
+            <div class="flashcard-progress-bar" style="width: 27%"></div>
+            <span class="flashcard-progress-count">8/30</span>
+          </div>
+
+          <div class="flashcard-body">
+            <span class="flashcard-face flashcard-face-front">What is the resting membrane potential of a typical neuron?</span>
+            <span class="flashcard-face">About −70 mV, held by the sodium–potassium pump and potassium leak channels.</span>
+          </div>
+
+          <div class="flashcard-ratings">
+            <button class="rating rating-again" type="button">Again<small>1 min</small></button>
+            <button class="rating rating-hard" type="button">Hard<small>8 min</small></button>
+            <button class="rating rating-good" type="button">Good<small>3 d</small></button>
+            <button class="rating rating-easy" type="button">Easy<small>12 d</small></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="screens.js"></script>
+<script src="icons.js"></script>
+<script src="shell.js"></script>
+</body>
+</html>

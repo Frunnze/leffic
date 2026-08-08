@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ask — chatbot panel · Leffic design</title>
+<link rel="stylesheet" href="shell.css">
+<link rel="stylesheet" href="app-tokens.css">
+<link rel="stylesheet" href="app-shell.css">
+<link rel="stylesheet" href="app-folder.css">
+<link rel="stylesheet" href="app-reading.css">
+</head>
+<body class="shell" data-screen="chatbot">
+<main class="shell-stage">
+  <div class="frame">
+    <div class="screen screen-fixed">
+      <div class="page">
+        <nav class="rail">
+          <ul class="rail-list">
+            <li class="rail-logo"><svg><use href="#icon-logo"/></svg></li>
+            <li><a class="rail-item" href="home.html"><svg class="icon"><use href="#icon-home"/></svg>Home</a></li>
+            <li><button class="rail-item" type="button"><svg class="icon"><use href="#icon-ask"/></svg><span>Ask</span></button></li>
+          </ul>
+          <div class="rail-foot">
+            <svg class="icon"><use href="#icon-profile"/></svg>
+            <span>Profile</span>
+          </div>
+        </nav>
+
+        <div class="folder">
+          <div class="folder-head">
+            <svg><use href="#icon-folderOpen"/></svg>
+            <span class="folder-name">Home</span>
+          </div>
+
+          <div class="folder-toolbar">
+            <div class="folder-actions">
+              <div class="folder-action">
+                <button class="btn btn-solid" type="button"><svg class="icon-sm"><use href="#icon-study"/></svg><span>Study</span></button>
+              </div>
+              <div class="folder-action">
+                <button class="btn" type="button"><svg class="icon-sm"><use href="#icon-aiImport"/></svg><span>AI Import</span></button>
+              </div>
+            </div>
+          </div>
+
+          <hr class="divider">
+        </div>
+      </div>
+
+      <aside class="chatbot">
+        <div class="chatbot-head">
+          <svg><use href="#icon-chatHeader"/></svg>
+          <span>Ask</span>
+          <div class="chatbot-close"><svg><use href="#icon-closePlain"/></svg></div>
+        </div>
+
+        <div class="chatbot-log">
+          <div class="chat-msg chat-msg-assistant">
+            <div class="chat-bubble chat-bubble-assistant">Hi, how can I help you?</div>
+          </div>
+          <div class="chat-msg chat-msg-user">
+            <div class="chat-bubble chat-bubble-user">What triggers an action potential?</div>
+          </div>
+          <div class="chat-msg chat-msg-assistant">
+            <div class="chat-bubble chat-bubble-assistant">A depolarisation that pushes the membrane past its threshold, roughly −55 mV.</div>
+          </div>
+        </div>
+
+        <div class="chatbot-compose">
+          <input type="text" placeholder="Ask anything ...">
+          <button class="chatbot-send" type="button">Send</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+</main>
+<script src="screens.js"></script>
+<script src="icons.js"></script>
+<script src="shell.js"></script>
+</body>
+</html>

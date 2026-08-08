@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flashcards — question · Leffic design</title>
+<link rel="stylesheet" href="shell.css">
+<link rel="stylesheet" href="app-tokens.css">
+<link rel="stylesheet" href="app-shell.css">
+<link rel="stylesheet" href="app-review.css">
+</head>
+<body class="shell" data-screen="flashcards-question">
+<main class="shell-stage">
+  <div class="frame">
+    <div class="screen screen-fixed">
+      <nav class="rail">
+        <ul class="rail-list">
+          <li class="rail-logo"><svg><use href="#icon-logo"/></svg></li>
+          <li><a class="rail-item" href="home.html"><svg class="icon"><use href="#icon-home"/></svg>Home</a></li>
+          <li><button class="rail-item" type="button"><svg class="icon"><use href="#icon-ask"/></svg><span>Ask</span></button></li>
+        </ul>
+        <div class="rail-foot">
+          <svg class="icon"><use href="#icon-profile"/></svg>
+          <span>Profile</span>
+        </div>
+      </nav>
+
+      <div class="review">
+        <div class="flashcard">
+          <div class="flashcard-progress">
+            <div class="flashcard-progress-bar" style="width: 27%"></div>
+            <span class="flashcard-progress-count">8/30</span>
+          </div>
+
+          <div class="flashcard-body">
+            <span class="flashcard-face">What is the resting membrane potential of a typical neuron?</span>
+          </div>
+
+          <button class="flashcard-show-answer" type="button">Show answer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="screens.js"></script>
+<script src="icons.js"></script>
+<script src="shell.js"></script>
+</body>
+</html>

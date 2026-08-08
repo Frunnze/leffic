@@ -1,0 +1,18 @@
+{
+    "exit_code_by_key": {
+        "app_factory.x_create_app__mutmut_1": 1,
+        "app_factory.x_create_app__mutmut_2": 1
+    },
+    "hash_by_function_name": {
+        "x_create_app": "07f9845a988a"
+    },
+    "type_check_error_by_key": {},
+    "durations_by_key": {
+        "app_factory.x_create_app__mutmut_1": 0.073608,
+        "app_factory.x_create_app__mutmut_2": 0.079439
+    },
+    "estimated_durations_by_key": {
+        "app_factory.x_create_app__mutmut_1": 0.0175062919879565,
+        "app_factory.x_create_app__mutmut_2": 0.0175062919879565
+    }
+}

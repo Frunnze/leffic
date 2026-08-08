@@ -1,4 +1,3 @@
-import copy
 from datetime import UTC, datetime
 
 from fsrs import Card, Rating, Scheduler
@@ -38,8 +37,8 @@ def get_ratings_times(
     ratings_times: dict[int, int] = {}
 
     for rating_value, rating in RATING_MAP.items():
-        reviewed_card, _ = copy.deepcopy(restored_scheduler).review_card(
-            copy.deepcopy(restored_card), rating
+        reviewed_card, _ = restored_scheduler.review_card(
+            restored_card, rating
         )
         seconds_until_due = (reviewed_card.due - timestamp).total_seconds()
         ratings_times[rating_value] = max(

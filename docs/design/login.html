@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Login · Leffic design</title>
+<link rel="stylesheet" href="shell.css">
+<link rel="stylesheet" href="app-tokens.css">
+<link rel="stylesheet" href="app-shell.css">
+<link rel="stylesheet" href="app-auth.css">
+</head>
+<body class="shell" data-screen="login">
+<main class="shell-stage">
+  <div class="frame">
+    <div class="screen screen-fixed">
+      <div class="auth">
+        <div class="auth-card auth-card-tall">
+          <div class="auth-mark"><svg><use href="#icon-logo"/></svg></div>
+          <h2 class="auth-title">Login</h2>
+
+          <div class="field">
+            <label for="email">Email:</label>
+            <input id="email" type="email" placeholder="Enter your email">
+          </div>
+
+          <div class="field">
+            <label for="password">Password:</label>
+            <input id="password" type="password" placeholder="Enter your password">
+            <span class="field-error">Invalid password or email</span>
+          </div>
+
+          <button class="auth-submit" type="button">Sign in</button>
+
+          <div class="auth-or">
+            <hr>
+            <span>or</span>
+          </div>
+
+          <span class="auth-link">Sign up</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="screens.js"></script>
+<script src="icons.js"></script>
+<script src="shell.js"></script>
+</body>
+</html>

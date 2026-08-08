@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Folder — loading · Leffic design</title>
+<link rel="stylesheet" href="shell.css">
+<link rel="stylesheet" href="app-tokens.css">
+<link rel="stylesheet" href="app-shell.css">
+<link rel="stylesheet" href="app-folder.css">
+</head>
+<body class="shell" data-screen="home-loading">
+<main class="shell-stage">
+  <div class="frame">
+    <div class="screen">
+      <div class="page">
+        <nav class="rail">
+          <ul class="rail-list">
+            <li class="rail-logo"><svg><use href="#icon-logo"/></svg></li>
+            <li><a class="rail-item" href="home.html"><svg class="icon"><use href="#icon-home"/></svg>Home</a></li>
+            <li><button class="rail-item" type="button"><svg class="icon"><use href="#icon-ask"/></svg><span>Ask</span></button></li>
+          </ul>
+          <div class="rail-foot">
+            <svg class="icon"><use href="#icon-profile"/></svg>
+            <span>Profile</span>
+          </div>
+        </nav>
+
+        <div class="folder">
+          <div class="folder-head">
+            <svg><use href="#icon-folderOpen"/></svg>
+          </div>
+
+          <div class="folder-toolbar">
+            <div class="folder-actions">
+              <div class="folder-action">
+                <button class="btn btn-solid" type="button"><svg class="icon-sm"><use href="#icon-study"/></svg><span>Study</span></button>
+              </div>
+              <div class="folder-action">
+                <button class="btn" type="button"><svg class="icon-sm"><use href="#icon-aiImport"/></svg><span>AI Import</span></button>
+              </div>
+              <div class="folder-action">
+                <button class="btn" type="button"><svg class="icon-sm"><use href="#icon-newFolder"/></svg><span>New folder</span></button>
+              </div>
+            </div>
+            <button class="btn" type="button"><svg class="icon-sm"><use href="#icon-dots"/></svg></button>
+          </div>
+
+          <hr class="divider">
+
+          <div class="units">
+            <p class="units-loading">Contents are loading...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="screens.js"></script>
+<script src="icons.js"></script>
+<script src="shell.js"></script>
+</body>
+</html>

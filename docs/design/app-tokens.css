@@ -1,0 +1,67 @@
+:root {
+  --primary: #ffffff;
+  --secondary: #3083dc;
+  --secondary-10: rgba(48, 131, 220, 0.1);
+  --tertiary-100: rgba(57, 57, 58, 1);
+  --tertiary-90: rgba(57, 57, 58, 0.9);
+  --tertiary-80: rgba(57, 57, 58, 0.8);
+  --tertiary-70: rgba(57, 57, 58, 0.7);
+  --tertiary-60: rgba(57, 57, 58, 0.6);
+  --tertiary-50: rgba(57, 57, 58, 0.5);
+  --tertiary-40: rgba(57, 57, 58, 0.4);
+  --tertiary-30: rgba(57, 57, 58, 0.3);
+  --tertiary-25: rgba(57, 57, 58, 0.25);
+  --tertiary-20: rgba(57, 57, 58, 0.2);
+  --tertiary-10: rgba(57, 57, 58, 0.1);
+  --tertiary-2: rgba(57, 57, 58, 0.02);
+  --red-60: rgba(208, 0, 0, 0.6);
+  --red-65: rgba(208, 0, 0, 0.65);
+  --red-75: rgba(208, 0, 0, 0.75);
+  --red-80: rgba(208, 0, 0, 0.8);
+  --green-60: rgba(28, 124, 84, 0.6);
+  --green-65: rgba(28, 124, 84, 0.65);
+  --green-95: rgba(28, 124, 84, 0.95);
+  --green-100: rgba(28, 124, 84, 1);
+  --rail-width: 68px;
+  --radius-sm: 2px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 16px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.25);
+}
+
+.screen {
+  position: relative;
+  min-height: 100%;
+  background: var(--primary);
+  color: var(--tertiary-100);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.screen-fixed {
+  height: 100%;
+  min-height: 0;
+}
+
+.screen svg {
+  display: block;
+  flex: none;
+  fill: currentColor;
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+}
+
+.icon-sm {
+  width: 18px;
+  height: 18px;
+}

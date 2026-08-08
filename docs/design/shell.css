@@ -1,0 +1,156 @@
+:root {
+  --shell-bg: #f4f5f7;
+  --shell-panel: #ffffff;
+  --shell-line: #dfe1e6;
+  --shell-text: #1b1c1f;
+  --shell-muted: #6b6e76;
+  --shell-accent: #3083dc;
+  --shell-bar-height: 56px;
+  --viewport-width: 390px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body.shell {
+  margin: 0;
+  background: var(--shell-bg);
+  color: var(--shell-text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+.shell-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: var(--shell-bar-height);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: var(--shell-panel);
+  border-bottom: 1px solid var(--shell-line);
+}
+
+.shell-bar a,
+.shell-bar button {
+  font: inherit;
+  font-size: 13px;
+  color: var(--shell-text);
+  background: var(--shell-panel);
+  border: 1px solid var(--shell-line);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.shell-bar button:hover,
+.shell-bar a:hover {
+  background: var(--shell-bg);
+}
+
+.shell-bar button.is-active {
+  background: var(--shell-accent);
+  border-color: var(--shell-accent);
+  color: #ffffff;
+}
+
+.shell-group {
+  display: flex;
+  gap: 6px;
+}
+
+.shell-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shell-count {
+  font-size: 12px;
+  color: var(--shell-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.shell-stage {
+  padding-top: calc(var(--shell-bar-height) + 24px);
+  padding-bottom: 24px;
+  display: flex;
+  justify-content: safe center;
+  overflow-x: auto;
+}
+
+.frame {
+  container-type: inline-size;
+  flex: none;
+  width: var(--viewport-width);
+  height: calc(100vh - var(--shell-bar-height) - 48px);
+  overflow: auto;
+  background: #ffffff;
+  border: 1px solid var(--shell-line);
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(27, 28, 31, 0.08);
+  position: relative;
+}
+
+.map {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: calc(var(--shell-bar-height) + 32px) 24px 64px;
+}
+
+.map-lead {
+  color: var(--shell-muted);
+  font-size: 14px;
+  margin: 0 0 32px;
+  max-width: 60ch;
+}
+
+.map-group {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--shell-muted);
+  margin: 32px 0 12px;
+}
+
+.map-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.map-card {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--shell-panel);
+  border: 1px solid var(--shell-line);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--shell-text);
+  font-size: 14px;
+}
+
+.map-card:hover {
+  border-color: var(--shell-accent);
+  box-shadow: 0 2px 10px rgba(48, 131, 220, 0.15);
+}
+
+.map-card-index {
+  font-size: 12px;
+  color: var(--shell-muted);
+  font-variant-numeric: tabular-nums;
+}

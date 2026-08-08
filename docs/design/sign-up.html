@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign up · Leffic design</title>
+<link rel="stylesheet" href="shell.css">
+<link rel="stylesheet" href="app-tokens.css">
+<link rel="stylesheet" href="app-shell.css">
+<link rel="stylesheet" href="app-auth.css">
+</head>
+<body class="shell" data-screen="sign-up">
+<main class="shell-stage">
+  <div class="frame">
+    <div class="screen screen-fixed">
+      <div class="auth">
+        <div class="auth-card">
+          <div class="auth-mark"><svg><use href="#icon-logo"/></svg></div>
+          <h2 class="auth-title">Sign up</h2>
+
+          <div class="field field-tight">
+            <label for="username">Username:</label>
+            <input id="username" type="text" placeholder="Enter your username">
+            <span class="field-error">Username already exists</span>
+          </div>
+
+          <div class="field field-tight">
+            <label for="email">Email:</label>
+            <input id="email" type="email" placeholder="Enter your email">
+          </div>
+
+          <div class="field">
+            <label for="password">Password:</label>
+            <input id="password" type="password" placeholder="Enter your password">
+          </div>
+
+          <button class="auth-submit" type="button">Enter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="screens.js"></script>
+<script src="icons.js"></script>
+<script src="shell.js"></script>
+</body>
+</html>

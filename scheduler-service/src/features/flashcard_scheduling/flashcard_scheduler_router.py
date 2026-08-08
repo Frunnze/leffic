@@ -1,7 +1,5 @@
-import json
-from typing import Annotated, cast
+from typing import Annotated
 
-from bson import json_util
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from fsrs.card import CardDict
@@ -12,21 +10,15 @@ from features.flashcard_scheduling.flashcard_scheduler import (
     get_ratings_times,
     schedule_flashcard_fsrs,
 )
+from features.flashcard_scheduling.stored_scheduler import (
+    scheduler_from_document,
+)
 from shared.claims_extractor import get_user_id_from_jwt
-from shared.database import MongoDocument, db
+from shared.database import db
 
 flashcard_scheduler = APIRouter()
 
 _SCHEDULERS_COLLECTION = "schedulers_collection"
-_MONGO_ID_FIELD = "_id"
-
-
-def mongo_row2dict(mongo_result: MongoDocument) -> dict[str, object]:
-    result_json = json.dumps(mongo_result, default=json_util.default)
-    plain_document = cast("dict[str, object]", json.loads(result_json))
-    del plain_document[_MONGO_ID_FIELD]
-
-    return plain_document
 
 
 def _stored_scheduler(user_id: str) -> SchedulerDict | None:
@@ -35,7 +27,7 @@ def _stored_scheduler(user_id: str) -> SchedulerDict | None:
     if not stored:
         return None
 
-    return cast("SchedulerDict", cast("object", mongo_row2dict(stored)))
+    return scheduler_from_document(stored)
 
 
 class ScheduleFlashcard(BaseModel):
