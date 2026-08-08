@@ -1,11 +1,14 @@
-from fastapi import FastAPI
 from dotenv import load_dotenv
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from features.authentication.authentication_router import auth
+from shared.database import Base, engine
 
-load_dotenv()
+_ = load_dotenv()
 
-def create_app():
+
+def create_app() -> FastAPI:
     app = FastAPI()
 
     app.add_middleware(
@@ -16,11 +19,8 @@ def create_app():
         allow_headers=["*"],
     )
 
-    from src.features.authentication.authentication_router import auth
     app.include_router(auth)
 
-    from src.features.authentication import models
-    from src.shared.database import engine
-    models.Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
 
     return app

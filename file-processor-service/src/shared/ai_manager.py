@@ -1,118 +1,119 @@
 from abc import ABC, abstractmethod
-import os
-import demjson3
-from openai import OpenAI
+from typing import override
+
+from openai import OpenAI, OpenAIError
+from openai.types.responses import (
+    EasyInputMessageParam,
+    Response,
+    ResponseInputItemParam,
+)
+
+from shared.json_extraction import get_dict_from_text
+from shared.model_rates import GPT_5_MINI, MODEL_RATES, ModelRates
+
+_ATTEMPTS = 2
+_ALL_ATTEMPTS_FAILED = "The AI model did not answer"
+
+AiMessage = ResponseInputItemParam
 
 
 class AIManager(ABC):
     @abstractmethod
-    def get_ai_res(self, system_prompt, user_prompt, output_format_type):
-        pass
+    def get_ai_res(
+        self, system_prompt: str, user_prompt: str
+    ) -> tuple[dict[str, object], float | None]: ...
 
     @abstractmethod
-    def get_ai_res_hist(self, system_prompt, history):
-        pass
-
-    @abstractmethod
-    def get_request_cost(self, response):
-        pass
-
-    @abstractmethod
-    def get_input_prompt_cost(self, text):
-        pass
+    def get_ai_res_hist(
+        self, system_prompt: str, history: list[AiMessage]
+    ) -> str: ...
 
 
-def get_dict_from_text(text):
-    text = text.replace("\n", "").replace("\t", "")
-    start_index = text.find("{")
-    end_index = text.rfind("}")
-    dictionary = demjson3.decode(text[start_index:end_index+1])
-    return dictionary
+class RequestCost:
+    def __init__(self, rates: ModelRates | None) -> None:
+        super().__init__()
+        self.rates: ModelRates | None = rates
+
+    def of(self, response: Response) -> float | None:
+        usage = response.usage
+
+        if self.rates is None or usage is None:
+            return None
+
+        cached_tokens = usage.input_tokens_details.cached_tokens
+
+        return (
+            usage.input_tokens * self.rates.input_token_cost
+            + usage.output_tokens * self.rates.output_token_cost
+            + cached_tokens * self.rates.cached_token_cost
+        )
 
 
 class OpenAIManager(AIManager):
-    def __init__(self, client):
-        self.client = client
+    def __init__(
+        self, client: OpenAI, model_name: str, rates: ModelRates | None
+    ) -> None:
+        super().__init__()
+        self.client: OpenAI = client
+        self.model_name: str = model_name
+        self.request_cost: RequestCost = RequestCost(rates)
 
-    def get_ai_res(self, system_prompt: str, user_prompt: str, output_format_type="JSON"):
-        for _ in range(2):
+    @override
+    def get_ai_res(
+        self, system_prompt: str, user_prompt: str
+    ) -> tuple[dict[str, object], float | None]:
+        history: list[AiMessage] = [
+            EasyInputMessageParam(
+                role="developer", content=system_prompt
+            ),
+            EasyInputMessageParam(role="user", content=user_prompt),
+        ]
+        last_error: OpenAIError | None = None
+
+        for _ in range(_ATTEMPTS):
             try:
-                response = self.client.responses.create(
-                    model=self.model_name,
-                    input=[
-                        {
-                            "role": "developer",
-                            "content": system_prompt
-                        },
-                        {
-                            "role": "user",
-                            "content": user_prompt
-                        }
-                    ]
-                )
-                print("Output text:", response.output_text)
-                request_cost = self.get_request_cost(response)
-                print("request_cost", request_cost)
-                if output_format_type == "JSON":
-                    data = get_dict_from_text(response.output_text), request_cost
-                else:
-                    data = response.output_text, request_cost
-                return data
-            except Exception as e:
-                print("Error in ai manager:", str(e))
+                response = self._answer(history)
+            except OpenAIError as error:
+                last_error = error
+                continue
 
-    def get_ai_res_hist(self, system_prompt, history):
-        input = [
-            {
-                "role": "developer",
-                "content": system_prompt
-            },
-            # {
-            #     "role": "user",
-            #     "content": user_prompt
-            # }
-        ] + history
-        response = self.client.responses.create(
-            model=self.model_name,
-            input=input
+            return (
+                get_dict_from_text(response.output_text),
+                self.request_cost.of(response),
+            )
+
+        raise RuntimeError(_ALL_ATTEMPTS_FAILED) from last_error
+
+    @override
+    def get_ai_res_hist(
+        self, system_prompt: str, history: list[AiMessage]
+    ) -> str:
+        conversation: list[AiMessage] = [
+            EasyInputMessageParam(
+                role="developer", content=system_prompt
+            ),
+            *history,
+        ]
+
+        return self._answer(conversation).output_text
+
+    def _answer(self, history: list[AiMessage]) -> Response:
+        return self.client.responses.create(
+            model=self.model_name, input=history
         )
-        return response.output_text
-
-    def get_request_cost(self, response):
-        input_tokens = response.usage.input_tokens
-        output_tokens = response.usage.output_tokens
-        cached_tokens = response.usage.input_tokens_details.cached_tokens
-        return input_tokens * self.input_token_cost + \
-            output_tokens * self.output_token_cost + \
-            cached_tokens * self.cached_token_cost
-
-    def get_input_prompt_cost(self, text):
-        pass
-
-
-class GPT41Nano(OpenAIManager):
-    def __init__(self, client):
-        self.model_name = "gpt-4.1-nano"
-        self.input_token_cost = 0.100 / 1000000 # $0.100 / 1M tokens
-        self.output_token_cost = 0.025 / 1000000 # $0.025 / 1M tokens
-        self.cached_token_cost = 0.400 / 1000000 # $0.400 / 1M tokens
-        super().__init__(client)
-
-
-class GPT5Mini(OpenAIManager):
-    def __init__(self, client):
-        self.model_name = "gpt-5-mini"
-        super().__init__(client)
 
 
 class AIFactory:
-    def __init__(self):
-        self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    def __init__(self) -> None:
+        super().__init__()
+        self.openai_client: OpenAI = OpenAI()
 
-    def get_ai(self, model=None):
-        # if model == "gpt-4.1-nano":
-        #     return GPT41Nano(self.openai_client)
-        return GPT5Mini(self.openai_client)
+    def get_ai(self, model: str | None = None) -> AIManager:
+        model_name = model or GPT_5_MINI
+
+        return OpenAIManager(
+            self.openai_client, model_name, MODEL_RATES.get(model_name)
+        )
 
 
 ai_factory = AIFactory()

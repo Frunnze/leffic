@@ -1,0 +1,18 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/_env.sh"
+
+require_binary "$python_binary" python
+
+finder="$(dirname "$0")/nested_definitions.py"
+
+echo "pre-commit: nested definitions (no def inside a def)"
+
+python_files=$(git ls-files '*/src/*.py' '*/tests/*.py' 'hooks/*.py')
+nested_definitions=$(echo "$python_files" | "$python_binary" "$finder")
+
+if [ -n "$nested_definitions" ]; then
+    echo "pre-commit: these definitions are nested - lift them out:" >&2
+    echo "$nested_definitions" >&2
+    exit 1
+fi

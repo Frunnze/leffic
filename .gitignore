@@ -16,3 +16,13 @@ ISO-690-UTM.csl
 .gitignore
 test.ipynb
 to-dos.md
+mutants/
+.mutmut-cache
+.claude/
+docs/design/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.pytest_cache/
+.ruff_cache/

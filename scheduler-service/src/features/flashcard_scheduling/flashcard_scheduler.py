@@ -1,67 +1,62 @@
-from fsrs import Scheduler, Card, Rating
-from datetime import datetime, timezone
-import copy
+from datetime import UTC, datetime
 
-rating_map = {
+from fsrs import Card, Rating, Scheduler
+from fsrs.card import CardDict
+from fsrs.review_log import ReviewLogDict
+from fsrs.scheduler import SchedulerDict
+
+RATING_MAP: dict[int, Rating] = {
     1: Rating.Again,
     2: Rating.Hard,
     3: Rating.Good,
-    4: Rating.Easy
+    4: Rating.Easy,
 }
 
-def schedule_flashcard_fsrs(card, scheduler, rating):
-    timestamp = datetime.now(timezone.utc)
+_NO_TIME_LEFT = 0
 
-    if card:
-        card = Card.from_dict(card)
-    else:
-        card = Card()
 
-    if scheduler:
-        scheduler = Scheduler.from_dict(scheduler)
-    else:
-        scheduler = Scheduler()
-
-    rating_obj = rating_map[rating]
-    new_card, review_log = scheduler.review_card(card, rating_obj)
+def schedule_flashcard_fsrs(
+    card: CardDict | None,
+    scheduler: SchedulerDict | None,
+    rating: int,
+) -> tuple[CardDict, ReviewLogDict]:
+    new_card, review_log = _restored_scheduler(scheduler).review_card(
+        _restored_card(card), RATING_MAP[rating]
+    )
 
     return new_card.to_dict(), review_log.to_dict()
 
 
-def get_ratings_times(card, scheduler):
-    timestamp = datetime.now(timezone.utc)
+def get_ratings_times(
+    card: CardDict | None,
+    scheduler: SchedulerDict | None,
+) -> dict[int, int]:
+    timestamp = datetime.now(UTC)
+    restored_card = _restored_card(card)
+    restored_scheduler = _restored_scheduler(scheduler)
+    ratings_times: dict[int, int] = {}
 
-    if card:
-        card = Card.from_dict(card)
-    else:
-        card = Card()
-
-    if scheduler:
-        scheduler = Scheduler.from_dict(scheduler)
-    else:
-        scheduler = Scheduler()
-
-    ratings_times = {}
-    for r, val in rating_map.items():
-        temp_card = copy.deepcopy(card)
-        scheduler = copy.deepcopy(scheduler)
-
-        temp_card, _ = scheduler.review_card(temp_card, val)
-        ratings_times[r] = max(0, int((temp_card.due - timestamp).total_seconds()))
+    for rating_value, rating in RATING_MAP.items():
+        reviewed_card, _ = restored_scheduler.review_card(
+            restored_card, rating
+        )
+        seconds_until_due = (reviewed_card.due - timestamp).total_seconds()
+        ratings_times[rating_value] = max(
+            _NO_TIME_LEFT, int(seconds_until_due)
+        )
 
     return ratings_times
 
-# celery task
-def optimize_scheduler(scheduler, user_id):
-    new_scheduler = None
 
-    # Check if there are enough review logs
-    # ...
+def _restored_card(card: CardDict | None) -> Card:
+    if not card:
+        return Card()
 
-    # Get review logs
-    # ...
+    return Card.from_dict(card)
 
-    # Optimize the scheduler
-    # ...
 
-    return new_scheduler
+def _restored_scheduler(scheduler: SchedulerDict | None) -> Scheduler:
+    if not scheduler:
+        return Scheduler()
+
+    return Scheduler.from_dict(scheduler)

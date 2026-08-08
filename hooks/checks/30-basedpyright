@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/_env.sh"
+
+require_binary "$basedpyright_binary" basedpyright
+
+echo "pre-commit: basedpyright (all)"
+
+for service in $services; do
+    (cd "$service" && "$basedpyright_binary")
+done

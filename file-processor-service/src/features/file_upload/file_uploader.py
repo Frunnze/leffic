@@ -1,118 +1,124 @@
-from fastapi import APIRouter, File, Form, UploadFile, HTTPException, Depends
-from fastapi.responses import FileResponse, Response, JSONResponse
-from typing import List, Optional
-import os
-import shutil
-import requests
-from uuid import uuid4
-import traceback
-#import pyclamd
 import shutil
 import subprocess
 import tempfile
+from pathlib import Path
+from typing import Annotated
+from uuid import uuid4
 
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse, Response
 
-from src.shared.settings import CONTENT_MANAGEMENT_SERVICE
-from src.shared.claims_extractor import get_user_id_from_jwt
-
+from features.study_units_generation.content_management_client import (
+    save_study_unit,
+)
+from shared.dependencies import AuthenticatedUserId
 
 file_uploader = APIRouter()
 
+_FILES_DIRECTORY = "files"
+_HOME_FOLDER = "home"
+_PDF_EXTENSION = "pdf"
+_PDF_MEDIA_TYPE = "application/pdf"
+_FILE_NOT_FOUND = "File not found"
+_CONVERSION_TIMEOUT_SECONDS = 120
 
-def save_file_to_storage(file, unique_name):
-    file_path = os.path.join("files", unique_name)
-    with open(file_path, "wb") as out_file:
+UploadedFiles = Annotated[list[UploadFile], File(...)]
+FolderId = Annotated[str | None, Form(...)]
+
+
+def save_file_to_storage(file: UploadFile, unique_name: str) -> None:
+    file_path = Path(_FILES_DIRECTORY) / unique_name
+
+    with file_path.open("wb") as out_file:
         shutil.copyfileobj(file.file, out_file)
 
 
-def scan_file_in_memory(file: UploadFile):
-    cd = pyclamd.ClamdNetworkSocket(host='clamav', port=3310)
-    if not cd.ping():
-        raise RuntimeError("Could not connect to ClamAV daemon")
-    file.file.seek(0)
-    file_bytes = file.file.read()
-    result = cd.scan_stream(file_bytes)
-    file.file.seek(0)
-    return result
+def _stored_file(file: UploadFile) -> dict[str, str]:
+    filename = file.filename or ""
+    file_id = str(uuid4())
+    extension = Path(filename).suffix
+    save_file_to_storage(file, file_id + extension)
+
+    return {
+        "file_id": file_id,
+        "extension": extension.lstrip("."),
+        "name": filename,
+    }
+
 
 @file_uploader.post("/upload-files")
 async def upload_files(
-    files: List[UploadFile] = File(...), 
-    folder_id: Optional[str] = Form(...),
-    user_id: str = Depends(get_user_id_from_jwt)
-):
-    try:
-        folder_id = folder_id if folder_id != "home" else user_id
-        uploaded_files = []
-        for file in files:
-            try:
-                # scan_result = scan_file_in_memory(file)
-                # if scan_result:
-                #     return JSONResponse(status_code=403, content="Malicious file!")
+    user_id: AuthenticatedUserId,
+    files: UploadedFiles,
+    folder_id: FolderId = None,
+) -> dict[str, object]:
+    resolved_folder_id = (
+        user_id if folder_id == _HOME_FOLDER else folder_id
+    )
+    uploaded_files = [_stored_file(file) for file in files]
 
-                file_id = str(uuid4())
-                _, extension = os.path.splitext(file.filename)
-                save_file_to_storage(file, file_id + extension)
-                extension = extension.lstrip(".")
-                uploaded_files.append({
-                    "file_id": file_id,
-                    "extension": extension,
-                    "name": file.filename
-                })
-            except Exception as e:
-                raise HTTPException(status_code=400, detail=f"Failed to upload {file.filename}: {str(e)}")
+    # Save the file names
+    _ = save_study_unit(
+        "/save-file-names",
+        {
+            "file_metadata": uploaded_files,
+            "folder_id": resolved_folder_id,
+        },
+    )
 
-        # Save the file names
-        response = requests.post(
-            url=CONTENT_MANAGEMENT_SERVICE + "/save-file-names",
-            json={
-                "file_metadata": uploaded_files,
-                "folder_id": folder_id
-            }
-        )
-        print(response.json())
-        response.raise_for_status()
+    return {"msg": "Files uploaded!", "file_metadata": uploaded_files}
 
-        return {"msg": "Files uploaded!", "file_metadata": uploaded_files}
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
-    
 
 @file_uploader.get("/file")
-async def get_file(file_id: str, file_extension: str):
-    input_path = os.path.join("files", f"{file_id}.{file_extension}")
+async def get_file(file_id: str, file_extension: str) -> Response:
+    input_path = Path(_FILES_DIRECTORY) / f"{file_id}.{file_extension}"
 
-    if os.path.exists(input_path):
-        if file_extension == "pdf":
-            return FileResponse(
-                path=input_path,
-                media_type="application/pdf",
-                filename=f"{file_id}.pdf"
+    if not input_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=_FILE_NOT_FOUND
+        )
+
+    if file_extension == _PDF_EXTENSION:
+        return FileResponse(
+            path=input_path,
+            media_type=_PDF_MEDIA_TYPE,
+            filename=f"{file_id}.{_PDF_EXTENSION}",
+        )
+
+    return Response(
+        content=_converted_to_pdf(input_path, file_id),
+        media_type=_PDF_MEDIA_TYPE,
+        headers={
+            "Content-Disposition": (
+                f"attachment; filename={file_id}.{_PDF_EXTENSION}"
             )
-        else:
-            with tempfile.TemporaryDirectory() as tmp_dir:
-                result = subprocess.run([
-                    "libreoffice", "--headless", "--convert-to", "pdf",
-                    "--outdir", tmp_dir, input_path
-                ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        },
+    )
 
-                if result.returncode != 0:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Conversion failed: {result.stderr.decode()}"
-                    )
 
-                temp_pdf_path = os.path.join(tmp_dir, f"{file_id}.pdf")
-                with open(temp_pdf_path, "rb") as f:
-                    pdf_content = f.read()
+def _converted_to_pdf(input_path: Path, file_id: str) -> bytes:
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        result = subprocess.run(
+            [
+                "libreoffice",
+                "--headless",
+                "--convert-to",
+                _PDF_EXTENSION,
+                "--outdir",
+                tmp_dir,
+                str(input_path),
+            ],
+            capture_output=True,
+            check=False,
+            timeout=_CONVERSION_TIMEOUT_SECONDS,
+        )
 
-            return Response(
-                content=pdf_content,
-                media_type="application/pdf",
-                headers={
-                    "Content-Disposition": f"attachment; filename={file_id}.pdf"
-                }
+        if result.returncode != 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Conversion failed: {result.stderr.decode()}",
             )
 
-    raise HTTPException(status_code=404, detail="File not found")
+        pdf_path = Path(tmp_dir) / f"{file_id}.{_PDF_EXTENSION}"
+
+        return pdf_path.read_bytes()
