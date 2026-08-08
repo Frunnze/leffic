@@ -1,0 +1,47 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/_env.sh"
+
+require_binary "$mutmut_binary" mutmut
+
+if [ -n "$SKIP_MUTATION" ]; then
+    echo "pre-commit: mutation testing (skipped)"
+    exit 0
+fi
+
+unmutatable_marker="nothing matches"
+
+echo "pre-commit: mutation testing (staged modules)"
+
+for service in $services; do
+    staged_sources=$(git diff --cached --name-only --diff-filter=d \
+        -- "$service/src/*.py")
+
+    changed_modules=$(echo "$staged_sources" | sed '/^$/d' | sort -u \
+        | sed "s|^$service/src/||; s|\.py$||; s|/|.|g")
+
+    if [ -z "$changed_modules" ]; then
+        continue
+    fi
+
+    mutant_filters=$(echo "$changed_modules" | sed 's|$|.*|' | tr '\n' ' ')
+
+    if ! mutation_output=$(cd "$service" && "$mutmut_binary" run \
+        $mutant_filters 2>&1); then
+        if echo "$mutation_output" | grep -q "$unmutatable_marker"; then
+            continue
+        fi
+
+        echo "$mutation_output" >&2
+        exit 1
+    fi
+
+    surviving_mutants=$(cd "$service" && "$mutmut_binary" results \
+        | grep ': survived$' || true)
+
+    if [ -n "$surviving_mutants" ]; then
+        echo "pre-commit: these mutants survived in $service:" >&2
+        echo "$surviving_mutants" >&2
+        exit 1
+    fi
+done
