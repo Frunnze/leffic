@@ -3,11 +3,16 @@ typeCheckingMode = "all"
 pythonVersion = "3.12"
 venvPath = ".."
 venv = ".venv"
-include = ["src", "run.py"]
+include = ["src", "run.py", "tests"]
 extraPaths = ["."]
 stubPath = "stubs"
 
 reportMissingTypeStubs = "none"
+
+[[tool.basedpyright.executionEnvironments]]
+root = "tests"
+extraPaths = [".", "src"]
+reportPrivateUsage = "none"
 
 [tool.ruff]
 line-length = 79
@@ -33,3 +38,16 @@ ignore = [
 
 [tool.ruff.lint.pylint]
 max-public-methods = 15
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "EM101",
+    "EM102",
+    "PLR2004",
+    "PT009",
+    "S101",
+    "SLF001",
+    "S108",
+    "TRY003",
+    "TRY004",
+]

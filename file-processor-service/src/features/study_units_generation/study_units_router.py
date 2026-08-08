@@ -98,7 +98,7 @@ def _queued_tasks(
     return queued
 
 
-@study_units_router.post("/generate-study-units")
+@study_units_router.post("/generate-study-units", response_model=None)
 async def generate_study_units(
     request_data: StudyUnitsMetadata, user_id: AuthenticatedUserId
 ) -> dict[str, object] | JSONResponse:

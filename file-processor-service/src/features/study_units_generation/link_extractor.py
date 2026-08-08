@@ -61,11 +61,7 @@ def _any_transcript(transcript_list: TranscriptList) -> Transcript | None:
             return transcript
 
     # Fallback: any auto-generated transcript
-    for transcript in transcript_list:
-        if transcript.is_generated:
-            return transcript
-
-    return None
+    return next(iter(transcript_list), None)
 
 
 def get_youtube_transcript_auto(
@@ -77,7 +73,7 @@ def get_youtube_transcript_auto(
         return None
 
     try:
-        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        transcript_list = YouTubeTranscriptApi().list(video_id)
     except (TranscriptsDisabled, NoTranscriptFound):
         return None
 
