@@ -1,51 +1,55 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 import os
-import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+from collections.abc import Generator
 
+import psycopg2
+from psycopg2 import sql
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+from sqlalchemy import create_engine
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 db_name = "users"
 db_user = os.getenv("DB_USER", "postgres")
 db_pass = os.getenv("DB_PASS", "postgres")
-db_host = os.getenv("DB_HOST",  "localhost")
-db_port = os.getenv("DB_PORT", 5455)
-SQLALCHEMY_DATABASE_URL = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+db_host = os.getenv("DB_HOST", "localhost")
+db_port = os.getenv("DB_PORT", "5455")
+SQLALCHEMY_DATABASE_URL = (
+    f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+)
 
-def create_database_if_not_exists():
-    try:
-        # Connect to the default database to check for the target db
-        conn = psycopg2.connect(
-            dbname="postgres",
-            user=db_user,
-            password=db_pass,
-            host=db_host,
-            port=db_port
-        )
-        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        cur = conn.cursor()
 
-        # Check if DB exists
-        cur.execute(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'")
-        exists = cur.fetchone()
+def create_database_if_not_exists() -> None:
+    with psycopg2.connect(
+        dbname="postgres",
+        user=db_user,
+        password=db_pass,
+        host=db_host,
+        port=db_port,
+    ) as connection:
+        connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
-        if not exists:
-            print(f"Database '{db_name}' does not exist. Creating...")
-            cur.execute(f"CREATE DATABASE {db_name}")
-        else:
-            print(f"Database '{db_name}' already exists.")
-    finally:
-        cur.close()
-        conn.close()
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT 1 FROM pg_database WHERE datname = %s", (db_name,)
+            )
+
+            if cursor.fetchone() is None:
+                cursor.execute(
+                    sql.SQL("CREATE DATABASE {}").format(
+                        sql.Identifier(db_name)
+                    )
+                )
 
 
 create_database_if_not_exists()
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
 
-def get_db():
+class Base(DeclarativeBase):
+    pass
+
+
+
+def get_db() -> Generator[Session]:
     db = SessionLocal()
     try:
         yield db
