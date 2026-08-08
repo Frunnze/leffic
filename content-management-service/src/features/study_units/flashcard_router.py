@@ -1,6 +1,6 @@
 import uuid
-from datetime import UTC, datetime
-from typing import cast
+from datetime import datetime
+from typing import TypeGuard, cast
 
 import requests
 from fastapi import APIRouter, HTTPException, status
@@ -10,6 +10,7 @@ from sqlalchemy import ColumnElement, func, or_, select
 from sqlalchemy.orm import Query, Session
 
 from features.study_units.formatting import date_to_str, flashcard_results
+from shared.clock import utc_today
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
 from shared.folder_tree import subfolder_ids
 from shared.models import (
@@ -26,11 +27,16 @@ _DEFAULT_PER_PAGE = 10
 _MISSING_FOLDER = "Folder does not exist!"
 _MISSING_FLASHCARD = "Flashcard does not exist!"
 _SCHEDULER_TIMEOUT_SECONDS = 30
+_NO_CARD_RETURNED = "Scheduler returned no card"
+
+
+def _is_object_dict(value: object) -> TypeGuard[dict[str, object]]:
+    return isinstance(value, dict)
 
 
 def _due_condition() -> ColumnElement[bool]:
     return or_(
-        func.date(Flashcard.next_review) <= datetime.now(UTC).date(),
+        func.date(Flashcard.next_review) <= utc_today(),
         Flashcard.next_review.is_(None),
     )
 
@@ -130,15 +136,13 @@ def review_flashcard(
 def _recorded_review(
     db: Session, card: Flashcard, scheduled: dict[str, object]
 ) -> dict[str, object]:
-    raw_new_card = scheduled.get("new_card")
+    new_card = scheduled.get("new_card")
 
-    if not isinstance(raw_new_card, dict):
+    if not _is_object_dict(new_card):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Scheduler returned no card",
+            detail=_NO_CARD_RETURNED,
         )
-
-    new_card = cast("dict[str, object]", raw_new_card)
 
     # Save new card
     card.fsrs_card = new_card

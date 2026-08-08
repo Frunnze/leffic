@@ -90,7 +90,9 @@ def test_creating_a_folder_needs_a_parent(client: TestClient) -> None:
     assert response.status_code == 422
 
 
-def test_accessing_home_creates_it_when_missing(client: TestClient) -> None:
+def test_accessing_home_creates_it_when_missing(
+    client: TestClient, sessions: sessionmaker[Session]
+) -> None:
     response = client.get(
         "/access-folder/",
         params={"folder_id": "home"},
@@ -99,7 +101,13 @@ def test_accessing_home_creates_it_when_missing(client: TestClient) -> None:
 
     body = cast("dict[str, object]", response.json())
 
+    with sessions() as session:
+        created = session.query(Folder).one()
+
     assert body == {"content": [], "parent_folder_name": "Home"}
+    assert created.id == _HOME_ID
+    assert created.name == "Home"
+    assert created.user_id == _HOME_ID
 
 
 def test_accessing_home_lists_its_contents(
@@ -123,9 +131,12 @@ def test_accessing_home_lists_its_contents(
         headers=authorization(),
     )
 
-    body = cast("dict[str, list[dict[str, str]]]", response.json())
+    body = cast("dict[str, object]", response.json())
+    listed = cast("list[dict[str, str]]", body["content"])
 
-    assert body["content"][0]["type"] == "note"
+    assert set(body) == {"content", "parent_folder_name"}
+    assert body["parent_folder_name"] == "Home"
+    assert listed[0]["type"] == "note"
 
 
 def test_accessing_a_folder_lists_every_kind_of_child(

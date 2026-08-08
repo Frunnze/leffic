@@ -6,34 +6,41 @@
 <title>Sign up · Leffic design</title>
 <link rel="stylesheet" href="shell.css">
 <link rel="stylesheet" href="app-tokens.css">
+<link rel="stylesheet" href="app-controls.css">
 <link rel="stylesheet" href="app-auth.css">
 </head>
 <body class="shell" data-screen="sign-up">
 <main class="shell-stage">
   <div class="frame">
-    <div class="screen screen-fixed">
+    <div class="screen">
       <div class="auth">
         <div class="auth-card">
-          <div class="auth-mark"><svg><use href="#icon-logo"/></svg></div>
-          <h2 class="auth-title">Sign up</h2>
-
-          <div class="field field-tight">
-            <label for="username">Username:</label>
-            <input id="username" type="text" placeholder="Enter your username">
-            <span class="field-error">Username already exists</span>
-          </div>
-
-          <div class="field field-tight">
-            <label for="email">Email:</label>
-            <input id="email" type="email" placeholder="Enter your email">
+          <div class="auth-head">
+            <span class="auth-mark"><svg aria-hidden="true"><use href="#icon-logo"/></svg></span>
+            <h1 class="auth-title">Create your account</h1>
+            <span class="auth-subtitle">Free, and your first deck takes a minute.</span>
           </div>
 
           <div class="field">
-            <label for="password">Password:</label>
-            <input id="password" type="password" placeholder="Enter your password">
+            <label for="username">Username</label>
+            <input class="input" id="username" type="text" autocomplete="username" aria-describedby="username-error">
+            <span class="field-error" id="username-error"><svg aria-hidden="true"><use href="#icon-failure"/></svg>That username is taken.</span>
           </div>
 
-          <button class="auth-submit" type="button">Enter</button>
+          <div class="field">
+            <label for="email">Email</label>
+            <input class="input" id="email" type="email" autocomplete="email">
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <input class="input" id="password" type="password" autocomplete="new-password" aria-describedby="password-hint">
+          </div>
+          <p class="auth-hint" id="password-hint">At least 8 characters.</p>
+
+          <button class="btn btn-primary btn-block btn-lg" type="button">Create account</button>
+
+          <p class="auth-foot">Already have an account? <a href="login.html">Log in</a></p>
         </div>
       </div>
     </div>

@@ -5,39 +5,43 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--tertiary-10);
-  backdrop-filter: blur(4px);
+  padding: var(--space-4);
+  background: rgba(27, 28, 31, 0.45);
 }
 
 .modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
   width: 100%;
-  max-width: 448px;
-  margin: 0 16px;
-  padding: 24px;
-  background: var(--primary);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-2xl);
+  max-width: 440px;
+  padding: var(--space-5);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+}
+
+.modal-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
 .modal-title {
-  margin: 0 0 16px;
-  font-size: 20px;
+  margin: 0;
+  font-size: var(--text-lg);
   font-weight: 600;
 }
 
-.modal-input {
-  width: 100%;
-  margin-bottom: 16px;
-  padding: 8px;
-  border: 1px solid var(--tertiary-40);
-  border-radius: var(--radius-lg);
-  font: inherit;
+.modal-text {
+  color: var(--ink-2);
+  font-size: var(--text-sm);
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .overlay {
@@ -45,100 +49,125 @@
   inset: 0;
   z-index: 51;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--tertiary-80);
+  flex-direction: column;
+  background: var(--surface-2);
   overflow: auto;
 }
 
-.overlay .test-stage {
-  margin-left: 0;
-  background: none;
-}
-
-.overlay-close {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  color: rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-}
-
-.overlay-close:hover {
-  color: #ffffff;
-}
-
-.overlay-close svg {
-  width: 45px;
-  height: 45px;
-}
-
-.toast {
-  position: absolute;
-  right: 20px;
-  z-index: 60;
+.overlay-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  width: 280px;
-  height: 80px;
-  padding: 12px;
-  background: var(--primary);
-  border: 1px solid var(--tertiary-20);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow);
-  color: var(--tertiary-100);
+  gap: var(--space-3);
+  flex: none;
+  min-height: 52px;
+  padding: 0 var(--space-3) 0 var(--space-4);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.overlay-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.overlay-bar .btn-icon {
+  margin-left: auto;
+}
+
+.overlay .review,
+.overlay .test-stage {
+  flex: 1;
+  min-height: 0;
+  padding-left: var(--space-4);
+  background: var(--surface-2);
 }
 
 .toast-stack {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: var(--space-4);
+  right: var(--space-4);
   z-index: 60;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-2);
+  width: 340px;
+  max-width: calc(100% - var(--space-8));
 }
 
-.toast-stack .toast {
-  position: static;
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--ink-3);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+}
+
+.toast-icon {
+  margin-top: 2px;
 }
 
 .toast-text {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
+  gap: 2px;
+  min-width: 0;
+}
+
+.toast-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
 }
 
 .toast-detail {
-  font-size: 12px;
-  color: var(--tertiary-80);
+  color: var(--ink-2);
+  font-size: var(--text-sm);
 }
 
-.toast-icon-success {
-  color: var(--green-100);
+.toast .btn-icon {
+  flex: none;
+  margin-left: auto;
+  min-width: 32px;
+  min-height: 32px;
 }
 
-.toast-icon-failure {
-  color: var(--red-80);
+.toast-progress {
+  border-left-color: var(--brand);
 }
 
-.toast-icon-start {
-  color: var(--secondary);
+.toast-progress .toast-icon {
+  color: var(--brand);
 }
 
-.toast-close {
-  color: var(--tertiary-60);
+.toast-success {
+  border-left-color: var(--success);
+}
+
+.toast-success .toast-icon {
+  color: var(--success);
+}
+
+.toast-failure {
+  border-left-color: var(--danger);
+}
+
+.toast-failure .toast-icon {
+  color: var(--danger);
+}
+
+.toast-action {
+  align-self: flex-start;
+  margin-top: var(--space-1);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brand);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-decoration: underline;
   cursor: pointer;
-}
-
-.toast-close:hover {
-  color: var(--tertiary-100);
-}
-
-.toast-close svg {
-  width: 30px;
-  height: 30px;
 }

@@ -1,37 +1,64 @@
 :root {
-  --primary: #ffffff;
-  --secondary: #3083dc;
-  --secondary-10: rgba(48, 131, 220, 0.1);
-  --tertiary-100: rgba(57, 57, 58, 1);
-  --tertiary-90: rgba(57, 57, 58, 0.9);
-  --tertiary-80: rgba(57, 57, 58, 0.8);
-  --tertiary-70: rgba(57, 57, 58, 0.7);
-  --tertiary-60: rgba(57, 57, 58, 0.6);
-  --tertiary-50: rgba(57, 57, 58, 0.5);
-  --tertiary-40: rgba(57, 57, 58, 0.4);
-  --tertiary-30: rgba(57, 57, 58, 0.3);
-  --tertiary-25: rgba(57, 57, 58, 0.25);
-  --tertiary-20: rgba(57, 57, 58, 0.2);
-  --tertiary-10: rgba(57, 57, 58, 0.1);
-  --tertiary-2: rgba(57, 57, 58, 0.02);
-  --red-60: rgba(208, 0, 0, 0.6);
-  --red-65: rgba(208, 0, 0, 0.65);
-  --red-75: rgba(208, 0, 0, 0.75);
-  --red-80: rgba(208, 0, 0, 0.8);
-  --green-60: rgba(28, 124, 84, 0.6);
-  --green-65: rgba(28, 124, 84, 0.65);
-  --green-95: rgba(28, 124, 84, 0.95);
-  --green-100: rgba(28, 124, 84, 1);
-  --rail-width: 68px;
-  --radius-sm: 2px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 16px;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
-  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.25);
+  --brand: #1a6fd4;
+  --brand-strong: #14559f;
+  --brand-bright: #3083dc;
+  --brand-surface: #edf3fb;
+  --brand-surface-strong: #d9e6f8;
+
+  --ink: #1b1c1f;
+  --ink-2: #4a4d55;
+  --ink-3: #6b6e76;
+  --on-brand: #ffffff;
+
+  --surface: #ffffff;
+  --surface-2: #f7f8fa;
+  --surface-3: #eef0f4;
+
+  --line: #e3e5e9;
+  --line-strong: #8a8f98;
+
+  --again: #b3261e;
+  --again-strong: #8c1d17;
+  --hard: #a05a00;
+  --hard-strong: #7d4600;
+  --good: #1c7c54;
+  --good-strong: #156040;
+  --easy: #0f6b46;
+  --easy-strong: #0b5236;
+
+  --danger: #b3261e;
+  --danger-surface: #fdf0ef;
+  --success: #1c7c54;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 32px;
+  --text-3xl: 48px;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+
+  --shadow-1: 0 1px 2px rgba(27, 28, 31, 0.06);
+  --shadow-2: 0 4px 12px rgba(27, 28, 31, 0.08);
+  --shadow-3: 0 12px 32px rgba(27, 28, 31, 0.14);
+
+  --rail-width: 72px;
+  --control-height: 40px;
+  --measure: 68ch;
 }
 
 .screen {
@@ -39,12 +66,13 @@
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: var(--primary);
-  color: var(--tertiary-100);
+  background: var(--surface);
+  color: var(--ink);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
+  font-size: var(--text-md);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
 }
 
 .screen > * {
@@ -62,6 +90,12 @@
   fill: currentColor;
 }
 
+.screen :focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
 .icon {
   width: 20px;
   height: 20px;
@@ -70,4 +104,27 @@
 .icon-sm {
   width: 18px;
   height: 18px;
+}
+
+.muted {
+  color: var(--ink-3);
+}
+
+.section-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

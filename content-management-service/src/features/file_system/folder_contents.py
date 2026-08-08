@@ -52,7 +52,7 @@ def _flashcard_decks(
 ) -> list[ContentEntry]:
     rows = (
         db.query(FlashcardDeck)
-        .join(Folder, FlashcardDeck.folder_id == Folder.id)
+        .join(Folder)
         .filter(Folder.id == folder_id, Folder.user_id == owner_id)
         .all()
     )
@@ -73,7 +73,7 @@ def _tests(
 ) -> list[ContentEntry]:
     rows = (
         db.query(Test)
-        .join(Folder, Test.folder_id == Folder.id)
+        .join(Folder)
         .filter(Folder.id == folder_id, Folder.user_id == owner_id)
         .all()
     )
@@ -94,7 +94,7 @@ def _files(
 ) -> list[ContentEntry]:
     rows = (
         db.query(File)
-        .join(Folder, File.folder_id == Folder.id)
+        .join(Folder)
         .filter(Folder.id == folder_id, Folder.user_id == owner_id)
         .all()
     )

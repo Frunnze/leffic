@@ -16,77 +16,103 @@
   <div class="frame">
     <div class="screen">
       <div class="page">
-        <nav class="rail">
+      <nav class="rail" aria-label="Main">
+        <div>
+          <div class="rail-logo"><svg aria-hidden="true"><use href="#icon-logo"/></svg></div>
           <ul class="rail-list">
-            <li class="rail-logo"><svg><use href="#icon-logo"/></svg></li>
-            <li><a class="rail-item" href="home.html"><svg class="icon"><use href="#icon-home"/></svg>Home</a></li>
-            <li><button class="rail-item" type="button"><svg class="icon"><use href="#icon-ask"/></svg><span>Ask</span></button></li>
+            <li><a class="rail-item" href="home.html" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#icon-home"/></svg>Home</a></li>
+            <li><button class="rail-item" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-ask"/></svg>Ask</button></li>
           </ul>
-          <div class="rail-foot">
-            <svg class="icon"><use href="#icon-profile"/></svg>
-            <span>Profile</span>
-          </div>
-        </nav>
-
-        <div class="folder">
-          <div class="folder-head">
-            <svg><use href="#icon-folderOpen"/></svg>
-            <span class="folder-name">Home</span>
-          </div>
-
-          <div class="folder-toolbar">
-            <div class="folder-actions">
-              <div class="folder-action">
-                <button class="btn btn-solid" type="button"><svg class="icon-sm"><use href="#icon-study"/></svg><span>Study</span></button>
-                <div class="dropdown dropdown-wide">
-                  <div class="dropdown-item"><svg class="icon-sm"><use href="#icon-flashcards"/></svg>Flashcards</div>
-                  <div class="dropdown-item"><svg class="icon-sm"><use href="#icon-test"/></svg>Tests</div>
-                </div>
-              </div>
-              <div class="folder-action">
-                <button class="btn" type="button"><svg class="icon-sm"><use href="#icon-aiImport"/></svg><span>AI Import</span></button>
-              </div>
-              <div class="folder-action">
-                <button class="btn" type="button"><svg class="icon-sm"><use href="#icon-newFolder"/></svg><span>New folder</span></button>
+        </div>
+        <div class="rail-foot-wrap">
+          <button class="rail-foot" type="button" aria-expanded="false">
+            <svg class="icon" aria-hidden="true"><use href="#icon-profile"/></svg>Profile
+          </button>
+        </div>
+      </nav>
+      <div class="folder">
+        <header class="folder-head">
+          <div class="folder-title-row">
+            <h1 class="folder-name">Home</h1>
+          <div class="folder-actions">
+            <div class="folder-action">
+              <button class="btn btn-primary" type="button" aria-expanded="true"><svg class="icon-sm" aria-hidden="true"><use href="#icon-study"/></svg>Study</button>
+              <div class="dropdown">
+                <button class="dropdown-item" type="button"><svg class="icon-sm" aria-hidden="true"><use href="#icon-flashcards"/></svg>Flashcards<span class="dropdown-hint">12 due</span></button>
+                <button class="dropdown-item" type="button"><svg class="icon-sm" aria-hidden="true"><use href="#icon-test"/></svg>Test<span class="dropdown-hint">7 due</span></button>
               </div>
             </div>
-            <button class="btn" type="button"><svg class="icon-sm"><use href="#icon-dots"/></svg></button>
+            <div class="folder-action">
+              <button class="btn" type="button" aria-expanded="false"><svg class="icon-sm" aria-hidden="true"><use href="#icon-aiImport"/></svg>Import</button>
+            </div>
+            <div class="folder-action">
+              <button class="btn btn-quiet btn-icon" type="button" aria-label="Folder options"><svg class="icon-sm" aria-hidden="true"><use href="#icon-dots"/></svg></button>
+            </div>
           </div>
-
-          <hr class="divider">
-
-          <div class="units">
-            <div class="unit">
-              <a class="unit-link" href="home.html">
-                <span class="unit-main">
-                  <svg class="icon"><use href="#icon-folder"/></svg>
-                  <span class="unit-name">Neuroscience</span>
-                </span>
-                <button class="unit-menu-btn" type="button"><svg class="icon-sm"><use href="#icon-dots"/></svg></button>
-              </a>
+          </div>
+        </header>
+        <section class="due">
+          <div class="due-head">
+            <h2 class="section-label">Due today</h2>
+            <span class="due-caption">Updated just now</span>
+          </div>
+          <div class="due-grid">
+            <div class="due-card">
+              <p class="due-count"><span class="due-number">12</span> <span class="due-kind">flashcards</span></p>
+              <div class="due-track"><div class="due-fill" style="width: 60%"></div></div>
+              <p class="due-caption">18 of 30 reviewed</p>
             </div>
-
-            <div class="unit">
-              <a class="unit-link" href="flashcards-question.html">
-                <span class="unit-main">
-                  <svg class="icon"><use href="#icon-flashcards"/></svg>
-                  <span class="unit-name">Action potentials — deck</span>
-                </span>
-                <button class="unit-menu-btn" type="button"><svg class="icon-sm"><use href="#icon-dots"/></svg></button>
-              </a>
+            <div class="due-card">
+              <p class="due-count"><span class="due-number">7</span> <span class="due-kind">test items</span></p>
+              <div class="due-track"><div class="due-fill" style="width: 77%"></div></div>
+              <p class="due-caption">23 of 30 answered</p>
             </div>
-
-            <div class="unit">
-              <a class="unit-link" href="test-question.html">
-                <span class="unit-main">
-                  <svg class="icon"><use href="#icon-test"/></svg>
-                  <span class="unit-name">Action potentials — test</span>
-                </span>
-                <button class="unit-menu-btn" type="button"><svg class="icon-sm"><use href="#icon-dots"/></svg></button>
-              </a>
+            <div class="due-card is-clear">
+              <p class="due-count"><span class="due-number">0</span> <span class="due-kind">notes</span></p>
+              <div class="due-track"><div class="due-fill" style="width: 100%"></div></div>
+              <p class="due-caption">All 13 read</p>
             </div>
+          </div>
+        </section>
+
+        <section>
+        <div class="units">
+          <div class="unit">
+            <a class="unit-link" href="home.html">
+              <svg class="icon unit-icon" aria-hidden="true"><use href="#icon-folder"/></svg>
+              <span class="unit-body">
+                <span class="unit-name">Neuroscience</span>
+                <span class="unit-meta">6 items · edited 2 days ago</span>
+              </span>
+              
+            </a>
+            <button class="btn btn-quiet btn-icon unit-menu" type="button" aria-label="More actions for Neuroscience"><svg class="icon-sm" aria-hidden="true"><use href="#icon-dots"/></svg></button>
+          </div>
+          <div class="unit">
+            <a class="unit-link" href="flashcards-question.html">
+              <svg class="icon unit-icon" aria-hidden="true"><use href="#icon-flashcards"/></svg>
+              <span class="unit-body">
+                <span class="unit-name">Action potentials — deck</span>
+                <span class="unit-meta">30 cards</span>
+              </span>
+              <span class="unit-badge">12 due</span>
+            </a>
+            <button class="btn btn-quiet btn-icon unit-menu" type="button" aria-label="More actions for Action potentials — deck"><svg class="icon-sm" aria-hidden="true"><use href="#icon-dots"/></svg></button>
+          </div>
+          <div class="unit">
+            <a class="unit-link" href="test-question.html">
+              <svg class="icon unit-icon" aria-hidden="true"><use href="#icon-test"/></svg>
+              <span class="unit-body">
+                <span class="unit-name">Action potentials — test</span>
+                <span class="unit-meta">30 questions</span>
+              </span>
+              <span class="unit-badge">7 due</span>
+            </a>
+            <button class="btn btn-quiet btn-icon unit-menu" type="button" aria-label="More actions for Action potentials — test"><svg class="icon-sm" aria-hidden="true"><use href="#icon-dots"/></svg></button>
           </div>
         </div>
+        </section>
+      </div>
       </div>
     </div>
   </div>

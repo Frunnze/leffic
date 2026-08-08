@@ -1,137 +1,145 @@
 .test-stage {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   min-height: 100%;
-  padding: 40px;
-  margin-left: var(--rail-width);
-  background: var(--secondary-10);
+  padding: var(--space-4);
+  padding-left: calc(var(--rail-width) + var(--space-4));
+  background: var(--surface-2);
 }
 
-@container (min-width: 1024px) {
-  .test-stage {
-    padding-left: 120px;
-    padding-right: 120px;
-  }
+.test-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 720px;
+  padding: var(--space-4) 0;
 }
 
 .test-card {
   display: flex;
+  flex: 0 1 auto;
   flex-direction: column;
-  justify-content: center;
-  gap: 20px;
-  width: 100%;
-  min-height: 80%;
-  padding: 32px 20px;
-  background: var(--primary);
-  border: 1px solid var(--tertiary-20);
+  gap: var(--space-5);
+  padding: var(--space-6) var(--space-5);
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-1);
 }
 
 .test-question {
-  font-size: 20px;
+  margin: 0;
+  font-size: var(--text-lg);
   font-weight: 600;
-  text-align: center;
+  line-height: 1.4;
+  text-wrap: balance;
 }
 
 .test-options {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  text-align: center;
+  gap: var(--space-2);
 }
 
 .test-option {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 20px;
-  border: 1px solid var(--tertiary-20);
-  border-radius: var(--radius-sm);
+  gap: var(--space-3);
+  min-height: 52px;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-md);
+  text-align: left;
   cursor: pointer;
 }
 
 .test-option:hover {
-  border-color: var(--secondary);
+  border-color: var(--brand);
+  background: var(--brand-surface);
 }
 
-.test-option.is-chosen {
-  border: 2px solid var(--secondary);
+.test-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.test-option[aria-pressed="true"] {
+  border-color: var(--brand);
+  background: var(--brand-surface);
+  box-shadow: inset 0 0 0 1px var(--brand);
+  font-weight: 500;
+}
+
+.test-option[aria-pressed="true"] .test-key {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--on-brand);
 }
 
 .test-nav {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 40px;
-  color: var(--primary);
-}
-
-.test-nav-btn {
-  width: 160px;
-  padding: 12px 24px;
-  background: var(--secondary);
-  border: 1px solid var(--secondary);
-  border-radius: 4px;
-  box-shadow: var(--shadow);
-  text-align: center;
-  cursor: pointer;
+  justify-content: space-between;
+  gap: var(--space-3);
 }
 
 .test-counter {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 120px;
-  padding: 12px 0;
-  background: var(--primary);
-  border: 1px solid var(--secondary);
-  border-radius: 9999px;
-  box-shadow: var(--shadow);
-  color: var(--secondary);
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
 }
 
 .test-result {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-}
-
-.test-result-figures {
-  font-size: 30px;
+  justify-content: center;
+  gap: var(--space-5);
+  padding: var(--space-6) 0;
   text-align: center;
 }
 
-.test-result-figures strong {
-  display: block;
-  font-size: 36px;
-  font-weight: 700;
+.test-score {
+  font-size: var(--text-3xl);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
 }
 
-.test-result-figures small {
-  display: block;
-  font-size: 24px;
+.test-score-detail {
+  color: var(--ink-2);
+  font-size: var(--text-md);
 }
 
-.test-restart {
-  width: 160px;
-  padding: 12px 24px;
-  background: var(--secondary);
-  border: 1px solid var(--primary);
-  border-radius: 4px;
-  box-shadow: var(--shadow);
-  color: var(--primary);
-  text-align: center;
-  cursor: pointer;
+.test-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
 }
 
 .test-empty {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  font-size: 20px;
-  font-weight: 500;
+  gap: var(--space-3);
+  padding: var(--space-6) 0;
+  text-align: center;
 }

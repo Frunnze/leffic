@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="app-rail.css">
 <link rel="stylesheet" href="app-controls.css">
 <link rel="stylesheet" href="app-folder.css">
+<link rel="stylesheet" href="app-units.css">
 <link rel="stylesheet" href="app-flashcards.css">
 <link rel="stylesheet" href="app-overlays.css">
 </head>
@@ -17,41 +18,101 @@
   <div class="frame">
     <div class="screen screen-fixed">
       <div class="page">
-        <nav class="rail">
+      <nav class="rail" aria-label="Main">
+        <div>
+          <div class="rail-logo"><svg aria-hidden="true"><use href="#icon-logo"/></svg></div>
           <ul class="rail-list">
-            <li class="rail-logo"><svg><use href="#icon-logo"/></svg></li>
-            <li><a class="rail-item" href="home.html"><svg class="icon"><use href="#icon-home"/></svg>Home</a></li>
-            <li><button class="rail-item" type="button"><svg class="icon"><use href="#icon-ask"/></svg><span>Ask</span></button></li>
+            <li><a class="rail-item" href="home.html" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#icon-home"/></svg>Home</a></li>
+            <li><button class="rail-item" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-ask"/></svg>Ask</button></li>
           </ul>
-          <div class="rail-foot">
-            <svg class="icon"><use href="#icon-profile"/></svg>
-            <span>Profile</span>
+        </div>
+        <div class="rail-foot-wrap">
+          <button class="rail-foot" type="button" aria-expanded="false">
+            <svg class="icon" aria-hidden="true"><use href="#icon-profile"/></svg>Profile
+          </button>
+        </div>
+      </nav>
+      <div class="folder">
+        <header class="folder-head">
+          <div class="folder-title-row">
+            <h1 class="folder-name">Home</h1>
+          <div class="folder-actions">
+            <div class="folder-action">
+              <button class="btn btn-primary" type="button" aria-expanded="false"><svg class="icon-sm" aria-hidden="true"><use href="#icon-study"/></svg>Study</button>
+            </div>
+            <div class="folder-action">
+              <button class="btn" type="button" aria-expanded="false"><svg class="icon-sm" aria-hidden="true"><use href="#icon-aiImport"/></svg>Import</button>
+            </div>
+            <div class="folder-action">
+              <button class="btn btn-quiet btn-icon" type="button" aria-label="Folder options"><svg class="icon-sm" aria-hidden="true"><use href="#icon-dots"/></svg></button>
+            </div>
           </div>
-        </nav>
+          </div>
+        </header>
+        <section>
+        <div class="units">
+          <div class="unit">
+            <a class="unit-link" href="home.html">
+              <svg class="icon unit-icon" aria-hidden="true"><use href="#icon-folder"/></svg>
+              <span class="unit-body">
+                <span class="unit-name">Neuroscience</span>
+                <span class="unit-meta">6 items · edited 2 days ago</span>
+              </span>
+              
+            </a>
+            <button class="btn btn-quiet btn-icon unit-menu" type="button" aria-label="More actions for Neuroscience"><svg class="icon-sm" aria-hidden="true"><use href="#icon-dots"/></svg></button>
+          </div>
+          <div class="unit">
+            <a class="unit-link" href="flashcards-question.html">
+              <svg class="icon unit-icon" aria-hidden="true"><use href="#icon-flashcards"/></svg>
+              <span class="unit-body">
+                <span class="unit-name">Action potentials — deck</span>
+                <span class="unit-meta">30 cards</span>
+              </span>
+              <span class="unit-badge">12 due</span>
+            </a>
+            <button class="btn btn-quiet btn-icon unit-menu" type="button" aria-label="More actions for Action potentials — deck"><svg class="icon-sm" aria-hidden="true"><use href="#icon-dots"/></svg></button>
+          </div>
+          <div class="unit">
+            <a class="unit-link" href="test-question.html">
+              <svg class="icon unit-icon" aria-hidden="true"><use href="#icon-test"/></svg>
+              <span class="unit-body">
+                <span class="unit-name">Action potentials — test</span>
+                <span class="unit-meta">30 questions</span>
+              </span>
+              <span class="unit-badge">7 due</span>
+            </a>
+            <button class="btn btn-quiet btn-icon unit-menu" type="button" aria-label="More actions for Action potentials — test"><svg class="icon-sm" aria-hidden="true"><use href="#icon-dots"/></svg></button>
+          </div>
+        </div>
+        </section>
+      </div>
 
-        <div class="folder">
-          <div class="folder-head">
-            <svg><use href="#icon-folderOpen"/></svg>
-            <span class="folder-name">Home</span>
+      <div class="overlay" role="dialog" aria-modal="true" aria-label="Mixed flashcard review">
+        <div class="overlay-bar">
+          <span class="overlay-title">Mixed review · Home</span>
+          <button class="btn btn-quiet btn-icon" type="button" aria-label="End review"><svg class="icon-sm" aria-hidden="true"><use href="#icon-closePlain"/></svg></button>
+        </div>
+        <div class="review">
+          <div class="review-inner">
+            <div class="review-progress">
+              <div class="review-progress-meta">
+                <span>Reviewed 21 of 50</span>
+                <span>29 left</span>
+              </div>
+              <div class="review-track"><div class="review-fill" style="width: 42%"></div></div>
+            </div>
+
+            <div class="flashcard">
+              <div class="flashcard-face">
+                <p class="flashcard-prompt">Which ion channel opens first during depolarisation?</p>
+              </div>
+            </div>
+
+            <button class="btn btn-primary btn-block btn-lg" type="button">Show answer <span class="muted">· Space</span></button>
           </div>
         </div>
       </div>
-
-      <div class="overlay">
-        <div class="overlay-close"><svg><use href="#icon-close"/></svg></div>
-
-        <div class="flashcard">
-          <div class="flashcard-progress">
-            <div class="flashcard-progress-bar" style="width: 42%"></div>
-            <span class="flashcard-progress-count">21/50</span>
-          </div>
-
-          <div class="flashcard-body">
-            <span class="flashcard-face">Which ion channel opens first during depolarisation?</span>
-          </div>
-
-          <button class="flashcard-show-answer" type="button">Show answer</button>
-        </div>
       </div>
     </div>
   </div>

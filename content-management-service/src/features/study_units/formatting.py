@@ -1,7 +1,7 @@
 import secrets
 from collections.abc import Sequence
 from datetime import datetime
-from typing import cast
+from typing import TypeGuard
 
 from shared.models import Flashcard
 
@@ -9,6 +9,10 @@ _DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 _CORRECT_OPTION_ID = 0
 _CORRECT = 1
 _INCORRECT = 0
+
+
+def _is_object_list(value: object) -> TypeGuard[list[object]]:
+    return isinstance(value, list)
 
 
 def date_to_str(dateobj: datetime) -> str:
@@ -43,12 +47,11 @@ def prepare_content(content: dict[str, object]) -> dict[str, object]:
     ]
 
     false_options = content.get("false_options")
-    if isinstance(false_options, list):
+
+    if _is_object_list(false_options):
         options.extend(
             {"id": index + len(true_options), "option": option}
-            for index, option in enumerate(
-                cast("list[object]", false_options)
-            )
+            for index, option in enumerate(false_options)
         )
 
     secrets.SystemRandom().shuffle(options)

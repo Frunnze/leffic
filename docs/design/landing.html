@@ -6,6 +6,7 @@
 <title>Landing page · Leffic design</title>
 <link rel="stylesheet" href="shell.css">
 <link rel="stylesheet" href="app-tokens.css">
+<link rel="stylesheet" href="app-controls.css">
 <link rel="stylesheet" href="app-landing.css">
 </head>
 <body class="shell" data-screen="landing">
@@ -13,23 +14,36 @@
   <div class="frame">
     <div class="screen">
       <div class="landing">
-        <div class="landing-mark"><svg><use href="#icon-logo"/></svg></div>
-        <span class="landing-name">Leffic</span>
-        <span class="landing-tagline">Learn efficiently</span>
-        <button class="landing-cta" type="button">Try</button>
+        <header class="landing-bar">
+          <span class="landing-wordmark"><svg aria-hidden="true"><use href="#icon-logo"/></svg>Leffic</span>
+          <a class="btn" href="login.html">Log in</a>
+        </header>
+
+        <div class="landing-hero">
+          <h1 class="landing-title">Learn it once. Remember it for good.</h1>
+          <p class="landing-lede">Turn any file, link or topic into flashcards, notes and a test — then review them exactly when you're about to forget.</p>
+          <div class="landing-cta">
+            <a class="btn btn-primary btn-lg" href="sign-up.html">Start free</a>
+            <a class="btn btn-lg" href="login.html">Log in</a>
+          </div>
+          <p class="landing-note">No card needed. Your first deck takes about a minute.</p>
+        </div>
 
         <div class="landing-features">
           <div class="feature">
-            <span class="feature-title">Scientific learning methods</span>
-            <span>Use evidence-based learning methods such as spaced repetition, active recall, and interleaving.</span>
+            <span class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-flashcards"/></svg></span>
+            <span class="feature-title">Proven methods</span>
+            <span class="feature-text">Spaced repetition, active recall and interleaving — the study techniques with the strongest evidence behind them.</span>
           </div>
           <div class="feature">
-            <span class="feature-title">AI Automation</span>
-            <span>Generate flashcards, notes and tests with AI from imported files, links, topics, or text.</span>
+            <span class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-aiImport"/></svg></span>
+            <span class="feature-title">Import anything</span>
+            <span class="feature-text">Drop in a PDF, paste a link or name a topic. You get flashcards, a note and a test back.</span>
           </div>
           <div class="feature">
-            <span class="feature-title">Review tools</span>
-            <span>Review files, flashcards, tests, and notes. Reduce review time by more than 20% with state-of-the-art scheduling algorithms.</span>
+            <span class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-study"/></svg></span>
+            <span class="feature-title">Review less</span>
+            <span class="feature-text">Scheduling decides what you see today, so you spend your time on what you're about to forget.</span>
           </div>
         </div>
       </div>

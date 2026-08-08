@@ -14,37 +14,37 @@
 <main class="shell-stage">
   <div class="frame">
     <div class="screen">
-      <nav class="rail">
-        <ul class="rail-list">
-          <li class="rail-logo"><svg><use href="#icon-logo"/></svg></li>
-          <li><a class="rail-item" href="home.html"><svg class="icon"><use href="#icon-home"/></svg>Home</a></li>
-          <li><button class="rail-item" type="button"><svg class="icon"><use href="#icon-ask"/></svg><span>Ask</span></button></li>
-        </ul>
-        <div class="rail-foot">
-          <svg class="icon"><use href="#icon-profile"/></svg>
-          <span>Profile</span>
+      <nav class="rail" aria-label="Main">
+        <div>
+          <div class="rail-logo"><svg aria-hidden="true"><use href="#icon-logo"/></svg></div>
+          <ul class="rail-list">
+            <li><a class="rail-item" href="home.html"><svg class="icon" aria-hidden="true"><use href="#icon-home"/></svg>Home</a></li>
+            <li><button class="rail-item" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-ask"/></svg>Ask</button></li>
+          </ul>
+        </div>
+        <div class="rail-foot-wrap">
+          <button class="rail-foot" type="button" aria-expanded="false">
+            <svg class="icon" aria-hidden="true"><use href="#icon-profile"/></svg>Profile
+          </button>
         </div>
       </nav>
-
       <div class="test-stage">
-        <div class="test-card">
-          <span class="test-question">Which ion rushes into the neuron during the rising phase of an action potential?</span>
-          <hr class="divider">
+        <div class="test-inner">
+            <div class="test-card">
+              <h1 class="test-question">Which ion rushes into the neuron during the rising phase of an action potential?</h1>
+              <div class="test-options">
+              <button class="test-option" type="button" aria-pressed="false"><span class="test-key">A</span>Potassium</button>
+              <button class="test-option" type="button" aria-pressed="true"><span class="test-key">B</span>Sodium</button>
+              <button class="test-option" type="button" aria-pressed="false"><span class="test-key">C</span>Chloride</button>
+              <button class="test-option" type="button" aria-pressed="false"><span class="test-key">D</span>Calcium</button>
+              </div>
+            </div>
 
-          <div class="test-options">
-            <div class="test-option">Potassium</div>
-            <div class="test-option is-chosen">Sodium</div>
-            <div class="test-option">Chloride</div>
-            <div class="test-option">Calcium</div>
-          </div>
-
-          <hr class="divider">
-
-          <div class="test-nav">
-            <div class="test-nav-btn">Back</div>
-            <div class="test-counter">3/24</div>
-            <div class="test-nav-btn">Next</div>
-          </div>
+            <div class="test-nav">
+              <button class="btn" type="button">Back</button>
+              <span class="test-counter">3 of 24</span>
+              <button class="btn btn-primary" type="button">Next</button>
+            </div>
         </div>
       </div>
     </div>

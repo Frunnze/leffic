@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="app-rail.css">
 <link rel="stylesheet" href="app-controls.css">
 <link rel="stylesheet" href="app-folder.css">
+<link rel="stylesheet" href="app-units.css">
 <link rel="stylesheet" href="app-chat.css">
 </head>
 <body class="shell" data-screen="chatbot">
@@ -16,63 +17,108 @@
   <div class="frame">
     <div class="screen screen-fixed">
       <div class="page">
-        <nav class="rail">
+      <nav class="rail" aria-label="Main">
+        <div>
+          <div class="rail-logo"><svg aria-hidden="true"><use href="#icon-logo"/></svg></div>
           <ul class="rail-list">
-            <li class="rail-logo"><svg><use href="#icon-logo"/></svg></li>
-            <li><a class="rail-item" href="home.html"><svg class="icon"><use href="#icon-home"/></svg>Home</a></li>
-            <li><button class="rail-item" type="button"><svg class="icon"><use href="#icon-ask"/></svg><span>Ask</span></button></li>
+            <li><a class="rail-item" href="home.html"><svg class="icon" aria-hidden="true"><use href="#icon-home"/></svg>Home</a></li>
+            <li><button class="rail-item" type="button" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#icon-ask"/></svg>Ask</button></li>
           </ul>
-          <div class="rail-foot">
-            <svg class="icon"><use href="#icon-profile"/></svg>
-            <span>Profile</span>
-          </div>
-        </nav>
-
-        <div class="folder">
-          <div class="folder-head">
-            <svg><use href="#icon-folderOpen"/></svg>
-            <span class="folder-name">Home</span>
-          </div>
-
-          <div class="folder-toolbar">
-            <div class="folder-actions">
-              <div class="folder-action">
-                <button class="btn btn-solid" type="button"><svg class="icon-sm"><use href="#icon-study"/></svg><span>Study</span></button>
-              </div>
-              <div class="folder-action">
-                <button class="btn" type="button"><svg class="icon-sm"><use href="#icon-aiImport"/></svg><span>AI Import</span></button>
-              </div>
+        </div>
+        <div class="rail-foot-wrap">
+          <button class="rail-foot" type="button" aria-expanded="false">
+            <svg class="icon" aria-hidden="true"><use href="#icon-profile"/></svg>Profile
+          </button>
+        </div>
+      </nav>
+      <div class="folder">
+        <header class="folder-head">
+          <div class="folder-title-row">
+            <h1 class="folder-name">Home</h1>
+          <div class="folder-actions">
+            <div class="folder-action">
+              <button class="btn btn-primary" type="button" aria-expanded="false"><svg class="icon-sm" aria-hidden="true"><use href="#icon-study"/></svg>Study</button>
+            </div>
+            <div class="folder-action">
+              <button class="btn" type="button" aria-expanded="false"><svg class="icon-sm" aria-hidden="true"><use href="#icon-aiImport"/></svg>Import</button>
+            </div>
+            <div class="folder-action">
+              <button class="btn btn-quiet btn-icon" type="button" aria-label="Folder options"><svg class="icon-sm" aria-hidden="true"><use href="#icon-dots"/></svg></button>
             </div>
           </div>
-
-          <hr class="divider">
+          </div>
+        </header>
+        <section>
+        <div class="units">
+          <div class="unit">
+            <a class="unit-link" href="home.html">
+              <svg class="icon unit-icon" aria-hidden="true"><use href="#icon-folder"/></svg>
+              <span class="unit-body">
+                <span class="unit-name">Neuroscience</span>
+                <span class="unit-meta">6 items · edited 2 days ago</span>
+              </span>
+              
+            </a>
+            <button class="btn btn-quiet btn-icon unit-menu" type="button" aria-label="More actions for Neuroscience"><svg class="icon-sm" aria-hidden="true"><use href="#icon-dots"/></svg></button>
+          </div>
+          <div class="unit">
+            <a class="unit-link" href="flashcards-question.html">
+              <svg class="icon unit-icon" aria-hidden="true"><use href="#icon-flashcards"/></svg>
+              <span class="unit-body">
+                <span class="unit-name">Action potentials — deck</span>
+                <span class="unit-meta">30 cards</span>
+              </span>
+              <span class="unit-badge">12 due</span>
+            </a>
+            <button class="btn btn-quiet btn-icon unit-menu" type="button" aria-label="More actions for Action potentials — deck"><svg class="icon-sm" aria-hidden="true"><use href="#icon-dots"/></svg></button>
+          </div>
+          <div class="unit">
+            <a class="unit-link" href="test-question.html">
+              <svg class="icon unit-icon" aria-hidden="true"><use href="#icon-test"/></svg>
+              <span class="unit-body">
+                <span class="unit-name">Action potentials — test</span>
+                <span class="unit-meta">30 questions</span>
+              </span>
+              <span class="unit-badge">7 due</span>
+            </a>
+            <button class="btn btn-quiet btn-icon unit-menu" type="button" aria-label="More actions for Action potentials — test"><svg class="icon-sm" aria-hidden="true"><use href="#icon-dots"/></svg></button>
+          </div>
         </div>
+        </section>
       </div>
 
-      <aside class="chatbot">
+      <aside class="chatbot" aria-label="Ask">
         <div class="chatbot-head">
-          <svg><use href="#icon-chatHeader"/></svg>
-          <span>Ask</span>
-          <div class="chatbot-close"><svg><use href="#icon-closePlain"/></svg></div>
+          <span class="chatbot-title"><svg aria-hidden="true"><use href="#icon-chatHeader"/></svg>Ask</span>
+          <button class="btn btn-quiet btn-icon" type="button" aria-label="Close Ask"><svg class="icon-sm" aria-hidden="true"><use href="#icon-closePlain"/></svg></button>
         </div>
 
         <div class="chatbot-log">
-          <div class="chat-msg chat-msg-assistant">
-            <div class="chat-bubble chat-bubble-assistant">Hi, how can I help you?</div>
+          <div class="chat-msg">
+            <span class="chat-who">Leffic</span>
+            <div class="chat-bubble chat-bubble-assistant">Ask me anything about the material in this folder.</div>
           </div>
           <div class="chat-msg chat-msg-user">
+            <span class="chat-who">You</span>
             <div class="chat-bubble chat-bubble-user">What triggers an action potential?</div>
           </div>
-          <div class="chat-msg chat-msg-assistant">
-            <div class="chat-bubble chat-bubble-assistant">A depolarisation that pushes the membrane past its threshold, roughly −55 mV.</div>
+          <div class="chat-msg">
+            <span class="chat-who">Leffic</span>
+            <div class="chat-bubble chat-bubble-assistant">A depolarisation that pushes the membrane past its threshold, roughly −55 mV. Below that the channels stay shut and nothing fires.</div>
           </div>
         </div>
 
+        <div class="chat-suggestions">
+          <button class="chat-suggestion" type="button">Explain the refractory period</button>
+          <button class="chat-suggestion" type="button">Quiz me on this</button>
+        </div>
+
         <div class="chatbot-compose">
-          <input type="text" placeholder="Ask anything ...">
-          <button class="chatbot-send" type="button">Send</button>
+          <input class="input" type="text" aria-label="Message" placeholder="Ask a question">
+          <button class="btn btn-primary" type="button">Send</button>
         </div>
       </aside>
+      </div>
     </div>
   </div>
 </main>

@@ -5,8 +5,6 @@ from sqlalchemy.orm import aliased
 
 from shared.models import Folder
 
-_SUBFOLDERS_CTE = "subfolders"
-
 
 def subfolder_ids(
     folder_id: str, user_id: str | None = None
@@ -19,7 +17,7 @@ def subfolder_ids(
     folder_cte = (
         select(Folder.id)
         .where(*conditions)
-        .cte(name=_SUBFOLDERS_CTE, recursive=True)
+        .cte(recursive=True)
     )
     subfolder = aliased(Folder)
     recursive_cte = folder_cte.union_all(

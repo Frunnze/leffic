@@ -6,36 +6,36 @@
 <title>Login · Leffic design</title>
 <link rel="stylesheet" href="shell.css">
 <link rel="stylesheet" href="app-tokens.css">
+<link rel="stylesheet" href="app-controls.css">
 <link rel="stylesheet" href="app-auth.css">
 </head>
 <body class="shell" data-screen="login">
 <main class="shell-stage">
   <div class="frame">
-    <div class="screen screen-fixed">
+    <div class="screen">
       <div class="auth">
-        <div class="auth-card auth-card-tall">
-          <div class="auth-mark"><svg><use href="#icon-logo"/></svg></div>
-          <h2 class="auth-title">Login</h2>
+        <div class="auth-card">
+          <div class="auth-head">
+            <span class="auth-mark"><svg aria-hidden="true"><use href="#icon-logo"/></svg></span>
+            <h1 class="auth-title">Log in to Leffic</h1>
+            <span class="auth-subtitle">Pick up where you left off.</span>
+          </div>
+
+          <div class="auth-alert"><svg aria-hidden="true"><use href="#icon-failure"/></svg><span>That email and password don't match. Check both and try again.</span></div>
 
           <div class="field">
-            <label for="email">Email:</label>
-            <input id="email" type="email" placeholder="Enter your email">
+            <label for="email">Email</label>
+            <input class="input" id="email" type="email" autocomplete="email">
           </div>
 
           <div class="field">
-            <label for="password">Password:</label>
-            <input id="password" type="password" placeholder="Enter your password">
-            <span class="field-error">Invalid password or email</span>
+            <label for="password">Password</label>
+            <input class="input" id="password" type="password" autocomplete="current-password">
           </div>
 
-          <button class="auth-submit" type="button">Sign in</button>
+          <button class="btn btn-primary btn-block btn-lg" type="button">Log in</button>
 
-          <div class="auth-or">
-            <hr>
-            <span>or</span>
-          </div>
-
-          <span class="auth-link">Sign up</span>
+          <p class="auth-foot">New here? <a href="sign-up.html">Create an account</a></p>
         </div>
       </div>
     </div>

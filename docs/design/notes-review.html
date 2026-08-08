@@ -14,24 +14,26 @@
 <main class="shell-stage">
   <div class="frame">
     <div class="screen">
-      <nav class="rail">
-        <ul class="rail-list">
-          <li class="rail-logo"><svg><use href="#icon-logo"/></svg></li>
-          <li><a class="rail-item" href="home.html"><svg class="icon"><use href="#icon-home"/></svg>Home</a></li>
-          <li><button class="rail-item" type="button"><svg class="icon"><use href="#icon-ask"/></svg><span>Ask</span></button></li>
-        </ul>
-        <div class="rail-foot">
-          <svg class="icon"><use href="#icon-profile"/></svg>
-          <span>Profile</span>
+      <nav class="rail" aria-label="Main">
+        <div>
+          <div class="rail-logo"><svg aria-hidden="true"><use href="#icon-logo"/></svg></div>
+          <ul class="rail-list">
+            <li><a class="rail-item" href="home.html"><svg class="icon" aria-hidden="true"><use href="#icon-home"/></svg>Home</a></li>
+            <li><button class="rail-item" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-ask"/></svg>Ask</button></li>
+          </ul>
+        </div>
+        <div class="rail-foot-wrap">
+          <button class="rail-foot" type="button" aria-expanded="false">
+            <svg class="icon" aria-hidden="true"><use href="#icon-profile"/></svg>Profile
+          </button>
         </div>
       </nav>
-
       <div class="notes-stage">
-        <div class="note-card">
-          <span class="note-title">Action potentials — note</span>
-          <br>
-          <hr class="divider">
-          <br>
+        <article class="note-card">
+          <header class="note-head">
+            <h1 class="note-title">Action potentials</h1>
+            <span class="note-meta">4 min read · generated from action-potentials.pdf</span>
+          </header>
           <div class="note-body">
             <h2>Resting state</h2>
             <p>A neuron at rest sits near −70 mV. The sodium–potassium pump moves three sodium ions out for every two potassium ions in, and potassium leak channels let potassium drift back out.</p>
@@ -49,7 +51,7 @@
             <h2>Refractory period</h2>
             <p>Potassium channels close slowly, so the membrane briefly overshoots below rest. During this window the neuron cannot fire again, which is what keeps signals travelling in one direction.</p>
           </div>
-        </div>
+        </article>
       </div>
     </div>
   </div>

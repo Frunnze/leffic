@@ -9,7 +9,7 @@ _ORIGIN = "http://localhost:3009"
 def _preflight() -> dict[str, str]:
     with TestClient(create_app()) as client:
         response = client.options(
-            "/chat",
+            "/save-note",
             headers={
                 "Origin": _ORIGIN,
                 "Access-Control-Request-Method": "POST",
@@ -36,16 +36,20 @@ def test_the_requested_headers_are_allowed() -> None:
     assert "X-Custom" in _preflight()["access-control-allow-headers"]
 
 
-def test_every_route_is_registered() -> None:
+def test_every_router_is_registered() -> None:
     app = create_app()
     paths = {
         route.path for route in app.routes if isinstance(route, APIRoute)
     }
 
     assert {
-        "/generate-study-units",
-        "/flashcards-status/{task_id}",
-        "/upload-files",
-        "/file",
-        "/chat",
+        "/save-flashcards",
+        "/flashcards",
+        "/flashcards-stats",
+        "/test-items",
+        "/test-items-stats",
+        "/note",
+        "/notes-stats",
+        "/create-folder",
+        "/save-file-names",
     } <= paths

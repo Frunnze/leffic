@@ -16,44 +16,50 @@
   <div class="frame">
     <div class="screen">
       <div class="page">
-        <nav class="rail">
+      <nav class="rail" aria-label="Main">
+        <div>
+          <div class="rail-logo"><svg aria-hidden="true"><use href="#icon-logo"/></svg></div>
           <ul class="rail-list">
-            <li class="rail-logo"><svg><use href="#icon-logo"/></svg></li>
-            <li><a class="rail-item" href="home.html"><svg class="icon"><use href="#icon-home"/></svg>Home</a></li>
-            <li><button class="rail-item" type="button"><svg class="icon"><use href="#icon-ask"/></svg><span>Ask</span></button></li>
+            <li><a class="rail-item" href="home.html" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#icon-home"/></svg>Home</a></li>
+            <li><button class="rail-item" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-ask"/></svg>Ask</button></li>
           </ul>
-          <div class="rail-foot">
-            <svg class="icon"><use href="#icon-profile"/></svg>
-            <span>Profile</span>
-          </div>
-        </nav>
-
-        <div class="folder">
-          <div class="folder-head">
-            <svg><use href="#icon-folderOpen"/></svg>
-          </div>
-
-          <div class="folder-toolbar">
-            <div class="folder-actions">
-              <div class="folder-action">
-                <button class="btn btn-solid" type="button"><svg class="icon-sm"><use href="#icon-study"/></svg><span>Study</span></button>
-              </div>
-              <div class="folder-action">
-                <button class="btn" type="button"><svg class="icon-sm"><use href="#icon-aiImport"/></svg><span>AI Import</span></button>
-              </div>
-              <div class="folder-action">
-                <button class="btn" type="button"><svg class="icon-sm"><use href="#icon-newFolder"/></svg><span>New folder</span></button>
-              </div>
-            </div>
-            <button class="btn" type="button"><svg class="icon-sm"><use href="#icon-dots"/></svg></button>
-          </div>
-
-          <hr class="divider">
-
-          <div class="units">
-            <p class="units-loading">Contents are loading...</p>
-          </div>
         </div>
+        <div class="rail-foot-wrap">
+          <button class="rail-foot" type="button" aria-expanded="false">
+            <svg class="icon" aria-hidden="true"><use href="#icon-profile"/></svg>Profile
+          </button>
+        </div>
+      </nav>
+      <div class="folder">
+        <header class="folder-head">
+          <div class="folder-title-row">
+            <h1 class="folder-name">Home</h1>
+          <div class="folder-actions">
+            <div class="folder-action">
+              <button class="btn btn-primary" type="button" aria-expanded="false"><svg class="icon-sm" aria-hidden="true"><use href="#icon-study"/></svg>Study</button>
+            </div>
+            <div class="folder-action">
+              <button class="btn" type="button" aria-expanded="false"><svg class="icon-sm" aria-hidden="true"><use href="#icon-aiImport"/></svg>Import</button>
+            </div>
+            <div class="folder-action">
+              <button class="btn btn-quiet btn-icon" type="button" aria-label="Folder options"><svg class="icon-sm" aria-hidden="true"><use href="#icon-dots"/></svg></button>
+            </div>
+          </div>
+          </div>
+        </header>
+        <section>
+          <div class="units-head">
+            <h2 class="section-label">Loading</h2>
+          </div>
+          <div class="skeleton-list" aria-busy="true" aria-live="polite">
+            <div class="skeleton-row"><span class="skeleton-dot"></span><span class="skeleton-bar" style="width: 46%"></span></div>
+            <div class="skeleton-row"><span class="skeleton-dot"></span><span class="skeleton-bar" style="width: 62%"></span></div>
+            <div class="skeleton-row"><span class="skeleton-dot"></span><span class="skeleton-bar" style="width: 38%"></span></div>
+            <div class="skeleton-row"><span class="skeleton-dot"></span><span class="skeleton-bar" style="width: 54%"></span></div>
+            <span class="visually-hidden">Loading folder contents</span>
+          </div>
+        </section>
+      </div>
       </div>
     </div>
   </div>

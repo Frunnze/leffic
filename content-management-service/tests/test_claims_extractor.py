@@ -28,6 +28,7 @@ def test_rejects_missing_header() -> None:
         _ = get_user_id_from_jwt(None)
 
     assert raised.value.status_code == 401
+    assert raised.value.detail == "Invalid token: expected a bearer scheme"
 
 
 def test_rejects_header_without_scheme() -> None:
@@ -35,20 +36,23 @@ def test_rejects_header_without_scheme() -> None:
         _ = get_user_id_from_jwt("just-a-token")
 
     assert raised.value.status_code == 401
+    assert raised.value.detail == "Invalid token: expected a bearer scheme"
 
 
 def test_rejects_wrong_scheme() -> None:
     with pytest.raises(HTTPException) as raised:
         _ = get_user_id_from_jwt("Basic abcdef")
 
-    assert "bearer scheme" in str(raised.value.detail)
+    assert raised.value.status_code == 401
+    assert raised.value.detail == "Invalid token: expected a bearer scheme"
 
 
 def test_rejects_malformed_token() -> None:
     with pytest.raises(HTTPException) as raised:
         _ = get_user_id_from_jwt("Bearer not-a-jwt")
 
-    assert "Invalid token" in str(raised.value.detail)
+    assert raised.value.status_code == 401
+    assert str(raised.value.detail).startswith("Invalid token: ")
 
 
 def test_rejects_token_without_user_id() -> None:

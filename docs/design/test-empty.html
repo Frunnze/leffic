@@ -7,27 +7,36 @@
 <link rel="stylesheet" href="shell.css">
 <link rel="stylesheet" href="app-tokens.css">
 <link rel="stylesheet" href="app-rail.css">
+<link rel="stylesheet" href="app-controls.css">
 <link rel="stylesheet" href="app-test.css">
 </head>
 <body class="shell" data-screen="test-empty">
 <main class="shell-stage">
   <div class="frame">
-    <div class="screen">
-      <nav class="rail">
-        <ul class="rail-list">
-          <li class="rail-logo"><svg><use href="#icon-logo"/></svg></li>
-          <li><a class="rail-item" href="home.html"><svg class="icon"><use href="#icon-home"/></svg>Home</a></li>
-          <li><button class="rail-item" type="button"><svg class="icon"><use href="#icon-ask"/></svg><span>Ask</span></button></li>
-        </ul>
-        <div class="rail-foot">
-          <svg class="icon"><use href="#icon-profile"/></svg>
-          <span>Profile</span>
+    <div class="screen screen-fixed">
+      <nav class="rail" aria-label="Main">
+        <div>
+          <div class="rail-logo"><svg aria-hidden="true"><use href="#icon-logo"/></svg></div>
+          <ul class="rail-list">
+            <li><a class="rail-item" href="home.html"><svg class="icon" aria-hidden="true"><use href="#icon-home"/></svg>Home</a></li>
+            <li><button class="rail-item" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-ask"/></svg>Ask</button></li>
+          </ul>
+        </div>
+        <div class="rail-foot-wrap">
+          <button class="rail-foot" type="button" aria-expanded="false">
+            <svg class="icon" aria-hidden="true"><use href="#icon-profile"/></svg>Profile
+          </button>
         </div>
       </nav>
-
       <div class="test-stage">
-        <div class="test-card">
-          <span class="test-empty">This test has no items!</span>
+        <div class="test-inner">
+          <div class="test-card">
+            <div class="test-empty">
+              <h1 class="test-question">This test has no questions yet</h1>
+              <p class="muted">Import a file, link or topic into this folder and questions are generated with it.</p>
+              <a class="btn btn-primary" href="home.html">Back to folder</a>
+            </div>
+          </div>
         </div>
       </div>
     </div>

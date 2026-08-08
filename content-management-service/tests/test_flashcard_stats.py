@@ -12,6 +12,7 @@ from app_factory import create_app
 from shared.database import get_db
 from shared.models import Flashcard, FlashcardDeck, Folder
 from tests.support import (
+    OTHER_USER_ID,
     USER_ID,
     SessionProvider,
     authorization,
@@ -116,3 +117,43 @@ def test_flashcard_stats_report_nothing_for_an_empty_folder(
 
     assert response.status_code == 404
     assert cast("dict[str, str]", response.json())["msg"] == "No flashcards!"
+
+
+def test_stats_treat_a_card_due_today_as_due(
+    client: TestClient, sessions: sessionmaker[Session], deck_id: str
+) -> None:
+    assert deck_id
+
+    with sessions() as session:
+        session.query(Flashcard).one().next_review = datetime.now(UTC)
+        session.commit()
+
+    response = client.get(
+        "/flashcards-stats",
+        params={"folder_id": "home"},
+        headers=authorization(),
+    )
+
+    assert cast("dict[str, int]", response.json()) == {"due": 1, "done": 0}
+
+
+def test_stats_ignore_another_users_cards(
+    client: TestClient, sessions: sessionmaker[Session], deck_id: str
+) -> None:
+    assert deck_id
+
+    with sessions() as session:
+        stranger = uuid.UUID(OTHER_USER_ID)
+        session.add(Folder(id=stranger, name="Home", user_id=stranger))
+        deck = FlashcardDeck(folder_id=stranger, name="Theirs")
+        deck.flashcards.append(Flashcard(type="basic", content={"q": "c"}))
+        session.add(deck)
+        session.commit()
+
+    response = client.get(
+        "/flashcards-stats",
+        params={"folder_id": "home"},
+        headers=authorization(),
+    )
+
+    assert cast("dict[str, int]", response.json()) == {"due": 1, "done": 0}

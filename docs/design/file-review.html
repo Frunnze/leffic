@@ -7,25 +7,36 @@
 <link rel="stylesheet" href="shell.css">
 <link rel="stylesheet" href="app-tokens.css">
 <link rel="stylesheet" href="app-rail.css">
+<link rel="stylesheet" href="app-controls.css">
 <link rel="stylesheet" href="app-reading.css">
 </head>
 <body class="shell" data-screen="file-review">
 <main class="shell-stage">
   <div class="frame">
     <div class="screen screen-fixed">
-      <nav class="rail">
-        <ul class="rail-list">
-          <li class="rail-logo"><svg><use href="#icon-logo"/></svg></li>
-          <li><a class="rail-item" href="home.html"><svg class="icon"><use href="#icon-home"/></svg>Home</a></li>
-          <li><button class="rail-item" type="button"><svg class="icon"><use href="#icon-ask"/></svg><span>Ask</span></button></li>
-        </ul>
-        <div class="rail-foot">
-          <svg class="icon"><use href="#icon-profile"/></svg>
-          <span>Profile</span>
+      <nav class="rail" aria-label="Main">
+        <div>
+          <div class="rail-logo"><svg aria-hidden="true"><use href="#icon-logo"/></svg></div>
+          <ul class="rail-list">
+            <li><a class="rail-item" href="home.html"><svg class="icon" aria-hidden="true"><use href="#icon-home"/></svg>Home</a></li>
+            <li><button class="rail-item" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-ask"/></svg>Ask</button></li>
+          </ul>
+        </div>
+        <div class="rail-foot-wrap">
+          <button class="rail-foot" type="button" aria-expanded="false">
+            <svg class="icon" aria-hidden="true"><use href="#icon-profile"/></svg>Profile
+          </button>
         </div>
       </nav>
-
       <div class="file-stage">
+        <div class="file-bar">
+          <svg class="icon unit-icon" aria-hidden="true"><use href="#icon-file"/></svg>
+          <span class="file-name">action-potentials.pdf</span>
+          <span class="unit-badge">Page 1 of 12</span>
+          <div class="file-bar-actions">
+            <button class="btn" type="button"><svg class="icon-sm" aria-hidden="true"><use href="#icon-aiImport"/></svg>Generate study units</button>
+          </div>
+        </div>
         <div class="file-viewer">
           <div class="file-page">
             <h1>Action potentials</h1>

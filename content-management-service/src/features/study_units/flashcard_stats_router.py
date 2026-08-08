@@ -1,9 +1,9 @@
-from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlalchemy import ColumnElement, func, or_, select
 
+from shared.clock import utc_today
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
 from shared.folder_tree import subfolder_ids
 from shared.models import Flashcard, FlashcardDeck, Folder
@@ -17,7 +17,7 @@ _MISSING_FOLDER = "Folder does not exist!"
 
 def _due_condition() -> ColumnElement[bool]:
     return or_(
-        func.date(Flashcard.next_review) <= datetime.now(UTC).date(),
+        func.date(Flashcard.next_review) <= utc_today(),
         Flashcard.next_review.is_(None),
     )
 
@@ -55,8 +55,7 @@ async def get_flashcards_stats(
         db.query(Flashcard)
         .filter(
             Flashcard.deck_id.in_(deck_ids),
-            func.date(Flashcard.next_review)
-            > datetime.now(UTC).date(),
+            func.date(Flashcard.next_review) > utc_today(),
             Flashcard.next_review.is_not(None),
         )
         .count()
