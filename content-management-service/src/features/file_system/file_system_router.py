@@ -11,9 +11,9 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import Session, aliased
 import os
 
-from ..models import Folder, FlashcardDeck, File, Note, Test
-from ..database import get_db
-from ..tools.claims_extractor import get_user_id_from_jwt
+from src.shared.models import Folder, FlashcardDeck, File, Note, Test
+from src.shared.database import get_db
+from src.shared.claims_extractor import get_user_id_from_jwt
 
 file_system_manager = APIRouter()
 

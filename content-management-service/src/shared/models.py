@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from datetime import datetime, timezone
 import uuid
 
-from .database import Base
+from src.shared.database import Base
 
 
 class Folder(Base):

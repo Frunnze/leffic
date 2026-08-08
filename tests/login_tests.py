@@ -3,9 +3,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from run import app 
-from app.models import Base, User 
-from app.database import get_db, SQLALCHEMY_DATABASE_URL
-from app.tools.access import hash_password
+from src.features.authentication.models import Base, User 
+from src.shared.database import get_db, SQLALCHEMY_DATABASE_URL
+from src.features.authentication.access import hash_password
 import uuid
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)

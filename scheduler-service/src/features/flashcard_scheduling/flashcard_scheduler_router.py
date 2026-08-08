@@ -6,9 +6,11 @@ import json
 from pydantic import BaseModel
 from typing import Optional
 
-from .. import db
-from ..tools.flashcard_scheduler import schedule_flashcard_fsrs, get_ratings_times
-from ..tools.claims_extractor import get_user_id_from_jwt
+from src.shared.database import db
+from src.features.flashcard_scheduling.flashcard_scheduler import (
+    schedule_flashcard_fsrs, get_ratings_times
+)
+from src.shared.claims_extractor import get_user_id_from_jwt
 
 
 flashcard_scheduler = APIRouter()

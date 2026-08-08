@@ -4,12 +4,12 @@ from sqlalchemy.orm import Session
 import traceback
 import jwt
 
-from ..schemas import (
+from src.features.authentication.schemas import (
     UserCreate, UserLogin
 )
-from ..models import User
-from ..database import get_db
-from ..tools.access import (
+from src.features.authentication.models import User
+from src.shared.database import get_db
+from src.features.authentication.access import (
     create_access_token, create_refresh_token,
     hash_password, verify_password, 
     SECRET_KEY, ALGORITHM

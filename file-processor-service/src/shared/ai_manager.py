@@ -113,3 +113,6 @@ class AIFactory:
         # if model == "gpt-4.1-nano":
         #     return GPT41Nano(self.openai_client)
         return GPT5Mini(self.openai_client)
+
+
+ai_factory = AIFactory()

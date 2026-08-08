@@ -9,18 +9,23 @@ from datetime import datetime, timezone
 import requests
 from celery.result import AsyncResult
 
-from ..tools.text_extractor import text_extractor_factory
-from .. import ai_factory
-from ..tools.prompts.flashcards_prompt import get_flashcards_system_prompt
-from ..tools.prompts.notes_prompt import get_notes_system_prompt
-from .. import CONTENT_MANAGEMENT_SERVICE
-from .. import celery_app
-from .. import ai_factory
-from ..tools.prompts.flashcards_prompt import get_flashcards_system_prompt
-from ..tools.prompts.notes_prompt import get_notes_system_prompt
-from ..tools.prompts.tests_prompt import get_test_system_prompt
-from ..tools.claims_extractor import get_user_id_from_jwt
-from ..tools.link_extractor import extract_link_main_content, get_youtube_transcript_auto
+from src.features.study_units_generation.text_extractor import text_extractor_factory
+from src.features.study_units_generation.prompts.flashcards_prompt import (
+    get_flashcards_system_prompt
+)
+from src.features.study_units_generation.prompts.notes_prompt import (
+    get_notes_system_prompt
+)
+from src.features.study_units_generation.prompts.tests_prompt import (
+    get_test_system_prompt
+)
+from src.features.study_units_generation.link_extractor import (
+    extract_link_main_content, get_youtube_transcript_auto
+)
+from src.shared.ai_manager import ai_factory
+from src.shared.celery_app import celery_app
+from src.shared.claims_extractor import get_user_id_from_jwt
+from src.shared.settings import CONTENT_MANAGEMENT_SERVICE
 
 
 study_units_generator = APIRouter()

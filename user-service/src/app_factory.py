@@ -1,12 +1,13 @@
 from fastapi import FastAPI
+from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
-import os
 
 
-SCHEDULER_SERVICE = os.getenv("SCHEDULER_SERVICE")
+load_dotenv()
 
 def create_app():
     app = FastAPI()
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -15,14 +16,11 @@ def create_app():
         allow_headers=["*"],
     )
 
-    from .apis.study_units import study_units
-    app.include_router(study_units)
+    from src.features.authentication.authentication_router import auth
+    app.include_router(auth)
 
-    from .apis.file_system_manager import file_system_manager
-    app.include_router(file_system_manager)
-
-    from . import models
-    from .database import engine
+    from src.features.authentication import models
+    from src.shared.database import engine
     models.Base.metadata.create_all(bind=engine)
 
     return app

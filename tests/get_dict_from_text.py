@@ -1,5 +1,5 @@
 import pytest
-from ai_manager import get_dict_from_text
+from src.shared.ai_manager import get_dict_from_text
 import demjson3
 
 def test_basic_extraction():

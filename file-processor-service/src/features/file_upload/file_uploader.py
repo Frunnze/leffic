@@ -12,8 +12,8 @@ import subprocess
 import tempfile
 
 
-from .. import CONTENT_MANAGEMENT_SERVICE
-from ..tools.claims_extractor import get_user_id_from_jwt
+from src.shared.settings import CONTENT_MANAGEMENT_SERVICE
+from src.shared.claims_extractor import get_user_id_from_jwt
 
 
 file_uploader = APIRouter()

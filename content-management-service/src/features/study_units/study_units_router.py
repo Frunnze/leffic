@@ -10,14 +10,14 @@ import requests
 from datetime import datetime, timezone
 import random
 
-from ..models import (
-    Folder, FlashcardDeck, Flashcard, 
+from src.shared.models import (
+    Folder, FlashcardDeck, Flashcard,
     FlashcardReview, Note, Test, TestItem,
     TestItemReview, TestSession
 )
-from ..database import get_db
-from .. import SCHEDULER_SERVICE
-from ..tools.claims_extractor import get_user_id_from_jwt
+from src.shared.database import get_db
+from src.shared.settings import SCHEDULER_SERVICE
+from src.shared.claims_extractor import get_user_id_from_jwt
 
 study_units = APIRouter()
 
