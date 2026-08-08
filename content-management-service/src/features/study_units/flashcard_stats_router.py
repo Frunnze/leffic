@@ -4,9 +4,9 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlalchemy import ColumnElement, func, or_, select
 
-from src.shared.dependencies import AuthenticatedUserId, DatabaseSession
-from src.shared.folder_tree import subfolder_ids
-from src.shared.models import Flashcard, FlashcardDeck, Folder
+from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.folder_tree import subfolder_ids
+from shared.models import Flashcard, FlashcardDeck, Folder
 
 flashcard_stats_router = APIRouter()
 

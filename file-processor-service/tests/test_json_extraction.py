@@ -1,7 +1,7 @@
 import pytest
 from demjson3 import JSONDecodeError
 
-from src.shared.json_extraction import get_dict_from_text
+from shared.json_extraction import get_dict_from_text
 
 
 def test_extracts_a_plain_object() -> None:

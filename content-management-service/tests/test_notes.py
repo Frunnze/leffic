@@ -7,10 +7,10 @@ import requests
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
-from src.app_factory import create_app
-from src.shared.database import get_db
-from src.shared.models import Flashcard, FlashcardDeck, Folder, Note
-from src.shared.settings import SCHEDULER_SERVICE
+from app_factory import create_app
+from shared.database import get_db
+from shared.models import Flashcard, FlashcardDeck, Folder, Note
+from shared.settings import SCHEDULER_SERVICE
 from tests.support import (
     USER_ID,
     SessionProvider,

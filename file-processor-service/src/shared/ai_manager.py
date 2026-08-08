@@ -9,8 +9,8 @@ from openai.types.responses import (
     ResponseInputItemParam,
 )
 
-from src.shared.json_extraction import get_dict_from_text
-from src.shared.model_rates import GPT_5_MINI, MODEL_RATES, ModelRates
+from shared.json_extraction import get_dict_from_text
+from shared.model_rates import GPT_5_MINI, MODEL_RATES, ModelRates
 
 JSON_FORMAT = "JSON"
 _ATTEMPTS = 2

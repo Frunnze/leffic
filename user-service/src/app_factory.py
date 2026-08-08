@@ -2,8 +2,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.features.authentication.authentication_router import auth
-from src.shared.database import Base, engine
+from features.authentication.authentication_router import auth
+from shared.database import Base, engine
 
 _ = load_dotenv()
 

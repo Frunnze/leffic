@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from src.shared.database import Base
+from shared.database import Base
 
 USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"
 OTHER_USER_ID = "6f1c7d4e-0000-4000-8000-0000000000ff"

@@ -5,14 +5,14 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.shared.database import Base
-from src.shared.models.columns import FlexibleUuid
+from shared.database import Base
+from shared.models.columns import FlexibleUuid
 
 if TYPE_CHECKING:
-    from src.shared.models.assessment import Test
-    from src.shared.models.file import File
-    from src.shared.models.flashcard import FlashcardDeck
-    from src.shared.models.note import Note
+    from shared.models.assessment import Test
+    from shared.models.file import File
+    from shared.models.flashcard import FlashcardDeck
+    from shared.models.note import Note
 
 _CASCADE_ORPHANS = "all, delete-orphan"
 

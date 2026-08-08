@@ -6,8 +6,8 @@ import jwt
 import pytest
 from fastapi.testclient import TestClient
 
-from src.app_factory import create_app
-from src.features.study_units_generation import (
+from app_factory import create_app
+from features.study_units_generation import (
     study_units_router as router_module,
 )
 

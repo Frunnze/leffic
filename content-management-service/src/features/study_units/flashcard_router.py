@@ -9,15 +9,15 @@ from pydantic import BaseModel
 from sqlalchemy import ColumnElement, func, or_, select
 from sqlalchemy.orm import Query, Session
 
-from src.features.study_units.formatting import date_to_str, flashcard_results
-from src.shared.dependencies import AuthenticatedUserId, DatabaseSession
-from src.shared.folder_tree import subfolder_ids
-from src.shared.models import (
+from features.study_units.formatting import date_to_str, flashcard_results
+from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.folder_tree import subfolder_ids
+from shared.models import (
     Flashcard,
     FlashcardDeck,
     FlashcardReview,
 )
-from src.shared.settings import SCHEDULER_SERVICE
+from shared.settings import SCHEDULER_SERVICE
 
 flashcard_router = APIRouter()
 

@@ -7,14 +7,14 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Query, Session
 
-from src.features.study_units.formatting import (
+from features.study_units.formatting import (
     date_to_str,
     evaluate_accuracy,
     prepare_content,
 )
-from src.shared.dependencies import AuthenticatedUserId, DatabaseSession
-from src.shared.folder_tree import subfolder_ids
-from src.shared.models import (
+from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.folder_tree import subfolder_ids
+from shared.models import (
     Test,
     TestItem,
     TestItemReview,

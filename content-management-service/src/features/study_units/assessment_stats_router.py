@@ -4,9 +4,9 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlalchemy import case, func
 
-from src.shared.dependencies import AuthenticatedUserId, DatabaseSession
-from src.shared.folder_tree import subfolder_ids
-from src.shared.models import Test, TestItem, TestItemReview, TestSession
+from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.folder_tree import subfolder_ids
+from shared.models import Test, TestItem, TestItemReview, TestSession
 
 assessment_stats_router = APIRouter()
 

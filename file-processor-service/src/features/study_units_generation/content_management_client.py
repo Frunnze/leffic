@@ -2,7 +2,7 @@ from typing import cast
 
 import requests
 
-from src.shared.settings import CONTENT_MANAGEMENT_SERVICE
+from shared.settings import CONTENT_MANAGEMENT_SERVICE
 
 _TIMEOUT_SECONDS = 60
 

@@ -4,8 +4,8 @@ from datetime import UTC, datetime
 from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.shared.database import Base
-from src.shared.models.columns import FlexibleUuid
+from shared.database import Base
+from shared.models.columns import FlexibleUuid
 
 
 class Note(Base):

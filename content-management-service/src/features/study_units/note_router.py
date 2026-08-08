@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 
-from src.shared.dependencies import AuthenticatedUserId, DatabaseSession
-from src.shared.folder_tree import subfolder_ids
-from src.shared.models import Folder, Note
+from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.folder_tree import subfolder_ids
+from shared.models import Folder, Note
 
 note_router = APIRouter()
 

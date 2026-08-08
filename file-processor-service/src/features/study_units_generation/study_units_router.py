@@ -4,17 +4,17 @@ from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from src.features.study_units_generation.generation_tasks import (
+from features.study_units_generation.generation_tasks import (
     generate_flashcards_task,
     generate_note_task,
     generate_test_task,
 )
-from src.features.study_units_generation.text_sources import (
+from features.study_units_generation.text_sources import (
     FileMetadata,
     text_from_files,
     text_from_link,
 )
-from src.shared.dependencies import AuthenticatedUserId
+from shared.dependencies import AuthenticatedUserId
 
 study_units_router = APIRouter()
 

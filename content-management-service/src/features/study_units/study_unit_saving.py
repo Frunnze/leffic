@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from src.shared.dependencies import DatabaseSession
-from src.shared.models import (
+from shared.dependencies import DatabaseSession
+from shared.models import (
     Flashcard,
     FlashcardDeck,
     Folder,

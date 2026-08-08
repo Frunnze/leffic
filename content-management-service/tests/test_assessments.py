@@ -6,13 +6,13 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
-from src.app_factory import create_app
-from src.features.study_units.formatting import (
+from app_factory import create_app
+from features.study_units.formatting import (
     evaluate_accuracy,
     prepare_content,
 )
-from src.shared.database import get_db
-from src.shared.models import (
+from shared.database import get_db
+from shared.models import (
     Folder,
     Test,
     TestItem,

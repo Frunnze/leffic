@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import cast
 
-from src.shared.models import Flashcard
+from shared.models import Flashcard
 
 _DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 _CORRECT_OPTION_ID = 0

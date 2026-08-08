@@ -1,19 +1,19 @@
 from typing import TypedDict, cast
 
-from src.features.study_units_generation.content_management_client import (
+from features.study_units_generation.content_management_client import (
     save_study_unit,
 )
-from src.features.study_units_generation.prompts.flashcards_prompt import (
+from features.study_units_generation.prompts.flashcards_prompt import (
     get_flashcards_system_prompt,
 )
-from src.features.study_units_generation.prompts.notes_prompt import (
+from features.study_units_generation.prompts.notes_prompt import (
     get_notes_system_prompt,
 )
-from src.features.study_units_generation.prompts.tests_prompt import (
+from features.study_units_generation.prompts.tests_prompt import (
     get_test_system_prompt,
 )
-from src.shared.ai_manager import ai_factory
-from src.shared.celery_app import celery_app
+from shared.ai_manager import ai_factory
+from shared.celery_app import celery_app
 
 _DECK_NAME = "deck_name"
 

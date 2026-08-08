@@ -8,12 +8,12 @@ from fsrs.card import CardDict
 from fsrs.scheduler import SchedulerDict
 from pydantic import BaseModel
 
-from src.features.flashcard_scheduling.flashcard_scheduler import (
+from features.flashcard_scheduling.flashcard_scheduler import (
     get_ratings_times,
     schedule_flashcard_fsrs,
 )
-from src.shared.claims_extractor import get_user_id_from_jwt
-from src.shared.database import MongoDocument, db
+from shared.claims_extractor import get_user_id_from_jwt
+from shared.database import MongoDocument, db
 
 flashcard_scheduler = APIRouter()
 

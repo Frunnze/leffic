@@ -3,7 +3,7 @@ from typing import cast
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from src.shared.ai_manager import AiMessage, ai_factory
+from shared.ai_manager import AiMessage, ai_factory
 
 chatbot = APIRouter()
 

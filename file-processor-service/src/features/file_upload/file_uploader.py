@@ -8,10 +8,10 @@ from uuid import uuid4
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse, Response
 
-from src.features.study_units_generation.content_management_client import (
+from features.study_units_generation.content_management_client import (
     save_study_unit,
 )
-from src.shared.dependencies import AuthenticatedUserId
+from shared.dependencies import AuthenticatedUserId
 
 file_uploader = APIRouter()
 

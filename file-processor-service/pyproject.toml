@@ -4,7 +4,7 @@ pythonVersion = "3.12"
 venvPath = ".."
 venv = ".venv"
 include = ["src", "run.py", "tests"]
-extraPaths = ["."]
+extraPaths = [".", "src"]
 stubPath = "stubs"
 
 reportMissingTypeStubs = "none"
@@ -17,7 +17,7 @@ reportPrivateUsage = "none"
 [tool.ruff]
 line-length = 79
 target-version = "py312"
-src = ["."]
+src = [".", "src"]
 
 [tool.ruff.lint]
 preview = true
@@ -51,3 +51,8 @@ max-public-methods = 15
     "TRY003",
     "TRY004",
 ]
+
+[tool.mutmut]
+source_paths = ["src"]
+also_copy = ["pytest.ini"]
+pytest_add_cli_args_test_selection = ["tests"]

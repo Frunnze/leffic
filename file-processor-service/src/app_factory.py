@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.features.chatbot.chatbot import chatbot
-from src.features.file_upload.file_uploader import file_uploader
-from src.features.study_units_generation.study_units_router import (
+from features.chatbot.chatbot import chatbot
+from features.file_upload.file_uploader import file_uploader
+from features.study_units_generation.study_units_router import (
     study_units_router,
 )
-from src.features.study_units_generation.task_status_router import (
+from features.study_units_generation.task_status_router import (
     task_status_router,
 )
 

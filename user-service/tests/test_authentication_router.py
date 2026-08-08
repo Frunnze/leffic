@@ -7,8 +7,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from src.app_factory import create_app
-from src.shared.database import Base, get_db
+from app_factory import create_app
+from shared.database import Base, get_db
 
 _EMAIL = "learner@example.com"
 _USERNAME = "learner"

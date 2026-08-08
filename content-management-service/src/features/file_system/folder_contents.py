@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from src.shared.models import (
+from shared.models import (
     File,
     FlashcardDeck,
     Folder,

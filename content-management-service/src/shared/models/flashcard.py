@@ -11,8 +11,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.shared.database import Base
-from src.shared.models.columns import FlexibleUuid
+from shared.database import Base
+from shared.models.columns import FlexibleUuid
 
 _CASCADE_ORPHANS = "all, delete-orphan"
 

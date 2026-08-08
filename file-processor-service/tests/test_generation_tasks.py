@@ -3,14 +3,14 @@ from unittest import mock
 import pytest
 import requests
 
-from src.features.study_units_generation import generation_tasks
-from src.features.study_units_generation.content_management_client import (
+from features.study_units_generation import generation_tasks
+from features.study_units_generation.content_management_client import (
     save_study_unit,
 )
-from src.features.study_units_generation.generation_tasks import (
+from features.study_units_generation.generation_tasks import (
     FlashcardsMetadata,
 )
-from src.shared.settings import CONTENT_MANAGEMENT_SERVICE
+from shared.settings import CONTENT_MANAGEMENT_SERVICE
 
 _FOLDER_ID = "6f1c7d4e-0000-4000-8000-000000000002"
 _USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"

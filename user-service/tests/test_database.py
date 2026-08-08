@@ -5,7 +5,7 @@ import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from sqlalchemy.orm import Session
 
-from src.shared import database
+from shared import database
 
 
 class FakeCursor:

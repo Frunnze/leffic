@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import jwt
 
-from src.features.authentication.access import (
+from features.authentication.access import (
     ALGORITHM,
     SECRET_KEY,
     create_access_token,

@@ -8,8 +8,8 @@ import jwt
 import pytest
 from fastapi.testclient import TestClient
 
-from src.app_factory import create_app
-from src.features.file_upload import file_uploader as upload_module
+from app_factory import create_app
+from features.file_upload import file_uploader as upload_module
 
 _USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"
 _FOLDER_ID = "6f1c7d4e-0000-4000-8000-000000000002"

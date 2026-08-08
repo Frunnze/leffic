@@ -1,10 +1,10 @@
-from src.features.study_units_generation.prompts.flashcards_prompt import (
+from features.study_units_generation.prompts.flashcards_prompt import (
     get_flashcards_system_prompt,
 )
-from src.features.study_units_generation.prompts.notes_prompt import (
+from features.study_units_generation.prompts.notes_prompt import (
     get_notes_system_prompt,
 )
-from src.features.study_units_generation.prompts.tests_prompt import (
+from features.study_units_generation.prompts.tests_prompt import (
     get_test_system_prompt,
 )
 

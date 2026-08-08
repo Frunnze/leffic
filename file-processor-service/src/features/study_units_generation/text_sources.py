@@ -3,11 +3,11 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from src.features.study_units_generation.link_extractor import (
+from features.study_units_generation.link_extractor import (
     extract_link_main_content,
     get_youtube_transcript_auto,
 )
-from src.features.study_units_generation.text_extractor import (
+from features.study_units_generation.text_extractor import (
     text_extractor_factory,
 )
 

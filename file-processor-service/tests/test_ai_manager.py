@@ -3,13 +3,13 @@ from typing import Self
 import pytest
 from openai import OpenAIError
 
-from src.shared.ai_manager import (
+from shared.ai_manager import (
     JSON_FORMAT,
     AIFactory,
     OpenAIManager,
     RequestCost,
 )
-from src.shared.model_rates import GPT_4_1_NANO, MODEL_RATES
+from shared.model_rates import GPT_4_1_NANO, MODEL_RATES
 
 _SYSTEM_PROMPT = "You are helpful"
 _USER_PROMPT = "Summarise this"

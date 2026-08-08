@@ -6,9 +6,9 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
-from src.app_factory import create_app
-from src.shared.database import get_db
-from src.shared.models import Flashcard, Folder, Note, Test, TestItem
+from app_factory import create_app
+from shared.database import get_db
+from shared.models import Flashcard, Folder, Note, Test, TestItem
 from tests.support import USER_ID, SessionProvider, in_memory_sessions
 
 _HOME_ID = uuid.UUID(USER_ID)

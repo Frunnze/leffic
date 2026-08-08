@@ -2,9 +2,9 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from src.features.file_system.file_storage import delete_file_from_storage
-from src.shared.dependencies import DatabaseSession
-from src.shared.models import File, FlashcardDeck, Folder, Note, Test
+from features.file_system.file_storage import delete_file_from_storage
+from shared.dependencies import DatabaseSession
+from shared.models import File, FlashcardDeck, Folder, Note, Test
 
 content_router = APIRouter()
 

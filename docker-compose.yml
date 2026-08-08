@@ -102,7 +102,7 @@ services:
       - redis
       - file-processor-service
     command: >
-      celery -A src.shared.celery_app
+      celery -A shared.celery_app
       worker
       --loglevel info
     restart: unless-stopped

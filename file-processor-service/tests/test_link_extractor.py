@@ -5,7 +5,7 @@ from unittest import mock
 import requests
 from youtube_transcript_api import NoTranscriptFound, TranscriptsDisabled
 
-from src.features.study_units_generation.link_extractor import (
+from features.study_units_generation.link_extractor import (
     extract_video_id,
     get_youtube_transcript_auto,
 )
@@ -13,7 +13,7 @@ from src.features.study_units_generation.link_extractor import (
 _LONG_TEXT = "B" * 250
 _VIDEO_ID = "dQw4w9WgXcQ"
 _TRANSCRIPT_API_LIST = (
-    "src.features.study_units_generation.link_extractor"
+    "features.study_units_generation.link_extractor"
     ".YouTubeTranscriptApi.list"
 )
 

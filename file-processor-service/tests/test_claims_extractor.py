@@ -2,7 +2,7 @@ import jwt
 import pytest
 from fastapi import HTTPException
 
-from src.shared.claims_extractor import get_user_id_from_jwt
+from shared.claims_extractor import get_user_id_from_jwt
 
 _USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"
 
@@ -55,6 +55,7 @@ def test_rejects_token_without_user_id() -> None:
     with pytest.raises(HTTPException) as raised:
         _ = get_user_id_from_jwt(_bearer({"sub": "nobody"}))
 
+    assert raised.value.status_code == 401
     assert raised.value.detail == "Token carries no user_id"
 
 
@@ -62,4 +63,5 @@ def test_rejects_non_string_user_id() -> None:
     with pytest.raises(HTTPException) as raised:
         _ = get_user_id_from_jwt(_bearer({"user_id": 12345}))
 
+    assert raised.value.status_code == 401
     assert raised.value.detail == "Token carries no user_id"

@@ -7,11 +7,11 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from src.features.file_system.file_storage import delete_file_from_storage
-from src.features.file_system.folder_contents import entries_in
-from src.shared.dependencies import AuthenticatedUserId, DatabaseSession
-from src.shared.folder_tree import subfolder_ids
-from src.shared.models import File, Folder
+from features.file_system.file_storage import delete_file_from_storage
+from features.file_system.folder_contents import entries_in
+from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.folder_tree import subfolder_ids
+from shared.models import File, Folder
 
 folder_router = APIRouter()
 

@@ -3,13 +3,13 @@ from unittest import mock
 
 import textract
 
-from src.features.study_units_generation import text_sources
-from src.features.study_units_generation.text_extractor import (
+from features.study_units_generation import text_sources
+from features.study_units_generation.text_extractor import (
     GeneralTextExtractor,
     TextExtractorFactory,
     text_extractor_factory,
 )
-from src.features.study_units_generation.text_sources import (
+from features.study_units_generation.text_sources import (
     FileMetadata,
     get_file_from_storage,
     text_from_files,

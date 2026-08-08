@@ -4,7 +4,7 @@ from typing import cast
 from celery.result import AsyncResult
 from fastapi import APIRouter
 
-from src.shared.celery_app import celery_app
+from shared.celery_app import celery_app
 
 task_status_router = APIRouter()
 

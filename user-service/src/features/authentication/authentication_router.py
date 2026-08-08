@@ -12,7 +12,7 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from src.features.authentication.access import (
+from features.authentication.access import (
     ALGORITHM,
     SECRET_KEY,
     create_access_token,
@@ -20,9 +20,9 @@ from src.features.authentication.access import (
     hash_password,
     verify_password,
 )
-from src.features.authentication.models import User
-from src.features.authentication.schemas import UserCreate, UserLogin
-from src.shared.database import get_db
+from features.authentication.models import User
+from features.authentication.schemas import UserCreate, UserLogin
+from shared.database import get_db
 
 auth = APIRouter()
 

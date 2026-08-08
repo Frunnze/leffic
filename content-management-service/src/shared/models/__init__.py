@@ -1,17 +1,17 @@
-from src.shared.models.assessment import (
+from shared.models.assessment import (
     Test,
     TestItem,
     TestItemReview,
     TestSession,
 )
-from src.shared.models.file import File
-from src.shared.models.flashcard import (
+from shared.models.file import File
+from shared.models.flashcard import (
     Flashcard,
     FlashcardDeck,
     FlashcardReview,
 )
-from src.shared.models.folder import Folder
-from src.shared.models.note import Note
+from shared.models.folder import Folder
+from shared.models.note import Note
 
 __all__ = [
     "File",

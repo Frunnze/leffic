@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.shared.database import Base
+from shared.database import Base
 
 _USERNAME_LENGTH = 50
 _EMAIL_LENGTH = 100

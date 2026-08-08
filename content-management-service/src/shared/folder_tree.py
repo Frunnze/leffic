@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import ColumnElement, Select, select
 from sqlalchemy.orm import aliased
 
-from src.shared.models import Folder
+from shared.models import Folder
 
 _SUBFOLDERS_CTE = "subfolders"
 
