@@ -1,0 +1,22 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/_env.sh"
+
+require_binary "$python_binary" python
+
+if [ -n "$SKIP_COVERAGE" ]; then
+    echo "pre-commit: branch coverage (skipped)"
+    exit 0
+fi
+
+minimum_coverage=100
+
+echo "pre-commit: branch coverage (min $minimum_coverage%)"
+
+for service in $services; do
+    (cd "$service" && "$python_binary" -m pytest tests -q \
+        --cov=src \
+        --cov-branch \
+        --cov-report=term-missing:skip-covered \
+        --cov-fail-under="$minimum_coverage")
+done

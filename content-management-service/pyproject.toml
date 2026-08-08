@@ -1,0 +1,34 @@
+[tool.basedpyright]
+typeCheckingMode = "all"
+pythonVersion = "3.12"
+venvPath = ".."
+venv = ".venv"
+include = ["src", "run.py"]
+extraPaths = ["."]
+
+reportMissingTypeStubs = "none"
+
+[tool.ruff]
+line-length = 79
+target-version = "py312"
+src = ["."]
+
+[tool.ruff.lint]
+preview = true
+explicit-preview-rules = true
+select = ["ALL", "PLR0904", "PLR1702", "PLW0717", "PLW1514"]
+ignore = [
+    "COM812",
+    "CPY001",
+    "D",
+    "INP001",
+    "ISC003",
+    "PERF401",
+    "PLR0913",
+    "S602",
+    "S603",
+    "S607",
+]
+
+[tool.ruff.lint.pylint]
+max-public-methods = 15
