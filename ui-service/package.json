@@ -1,25 +1,23 @@
 {
-  "name": "vite-template-solid",
+  "name": "leffic-ui-service",
   "version": "0.0.0",
   "description": "",
   "type": "module",
   "scripts": {
     "start": "vite",
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
     "serve": "vite preview"
   },
   "license": "MIT",
   "devDependencies": {
-    "@tailwindcss/typography": "^0.5.16",
+    "typescript": "^5.7.3",
     "vite": "^6.0.0",
     "vite-plugin-solid": "^2.11.6"
   },
   "dependencies": {
     "@solidjs/router": "^0.15.3",
-    "@tailwindcss/vite": "^4.1.4",
-    "chart.js": "^4.4.9",
-    "solid-js": "^1.9.5",
-    "tailwindcss": "^4.1.4"
+    "solid-js": "^1.9.5"
   }
 }

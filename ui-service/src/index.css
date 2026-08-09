@@ -1,37 +1,49 @@
-@import "tailwindcss";
-@plugin "@tailwindcss/typography";
+@import "./styles/tokens.css";
+@import "./styles/theme-dark.css";
+@import "./styles/base.css";
+@import "./styles/controls.css";
+@import "./styles/forms.css";
+@import "./styles/modal.css";
+@import "./styles/rail.css";
+@import "./styles/folder.css";
+@import "./styles/units.css";
+@import "./styles/meter.css";
+@import "./styles/overlays.css";
+@import "./styles/flashcards.css";
+@import "./styles/test.css";
+@import "./styles/note.css";
+@import "./styles/file.css";
+@import "./styles/landing.css";
+@import "./styles/chat.css";
+@import "./styles/auth.css";
 
-
-@theme {
-  --color-primary: #FFFFFF;
-  --color-secondary: #3083DC;
-  --color-tertiary-100: rgba(57, 57, 58, 1);
-  --color-tertiary-40: rgba(57, 57, 58, 0.40);
-  --color-tertiary-30: rgba(57, 57, 58, 0.30);
-  --color-tertiary-20: rgba(57, 57, 58, 0.20);
-  --color-tertiary-10: rgba(57, 57, 58, 0.10);
-  --color-tertiary-2: rgba(57, 57, 58, 0.02);
-
-  --color-tertiary-red-75: rgba(208, 0, 0, 0.75);
-  --color-tertiary-red-80: rgba(208, 0, 0, 0.80);
-  --color-tertiary-red-60: rgba(208, 0, 0, 0.60);
-  --color-tertiary-red-65: rgba(208, 0, 0, 0.65);
-  --color-tertiary-green-60: rgba(28, 124, 84, 0.60);
-  --color-tertiary-green-65: rgba(28, 124, 84, 0.65);
-  --color-tertiary-green-95: rgba(28, 124, 84, 0.95);
-  --color-tertiary-green-100: rgba(28, 124, 84, 1);
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-.btn-primary {
-  @apply border flex items-center gap-2 py-1.5 px-3 border-tertiary-40 rounded-md hover:bg-tertiary-2 cursor-pointer font-medium text-sm md:text-base text-nowrap;
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: var(--surface-2);
 }
 
-/* Hide scrollbar for Chrome, Safari and Opera */
-  .no-scrollbar::-webkit-scrollbar {
-      display: none;
-  }
-  /* Hide scrollbar for IE, Edge and Firefox */
-  .no-scrollbar {
-      -ms-overflow-style: none;  /* IE and Edge */
-      scrollbar-width: none;  /* Firefox */
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  color: var(--ink);
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+img,
+svg {
+  max-width: 100%;
 }
