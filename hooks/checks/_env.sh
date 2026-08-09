@@ -8,6 +8,7 @@ basedpyright_binary="$repository_root/.venv/bin/basedpyright"
 mutmut_binary="$repository_root/.venv/bin/mutmut"
 pylint_binary="$repository_root/.venv/bin/pylint"
 vulture_binary="$repository_root/.venv/bin/vulture"
+deptry_binary="$repository_root/.venv/bin/deptry"
 python_binary="$repository_root/.venv/bin/python"
 
 require_binary() {

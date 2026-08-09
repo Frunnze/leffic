@@ -55,3 +55,6 @@ max-public-methods = 15
 source_paths = ["src"]
 also_copy = ["pytest.ini"]
 pytest_add_cli_args_test_selection = ["tests"]
+
+[tool.deptry.per_rule_ignores]
+DEP002 = ["uvicorn", "bcrypt"]
