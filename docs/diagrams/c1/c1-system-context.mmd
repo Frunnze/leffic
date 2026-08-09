@@ -1,0 +1,28 @@
+---
+title: Leffic — System Context (C1)
+config:
+  themeCSS: ".flowchartTitleText, .titleText { font-size: 28px; font-weight: 600; }"
+  layout: elk
+  theme: neutral
+---
+flowchart TB
+    learner["«person»<br/><b>Learner</b><br/>Drops in a file, a link or a topic, then reviews<br/>the flashcards, notes and tests made from it"]
+
+    leffic["«system»<br/><b>Leffic</b><br/>Turns any source material into study units and<br/>schedules them for spaced repetition"]
+
+    openai["«external system»<br/><b>OpenAI Platform</b><br/>Generates the flashcards, note and test from<br/>extracted text, and answers the chatbot"]
+
+    youtube["«external system»<br/><b>YouTube</b><br/>Transcripts for a pasted video link"]
+
+    web["«external system»<br/><b>Web pages</b><br/>Article text behind a pasted URL"]
+
+    learner -->|"Imports material, reviews cards, takes tests, reads notes [HTTPS/SPA]"| leffic
+    leffic -->|"Sends extracted text and prompts, receives study units [HTTPS/JSON]"| openai
+    leffic -->|"Fetches the transcript of a video [HTTPS]"| youtube
+    leffic -->|"Fetches and strips the main article text [HTTPS]"| web
+
+    style learner fill:#08427b,stroke:#052e56,color:#ffffff
+    style leffic fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style openai fill:#999999,stroke:#6b6b6b,color:#ffffff
+    style youtube fill:#999999,stroke:#6b6b6b,color:#ffffff
+    style web fill:#999999,stroke:#6b6b6b,color:#ffffff

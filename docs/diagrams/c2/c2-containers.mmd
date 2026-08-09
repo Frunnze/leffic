@@ -1,0 +1,78 @@
+---
+title: Leffic — Containers (C2)
+config:
+  themeCSS: ".flowchartTitleText, .titleText { font-size: 28px; font-weight: 600; }"
+  layout: elk
+  theme: neutral
+---
+flowchart TB
+    learner["«person»<br/><b>Learner</b><br/>Imports material and reviews it"]
+
+    subgraph leffic["Leffic"]
+        ui["«container»<br/><b>Web app</b><br/>SolidJS / TypeScript, Vite, served by nginx<br/>Folder tree, import menu, flashcard and test<br/>review, note reader, chatbot panel"]
+
+        gateway["«container»<br/><b>API gateway</b><br/>Kong 3.9, DB-less<br/>One public port; verifies the JWT and applies<br/>CORS before anything reaches a service"]
+
+        userService["«container»<br/><b>User service</b><br/>FastAPI / Python<br/>The only identity authority: sign-up, login,<br/>refresh, and JWT issuance"]
+
+        contentService["«container»<br/><b>Content service</b><br/>FastAPI / SQLAlchemy<br/>System of record for folders, decks, cards,<br/>tests, notes and files; serves the due counts"]
+
+        fileService["«container»<br/><b>File processor</b><br/>FastAPI / Python<br/>Uploads, text extraction, LibreOffice to PDF,<br/>enqueues generation, answers the chatbot"]
+
+        worker["«container»<br/><b>Generation worker</b><br/>Celery / Python, same image<br/>Three tasks per import: flashcards, note, test;<br/>posts each result to the content service"]
+
+        scheduler["«container»<br/><b>Scheduler service</b><br/>FastAPI / py-fsrs<br/>Computes the next review date and the<br/>per-rating interval labels"]
+
+        userDb[("«container»<br/><b>User database</b><br/>PostgreSQL<br/>Accounts and password hashes")]
+
+        contentDb[("«container»<br/><b>Content database</b><br/>PostgreSQL<br/>Folders, study units, review history<br/>and test sessions")]
+
+        schedulerDb[("«container»<br/><b>Scheduler store</b><br/>MongoDB<br/>Per-user FSRS parameters")]
+
+        queue[("«container»<br/><b>Task queue</b><br/>Redis<br/>Celery broker and result backend")]
+
+        fileVolume[("«container»<br/><b>File store</b><br/>Shared Docker volume<br/>Uploaded documents, read by both the file<br/>processor and the content service")]
+    end
+
+    openai["«external system»<br/><b>OpenAI Platform</b><br/>Study-unit generation and chatbot replies"]
+
+    sources["«external system»<br/><b>YouTube and web pages</b><br/>Transcripts and article text for a pasted link"]
+
+    learner -->|"Uses [HTTPS]"| ui
+    ui -->|"Calls every API through one origin [HTTPS/JSON]"| gateway
+    gateway -->|"Signs up, logs in, refreshes the access token [HTTP/JSON]"| userService
+    gateway -->|"Reads folders and study units, records reviews [HTTP/JSON]"| contentService
+    gateway -->|"Uploads files, starts a generation, polls its status [HTTP/JSON]"| fileService
+    gateway -->|"Asks for the per-rating interval labels [HTTP/JSON]"| scheduler
+
+    userService -->|"Stores accounts in [SQLAlchemy]"| userDb
+    contentService -->|"Stores folders, units and reviews in [SQLAlchemy]"| contentDb
+    contentService -->|"Asks for the next review date on each rating [HTTP/JSON]"| scheduler
+    contentService -->|"Reads and deletes uploaded documents on [Filesystem]"| fileVolume
+    scheduler -->|"Loads the user's tuned scheduler from [PyMongo]"| schedulerDb
+
+    fileService -->|"Writes uploads, converts them to PDF on [Filesystem]"| fileVolume
+    fileService -->|"Records the uploaded file metadata in [HTTP/JSON]"| contentService
+    fileService -->|"Enqueues one task per study-unit type on [Celery]"| queue
+    fileService -->|"Answers the chatbot with [HTTPS/JSON]"| openai
+    fileService -->|"Extracts the source text from [HTTPS]"| sources
+
+    queue -->|"Delivers the queued generation tasks to [Celery]"| worker
+    worker -->|"Generates the flashcards, note and test with [HTTPS/JSON]"| openai
+    worker -->|"Saves each finished study unit through [HTTP/JSON]"| contentService
+
+    style learner fill:#08427b,stroke:#052e56,color:#ffffff
+    style ui fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style gateway fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style userService fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style contentService fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style fileService fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style worker fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style scheduler fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style userDb fill:#438dd5,stroke:#2e6295,color:#ffffff
+    style contentDb fill:#438dd5,stroke:#2e6295,color:#ffffff
+    style schedulerDb fill:#438dd5,stroke:#2e6295,color:#ffffff
+    style queue fill:#438dd5,stroke:#2e6295,color:#ffffff
+    style fileVolume fill:#438dd5,stroke:#2e6295,color:#ffffff
+    style openai fill:#999999,stroke:#6b6b6b,color:#ffffff
+    style sources fill:#999999,stroke:#6b6b6b,color:#ffffff
