@@ -1,3 +1,16 @@
+x-file-processor: &file-processor
+  build: ./file-processor-service
+  environment:
+    - REDIS_HOST=redis:6379
+    - OPENAI_API_KEY=${OPENAI_API_KEY}
+    - CONTENT_MANAGEMENT_SERVICE=http://content-management-service:8000
+  restart: unless-stopped
+
+x-postgres-client: &postgres-client
+  depends_on:
+    - postgres
+  restart: unless-stopped
+
 services:
   frontend:
     build: ./ui-service
@@ -12,32 +25,27 @@ services:
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /kong/kong.yml
-      KONG_PROXY_ACCESS_LOG: /dev/stdout
-      KONG_ADMIN_ACCESS_LOG: /dev/stdout
-      KONG_PROXY_ERROR_LOG: /dev/stderr
-      KONG_ADMIN_ERROR_LOG: /dev/stderr
-      KONG_LOG_LEVEL: debug
     volumes:
       - ./api-gateway/kong.yml:/kong/kong.yml
     restart: unless-stopped
 
   file-processor-service:
-    build: ./file-processor-service
-    environment:
-      - REDIS_HOST=redis:6379
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - CONTENT_MANAGEMENT_SERVICE=http://content-management-service:8000
-      #- CLAMD_HOST=clamav
-      - CLAMD_PORT=3310
+    <<: *file-processor
     volumes:
       - files:/app/files
     depends_on:
-      - postgres
+      - redis
       - content-management-service
-      #- clamav
-    restart: unless-stopped
+
+  celery-worker:
+    <<: *file-processor
+    depends_on:
+      - redis
+      - file-processor-service
+    command: celery -A shared.celery_app worker --loglevel info
 
   content-management-service:
+    <<: *postgres-client
     build: ./content-management-service
     environment:
       - CM_DB_USER=postgres
@@ -47,11 +55,9 @@ services:
       - SCHEDULER_SERVICE=http://scheduler-service:8000
     volumes:
       - files:/app/files
-    depends_on:
-      - postgres
-    restart: unless-stopped
 
   user-service:
+    <<: *postgres-client
     build: ./user-service
     environment:
       - DB_USER=postgres
@@ -59,9 +65,6 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-    depends_on:
-      - postgres
-    restart: unless-stopped
 
   scheduler-service:
     build: ./scheduler-service
@@ -72,7 +75,7 @@ services:
     restart: unless-stopped
 
   redis:
-    image: redis:6.2
+    image: redis:6.2-alpine
     volumes:
       - redis-data:/data
     restart: unless-stopped
@@ -91,25 +94,6 @@ services:
     volumes:
       - mongodb:/data/db
     restart: unless-stopped
-
-  celery-worker:
-    build: ./file-processor-service
-    environment:
-      - REDIS_HOST=redis:6379
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - CONTENT_MANAGEMENT_SERVICE=http://content-management-service:8000
-    depends_on:
-      - redis
-      - file-processor-service
-    command: >
-      celery -A shared.celery_app
-      worker
-      --loglevel info
-    restart: unless-stopped
-
-  # clamav:
-  #   image: mkodockx/docker-clamav:alpine
-  #   restart: unless-stopped
 
 volumes:
   redis-data:
