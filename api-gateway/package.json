@@ -1,0 +1,14 @@
+{
+  "name": "leffic-api-gateway",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "njs-types": "^0.9.1",
+    "typescript": "^5.7.3"
+  }
+}

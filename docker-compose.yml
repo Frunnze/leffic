@@ -18,15 +18,17 @@ services:
       - "3009:80"
     restart: unless-stopped
 
-  kong:
-    image: kong:3.9
+  api-gateway:
+    build: ./api-gateway
     ports:
-      - 8888:8000
+      - 8888:80
     environment:
-      KONG_DATABASE: "off"
-      KONG_DECLARATIVE_CONFIG: /kong/kong.yml
-    volumes:
-      - ./api-gateway/kong.yml:/kong/kong.yml
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+    depends_on:
+      - user-service
+      - content-management-service
+      - file-processor-service
+      - scheduler-service
     restart: unless-stopped
 
   file-processor-service:
