@@ -1,9 +1,9 @@
 import os
 from collections.abc import Generator
+from contextlib import closing
 
 import psycopg2
 from psycopg2 import sql
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -19,14 +19,16 @@ _POSTGRES_SCHEME = "postgresql"
 
 
 def create_database_if_not_exists() -> None:
-    with psycopg2.connect(
-        dbname="postgres",
-        user=db_user,
-        password=db_pass,
-        host=db_host,
-        port=db_port,
+    with closing(
+        psycopg2.connect(
+            dbname="postgres",
+            user=db_user,
+            password=db_pass,
+            host=db_host,
+            port=db_port,
+        )
     ) as connection:
-        connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        connection.autocommit = True
 
         with connection.cursor() as cursor:
             cursor.execute(

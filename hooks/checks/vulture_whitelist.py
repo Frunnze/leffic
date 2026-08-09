@@ -23,6 +23,7 @@ review_flashcard  # unused function (src/features/study_units/flashcard_router.p
 get_flashcards_stats  # unused function (src/features/study_units/flashcard_stats_router.py:24)
 get_note  # unused function (src/features/study_units/note_router.py:15)
 get_notes_stats  # unused function (src/features/study_units/note_router.py:31)
+review_note  # unused function (src/features/study_units/note_router.py:38)
 save_flashcards  # unused function (src/features/study_units/study_unit_saving.py:27)
 save_note  # unused function (src/features/study_units/study_unit_saving.py:67)
 save_test  # unused function (src/features/study_units/study_unit_saving.py:89)
@@ -49,3 +50,4 @@ generate_study_units  # unused function (src/features/study_units_generation/stu
 get_flashcard_status  # unused function (src/features/study_units_generation/task_status_router.py:33)
 get_test_task_status  # unused function (src/features/study_units_generation/task_status_router.py:49)
 get_note_task_status  # unused function (src/features/study_units_generation/task_status_router.py:65)
+_.autocommit  # unused attribute (src/shared/database.py:31)

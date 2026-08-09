@@ -3,7 +3,7 @@ FROM python:3.12-slim
 WORKDIR /app
 ENV PYTHONPATH=/app/src
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-dev \
     libxml2-dev \
     libxslt1-dev \
@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     unrtf \
     poppler-utils \
     tesseract-ocr \
+    tesseract-ocr-eng \
     flac \
     ffmpeg \
     lame \
@@ -19,14 +20,17 @@ RUN apt-get update && apt-get install -y \
     sox \
     libjpeg-dev \
     swig \
-    libreoffice \
+    libreoffice-writer \
+    libreoffice-calc \
+    libreoffice-impress \
+    fonts-liberation \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install "pip<24.1"
-RUN pip install -r requirements.txt
-RUN pip install --upgrade six
+RUN pip install --no-cache-dir "pip<24.1"
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade six
 
 COPY . .
 CMD ["uvicorn", "run:app", "--host", "0.0.0.0", "--port", "8000"]
