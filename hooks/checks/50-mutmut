@@ -4,40 +4,24 @@ set -e
 
 require_binary "$mutmut_binary" mutmut
 
-if [ -n "$SKIP_MUTATION" ]; then
-    echo "pre-commit: mutation testing (skipped)"
-    exit 0
-fi
-
-unmutatable_marker="nothing matches"
-
-echo "pre-commit: mutation testing (staged modules)"
+echo "pre-commit: mutation testing (all services)"
 
 for service in $services; do
-    staged_sources=$(git diff --cached --name-only --diff-filter=d \
-        -- "$service/src/*.py")
+    rm -rf "$repository_root/$service/mutants"
 
-    changed_modules=$(echo "$staged_sources" | sed '/^$/d' | sort -u \
-        | sed "s|^$service/src/||; s|\.py$||; s|/|.|g")
+    mutation_failed=""
 
-    if [ -z "$changed_modules" ]; then
-        continue
-    fi
-
-    mutant_filters=$(echo "$changed_modules" | sed 's|$|.*|' | tr '\n' ' ')
-
-    if ! mutation_output=$(cd "$service" && "$mutmut_binary" run \
-        $mutant_filters 2>&1); then
-        if echo "$mutation_output" | grep -q "$unmutatable_marker"; then
-            continue
-        fi
-
-        echo "$mutation_output" >&2
-        exit 1
+    if ! mutation_output=$(cd "$service" && "$mutmut_binary" run 2>&1); then
+        mutation_failed=1
     fi
 
     surviving_mutants=$(cd "$service" && "$mutmut_binary" results \
         | grep ': survived$' || true)
+
+    if [ -z "$surviving_mutants" ] && [ -n "$mutation_failed" ]; then
+        echo "$mutation_output" >&2
+        exit 1
+    fi
 
     if [ -n "$surviving_mutants" ]; then
         echo "pre-commit: these mutants survived in $service:" >&2
