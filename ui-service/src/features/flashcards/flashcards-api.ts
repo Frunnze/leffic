@@ -36,7 +36,9 @@ export class FlashcardsApi {
     };
   }
 
-  static async ratingIntervals(card: FsrsCard): Promise<RatingIntervals | null> {
+  static async ratingIntervals(
+    card: FsrsCard | null,
+  ): Promise<RatingIntervals | null> {
     const response = await HttpClient.send({
       endpoint: "/api/scheduler/public/ratings-times",
       method: "POST",
@@ -81,7 +83,7 @@ export class FlashcardsApi {
       front: Json.stringOr(content.front, ""),
       back: Json.stringOr(content.back, ""),
       nextReview: Json.stringOrNull(raw.next_review),
-      fsrsCard: Json.object(raw.fsrs_card, "flashcard.fsrs_card"),
+      fsrsCard: Json.objectOrNull(raw.fsrs_card),
     };
   }
 }

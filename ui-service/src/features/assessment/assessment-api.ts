@@ -42,7 +42,7 @@ export class AssessmentApi {
   static async submitAnswer(
     testItemId: string,
     testSession: string,
-    answers: readonly string[],
+    answers: readonly number[],
   ): Promise<void> {
     await HttpClient.send({
       endpoint: "/api/content/review-test-item",
@@ -88,16 +88,16 @@ export class AssessmentApi {
 
   private static toOption(raw: JsonObject): AssessmentOption {
     return {
-      id: Json.identifier(raw.id, "assessmentOption.id"),
+      id: Json.number(raw.id, "assessmentOption.id"),
       option: Json.stringOr(raw.option, ""),
     };
   }
 
-  private static toAnswers(value: unknown): readonly string[] {
+  private static toAnswers(value: unknown): readonly number[] {
     if (!Array.isArray(value)) return [];
 
     return value.map((entry, index) =>
-      Json.identifier(entry, `testItem.last_answers[${index}]`),
+      Json.number(entry, `testItem.last_answers[${index}]`),
     );
   }
 }

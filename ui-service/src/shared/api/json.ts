@@ -44,6 +44,14 @@ export class Json {
     return typeof value === "string" ? value : null;
   }
 
+  static objectOrNull(value: unknown): JsonObject | null {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      return null;
+    }
+
+    return value as JsonObject;
+  }
+
   static numberOrNull(value: unknown): number | null {
     return typeof value === "number" && !Number.isNaN(value) ? value : null;
   }

@@ -1,5 +1,5 @@
 export type AssessmentOption = {
-  readonly id: string;
+  readonly id: number;
   readonly option: string;
 };
 
@@ -7,7 +7,7 @@ export type AssessmentItem = {
   readonly id: string;
   readonly question: string;
   readonly options: readonly AssessmentOption[];
-  readonly lastAnswers: readonly string[];
+  readonly lastAnswers: readonly number[];
 };
 
 export type AssessmentPage = {

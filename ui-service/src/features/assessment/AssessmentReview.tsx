@@ -18,14 +18,14 @@ export function AssessmentReview(props: AssessmentReviewProps): JSX.Element {
     AssessmentProgress.storedIndex(props.scopeId),
   );
   const [chosenAnswers, setChosenAnswers] = createSignal<
-    Readonly<Record<string, readonly string[]>>
+    Readonly<Record<string, readonly number[]>>
   >({});
   const [correctCount, setCorrectCount] = createSignal<number | null>(null);
 
   const currentItem = (): AssessmentItem | undefined =>
     currentPage()?.items[itemIndex()];
 
-  const answersFor = (item: AssessmentItem): readonly string[] =>
+  const answersFor = (item: AssessmentItem): readonly number[] =>
     chosenAnswers()[item.id] ?? item.lastAnswers;
 
   const totalItems = (): number => currentPage()?.totalItems ?? 0;
@@ -106,7 +106,7 @@ export function AssessmentReview(props: AssessmentReviewProps): JSX.Element {
     await loadPage(FIRST_PAGE);
   };
 
-  const chooseAnswer = (item: AssessmentItem, optionId: string): void => {
+  const chooseAnswer = (item: AssessmentItem, optionId: number): void => {
     setChosenAnswers({ ...chosenAnswers(), [item.id]: [optionId] });
   };
 

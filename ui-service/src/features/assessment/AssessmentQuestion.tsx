@@ -5,10 +5,10 @@ import type { AssessmentItem } from "./assessment-models";
 
 export type AssessmentQuestionProps = {
   readonly item: AssessmentItem;
-  readonly chosenAnswers: readonly string[];
+  readonly chosenAnswers: readonly number[];
   readonly position: number;
   readonly totalItems: number;
-  readonly onChoose: (optionId: string) => void;
+  readonly onChoose: (optionId: number) => void;
   readonly onBack: () => void;
   readonly onNext: () => void;
 };

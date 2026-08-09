@@ -20,7 +20,10 @@ export type ImportMenuProps = {
   readonly folderId: string;
   readonly folderName: string;
   readonly variant: "toolbar" | "empty-state";
-  readonly onUnitsAdded: (units: readonly Unit[]) => void;
+  readonly onUnitsAdded: (
+    units: readonly Unit[],
+    folderId: string,
+  ) => void;
 };
 
 export function ImportMenu(props: ImportMenuProps): JSX.Element {
@@ -33,17 +36,20 @@ export function ImportMenu(props: ImportMenuProps): JSX.Element {
     source: GenerationSource,
     sourceLabel: string,
   ): Promise<void> => {
+    const targetFolderId = props.folderId;
     const progressToast = toasts.show({
       tone: "progress",
       title: `Generating from ${sourceLabel}`,
       detail: "About a minute. You can keep working.",
     });
-    const tasks = await GenerationApi.start(source, props.folderId);
+    const tasks = await GenerationApi.start(source, targetFolderId);
 
     const stop = GenerationWatcher.watch(tasks, (outcome) => {
       toasts.dismiss(progressToast);
 
-      if (outcome.unit !== null) props.onUnitsAdded([outcome.unit]);
+      if (outcome.unit !== null) {
+        props.onUnitsAdded([outcome.unit], targetFolderId);
+      }
 
       toasts.show({
         tone: outcome.succeeded ? "success" : "failure",
@@ -60,7 +66,8 @@ export function ImportMenu(props: ImportMenuProps): JSX.Element {
   };
 
   const uploadChosenFile = async (chosen: File): Promise<void> => {
-    const uploaded = await GenerationApi.uploadFile(chosen, props.folderId);
+    const targetFolderId = props.folderId;
+    const uploaded = await GenerationApi.uploadFile(chosen, targetFolderId);
     props.onUnitsAdded(
       uploaded.map((file) => ({
         id: file.fileId,
@@ -71,6 +78,7 @@ export function ImportMenu(props: ImportMenuProps): JSX.Element {
         dueCount: null,
         meta: null,
       })),
+      targetFolderId,
     );
 
     const first = uploaded[0];

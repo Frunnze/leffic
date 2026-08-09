@@ -1,5 +1,7 @@
-import { createSignal, type JSX } from "solid-js";
+import { createSignal, onCleanup, onMount, type JSX } from "solid-js";
 import { Icon } from "./icons/Icon";
+
+const ESCAPE_KEY = "Escape";
 
 export type PromptDialogProps = {
   readonly title: string;
@@ -14,17 +16,35 @@ export type PromptDialogProps = {
 
 export function PromptDialog(props: PromptDialogProps): JSX.Element {
   const [value, setValue] = createSignal("");
+  let inputElement: HTMLInputElement | undefined;
+
+  const isEmpty = (): boolean => value().trim().length === 0;
 
   const confirm = (event: Event): void => {
     event.preventDefault();
-    const entered = value().trim();
-    if (entered.length === 0) return;
+    if (isEmpty()) return;
 
-    props.onConfirm(entered);
+    props.onConfirm(value().trim());
   };
 
+  onMount(() => {
+    inputElement?.focus();
+
+    const dismissOnEscape = (event: KeyboardEvent): void => {
+      if (event.key === ESCAPE_KEY) props.onCancel();
+    };
+
+    document.addEventListener("keydown", dismissOnEscape);
+    onCleanup(() => document.removeEventListener("keydown", dismissOnEscape));
+  });
+
   return (
-    <div class="modal-backdrop">
+    <div
+      class="modal-backdrop"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) props.onCancel();
+      }}
+    >
       <form
         class="modal"
         role="dialog"
@@ -53,6 +73,7 @@ export function PromptDialog(props: PromptDialogProps): JSX.Element {
           <div class="field">
             <label for="dialog-input">{props.label}</label>
             <input
+              ref={inputElement}
               class="input"
               id="dialog-input"
               type={props.inputType}
@@ -67,7 +88,7 @@ export function PromptDialog(props: PromptDialogProps): JSX.Element {
           <button class="btn" type="button" onClick={() => props.onCancel()}>
             Cancel
           </button>
-          <button class="btn btn-primary" type="submit">
+          <button class="btn btn-primary" type="submit" disabled={isEmpty()}>
             {props.confirmLabel}
           </button>
         </div>

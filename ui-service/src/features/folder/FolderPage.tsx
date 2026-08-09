@@ -7,6 +7,7 @@ import { AssessmentReview } from "../assessment/AssessmentReview";
 import { FlashcardsReview } from "../flashcards/FlashcardsReview";
 import { DueSection } from "./DueSection";
 import { ImportMenu } from "./import/ImportMenu";
+import { NewFolderButton } from "./NewFolderButton";
 import { StatsApi } from "./stats-api";
 import { UnitListSkeleton } from "./UnitListSkeleton";
 import { UnitPresentation } from "./unit-presentation";
@@ -28,7 +29,9 @@ export default function FolderPage(): JSX.Element {
   );
   const [openReview, setOpenReview] = createSignal<OpenReview>("none");
 
-  const addUnits = (added: readonly Unit[]): void => {
+  const addUnits = (added: readonly Unit[], targetFolderId: string): void => {
+    if (targetFolderId !== params.id) return;
+
     const current = folder();
     if (current === undefined) return;
 
@@ -36,6 +39,8 @@ export default function FolderPage(): JSX.Element {
       ...current,
       units: UnitsApi.sortByNewest([...added, ...current.units]),
     });
+
+    void refetchBreakdown();
   };
 
   const deleteUnit = async (unit: Unit): Promise<void> => {
@@ -47,6 +52,8 @@ export default function FolderPage(): JSX.Element {
       ...current,
       units: current.units.filter((kept) => kept.id !== unit.id),
     });
+
+    void refetchBreakdown();
   };
 
   const closeReview = (): void => {
@@ -62,12 +69,18 @@ export default function FolderPage(): JSX.Element {
             <div class="folder-title-row">
               <h1 class="folder-name">{folder()?.parentFolderName ?? "Home"}</h1>
               <div class="folder-actions">
-                <ImportMenu
+                <NewFolderButton
                   folderId={params.id}
-                  folderName={folder()?.parentFolderName ?? "Home"}
-                  variant="toolbar"
-                  onUnitsAdded={addUnits}
+                  onFolderCreated={(created) => addUnits(created, params.id)}
                 />
+                <Show when={(folder()?.units.length ?? 0) > 0}>
+                  <ImportMenu
+                    folderId={params.id}
+                    folderName={folder()?.parentFolderName ?? "Home"}
+                    variant="toolbar"
+                    onUnitsAdded={addUnits}
+                  />
+                </Show>
               </div>
             </div>
           </header>

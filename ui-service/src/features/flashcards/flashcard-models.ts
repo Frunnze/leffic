@@ -7,7 +7,7 @@ export type Flashcard = {
   readonly front: string;
   readonly back: string;
   readonly nextReview: string | null;
-  readonly fsrsCard: FsrsCard;
+  readonly fsrsCard: FsrsCard | null;
 };
 
 export type FlashcardDeck = {
