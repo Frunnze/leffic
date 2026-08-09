@@ -9,8 +9,8 @@ import uuid
 # Import your FastAPI app and the exact auth‐dependency it uses,
 # directly from run.py (so you don't import app.dependencies).
 from run import app  
-from app.models import Base, Folder
-from app.database import get_db, SQLALCHEMY_DATABASE_URL
+from src.shared.models import Base, Folder
+from src.shared.database import get_db, SQLALCHEMY_DATABASE_URL
 
 # ─── Database setup ───────────────────────────────────────────────────────────
 engine = create_engine(SQLALCHEMY_DATABASE_URL)

@@ -7,7 +7,7 @@ from unittest.mock import patch, Mock
 # Dynamically import extract_link_main_content from the file path
 spec = importlib.util.spec_from_file_location(
     "link_extractor",
-    os.path.join(os.path.dirname(__file__), '../file-processor-service/app/tools/link_extractor.py')
+    os.path.join(os.path.dirname(__file__), '../file-processor-service/src/features/study_units_generation/link_extractor.py')
 )
 link_extractor = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(link_extractor)

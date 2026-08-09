@@ -1,0 +1,31 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/_env.sh"
+
+require_binary "$mutmut_binary" mutmut
+
+echo "pre-commit: mutation testing (all services)"
+
+for service in $services; do
+    rm -rf "$repository_root/$service/mutants"
+
+    mutation_failed=""
+
+    if ! mutation_output=$(cd "$service" && "$mutmut_binary" run 2>&1); then
+        mutation_failed=1
+    fi
+
+    surviving_mutants=$(cd "$service" && "$mutmut_binary" results \
+        | grep ': survived$' || true)
+
+    if [ -z "$surviving_mutants" ] && [ -n "$mutation_failed" ]; then
+        echo "$mutation_output" >&2
+        exit 1
+    fi
+
+    if [ -n "$surviving_mutants" ]; then
+        echo "pre-commit: these mutants survived in $service:" >&2
+        echo "$surviving_mutants" >&2
+        exit 1
+    fi
+done

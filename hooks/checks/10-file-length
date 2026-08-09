@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/_env.sh"
+
+maximum_file_lines=200
+
+echo "pre-commit: file length (max $maximum_file_lines lines)"
+
+overlong_files=$(git ls-files '*.py' | while read -r python_file; do
+    [ -f "$python_file" ] || continue
+    wc -l "$python_file"
+done | awk -v limit="$maximum_file_lines" \
+    '$1 > limit {print $2 " (" $1 " lines)"}')
+
+if [ -n "$overlong_files" ]; then
+    echo "pre-commit: over $maximum_file_lines lines:" >&2
+    echo "$overlong_files" >&2
+    exit 1
+fi

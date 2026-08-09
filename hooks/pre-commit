@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+repository_root=$(git rev-parse --show-toplevel)
+cd "$repository_root"
+
+for check in hooks/checks/*; do
+    [ -f "$check" ] || continue
+    [ -x "$check" ] || continue
+    "$check"
+done
