@@ -7,6 +7,7 @@ ruff_binary="$repository_root/.venv/bin/ruff"
 basedpyright_binary="$repository_root/.venv/bin/basedpyright"
 mutmut_binary="$repository_root/.venv/bin/mutmut"
 pylint_binary="$repository_root/.venv/bin/pylint"
+vulture_binary="$repository_root/.venv/bin/vulture"
 python_binary="$repository_root/.venv/bin/python"
 
 require_binary() {
