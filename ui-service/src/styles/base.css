@@ -27,7 +27,8 @@
   .review,
   .test-stage,
   .notes-stage,
-  .file-stage {
+  .file-stage,
+  .landing {
     height: 100%;
     min-height: 0;
     overflow: auto;

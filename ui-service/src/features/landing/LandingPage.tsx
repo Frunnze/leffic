@@ -15,6 +15,37 @@ const OUTPUTS: readonly Artefact[] = [
   { icon: "test", name: "24 questions" },
 ];
 
+type Method = {
+  readonly icon: IconName;
+  readonly name: string;
+  readonly claim: string;
+  readonly applied: string;
+};
+
+const METHODS: readonly Method[] = [
+  {
+    icon: "test",
+    name: "Active recall",
+    claim: "Pulling an answer from memory teaches you more than reading it again.",
+    applied:
+      "Every flashcard and test question makes you produce the answer before it is shown.",
+  },
+  {
+    icon: "study",
+    name: "Spaced repetition",
+    claim: "The same hour of study is worth more spread out than crammed.",
+    applied:
+      "An FSRS scheduler returns each item just before you would have forgotten it.",
+  },
+  {
+    icon: "flashcards",
+    name: "Interleaving",
+    claim: "Mixing topics is harder in the moment and stronger later.",
+    applied:
+      "Reviewing a folder draws from every deck inside it, not one deck at a time.",
+  },
+];
+
 export default function LandingPage(): JSX.Element {
   return (
     <div class="screen">
@@ -85,6 +116,32 @@ export default function LandingPage(): JSX.Element {
               most days are short.
             </p>
           </div>
+        </section>
+
+        <section class="method" aria-labelledby="method-title">
+          <div class="method-heading">
+            <h2 class="method-title" id="method-title">
+              Three findings from learning science, built in
+            </h2>
+            <p class="method-lede">
+              The testing effect, the spacing effect and mixed practice are among
+              the most replicated results in the study of memory. Leffic is
+              assembled out of all three rather than leaving them to you.
+            </p>
+          </div>
+
+          <ul class="method-list">
+            <For each={METHODS}>
+              {(method) => (
+                <li class="method-card">
+                  <Icon name={method.icon} />
+                  <h3 class="method-name">{method.name}</h3>
+                  <p class="method-claim">{method.claim}</p>
+                  <p class="method-applied">{method.applied}</p>
+                </li>
+              )}
+            </For>
+          </ul>
         </section>
       </div>
     </div>
