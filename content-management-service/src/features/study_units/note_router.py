@@ -2,14 +2,13 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.folder_access import owned_folder_id
 from shared.folder_tree import subfolder_ids
-from shared.models import Folder, Note
+from shared.models import Note
 
 note_router = APIRouter()
 
-_HOME_FOLDER = "home"
 _NO_NOTES = "No notes!"
-_MISSING_FOLDER = "Folder does not exist!"
 _MISSING_NOTE = "Note does not exist!"
 
 
@@ -35,18 +34,7 @@ async def get_notes_stats(
     db: DatabaseSession,
     folder_id: str | None = None,
 ) -> JSONResponse:
-    resolved_folder_id = user_id if folder_id == _HOME_FOLDER else folder_id
-
-    user_folder_exists = (
-        db.query(Folder)
-        .filter(Folder.user_id == user_id, Folder.id == resolved_folder_id)
-        .first()
-    )
-
-    if not user_folder_exists or resolved_folder_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=_MISSING_FOLDER
-        )
+    resolved_folder_id = owned_folder_id(db, user_id, folder_id)
 
     folder_ids = subfolder_ids(resolved_folder_id, user_id)
     due_notes = (

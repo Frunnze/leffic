@@ -3,7 +3,6 @@ from datetime import UTC, datetime
 
 from sqlalchemy import (
     JSON,
-    Boolean,
     DateTime,
     ForeignKey,
     Integer,
@@ -13,29 +12,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from shared.database import Base
 from shared.models.columns import FlexibleUuid
+from shared.models.mixins import FolderContent
 
 _CASCADE_ORPHANS = "all, delete-orphan"
 
 
-class FlashcardDeck(Base):
+class FlashcardDeck(FolderContent, Base):
     __tablename__: str = "flashcard_decks"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        FlexibleUuid(),
-        primary_key=True,
-        default=uuid.uuid4,
-        nullable=False,
-    )
-    folder_id: Mapped[uuid.UUID] = mapped_column(
-        FlexibleUuid(), ForeignKey("folders.id"), nullable=False
-    )
-    name: Mapped[str] = mapped_column(String, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now(UTC), nullable=False
-    )
-    public: Mapped[bool] = mapped_column(
-        Boolean, default=False, nullable=False
-    )
 
     flashcards: Mapped[list["Flashcard"]] = relationship(
         backref="deck", cascade=_CASCADE_ORPHANS

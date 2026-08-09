@@ -6,6 +6,7 @@ services="user-service content-management-service scheduler-service file-process
 ruff_binary="$repository_root/.venv/bin/ruff"
 basedpyright_binary="$repository_root/.venv/bin/basedpyright"
 mutmut_binary="$repository_root/.venv/bin/mutmut"
+pylint_binary="$repository_root/.venv/bin/pylint"
 python_binary="$repository_root/.venv/bin/python"
 
 require_binary() {

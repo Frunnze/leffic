@@ -3,7 +3,6 @@ from datetime import UTC, datetime
 
 from sqlalchemy import (
     JSON,
-    Boolean,
     DateTime,
     Float,
     ForeignKey,
@@ -14,29 +13,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from shared.database import Base
 from shared.models.columns import FlexibleUuid
+from shared.models.mixins import FolderContent, UuidPrimaryKey
 
 _CASCADE_ORPHANS = "all, delete-orphan"
 
 
-class Test(Base):
+class Test(FolderContent, Base):
     __tablename__: str = "tests"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        FlexibleUuid(),
-        primary_key=True,
-        default=uuid.uuid4,
-        nullable=False,
-    )
-    folder_id: Mapped[uuid.UUID] = mapped_column(
-        FlexibleUuid(), ForeignKey("folders.id"), nullable=False
-    )
-    name: Mapped[str] = mapped_column(String, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now(UTC), nullable=False
-    )
-    public: Mapped[bool] = mapped_column(
-        Boolean, default=False, nullable=False
-    )
 
     test_items: Mapped[list["TestItem"]] = relationship(
         backref="test", cascade=_CASCADE_ORPHANS
@@ -65,15 +49,9 @@ class TestItem(Base):
     )
 
 
-class TestSession(Base):
+class TestSession(UuidPrimaryKey, Base):
     __tablename__: str = "test_sessions"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        FlexibleUuid(),
-        primary_key=True,
-        default=uuid.uuid4,
-        nullable=False,
-    )
     origin_id: Mapped[uuid.UUID] = mapped_column(
         FlexibleUuid(), nullable=False
     )  # test/folder id
