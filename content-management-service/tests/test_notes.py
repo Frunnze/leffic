@@ -64,28 +64,6 @@ def deck_id(sessions: sessionmaker[Session]) -> str:
         return str(deck.id)
 
 
-def test_reading_a_note_marks_it_read(
-    client: TestClient, sessions: sessionmaker[Session]
-) -> None:
-    with sessions() as session:
-        folder = Folder(id=_HOME_ID, name="Home", user_id=_HOME_ID)
-        session.add(folder)
-        note = Note(
-            folder_id=folder.id, name="N", content="body", type="general"
-        )
-        session.add(note)
-        session.commit()
-        note_id = str(note.id)
-
-    first = client.get("/note", params={"note_id": note_id})
-    _ = client.get("/note", params={"note_id": note_id})
-
-    with sessions() as session:
-        assert session.query(Note).one().read
-
-    assert cast("dict[str, str]", first.json())["content"] == "body"
-
-
 def test_reading_an_unknown_note_is_not_found(client: TestClient) -> None:
     response = client.get("/note", params={"note_id": str(uuid.uuid4())})
 

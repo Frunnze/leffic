@@ -92,3 +92,13 @@
   color: var(--ink-3);
   font-size: var(--text-sm);
 }
+
+.note-foot .btn.is-done {
+  border-color: var(--success);
+  background: var(--surface);
+  color: var(--ink-2);
+}
+
+.note-foot .btn.is-done svg {
+  color: var(--success);
+}

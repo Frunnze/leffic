@@ -19,7 +19,16 @@ export class NotesApi {
       name: Json.stringOr(rawNote.name, "Untitled note"),
       content,
       readingMinutes: NotesApi.readingMinutes(content),
+      isRead: rawNote.read === true,
     };
+  }
+
+  static async markAsRead(noteId: string): Promise<void> {
+    await HttpClient.json({
+      endpoint: "/api/content/review-note",
+      method: "POST",
+      body: { note_id: noteId },
+    });
   }
 
   private static readingMinutes(html: string): number | null {
