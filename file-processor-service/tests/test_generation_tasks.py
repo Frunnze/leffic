@@ -156,7 +156,7 @@ def test_generating_flashcards_strips_the_deck_name_from_the_payload() -> None:
     assert "basic_flashcards" not in factory.ai.prompts[0]
 
 
-def test_generating_flashcards_handles_missing_types() -> None:
+def test_generating_flashcards_falls_back_to_basic_types() -> None:
     metadata: FlashcardsMetadata = {
         "comprehensiveness": "high",
         "verbosity": "high",
@@ -175,4 +175,4 @@ def test_generating_flashcards_handles_missing_types() -> None:
     assert "Comprehensiveness: high" in factory.ai.prompts[0]
     assert "Flashcard verbosity: high" in factory.ai.prompts[0]
     assert "Flashcards number" not in factory.ai.prompts[0]
-    assert "basic_flashcards" not in factory.ai.prompts[0]
+    assert "basic_flashcards" in factory.ai.prompts[0]

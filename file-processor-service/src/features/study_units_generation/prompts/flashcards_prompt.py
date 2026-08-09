@@ -47,10 +47,17 @@ _DECK_NAME_FORMAT = """
 
 
 def _output_format(flashcard_types: tuple[str, ...]) -> str:
+    known_types = tuple(
+        flashcard_type
+        for flashcard_type in flashcard_types
+        if flashcard_type in _TYPE_OUTPUT_FORMATS
+    )
+    requested_types = known_types or _DEFAULT_TYPES
+
     output_format = "{"
 
-    for flashcard_type in flashcard_types:
-        output_format += _TYPE_OUTPUT_FORMATS.get(flashcard_type, "")
+    for flashcard_type in requested_types:
+        output_format += _TYPE_OUTPUT_FORMATS[flashcard_type]
 
     return output_format + _DECK_NAME_FORMAT + "}"
 

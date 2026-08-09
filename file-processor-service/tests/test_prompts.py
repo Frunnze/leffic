@@ -108,3 +108,15 @@ def test_no_amount_leaves_the_constraint_line_empty() -> None:
         "- Comprehensiveness: medium;",
         "- Flashcard verbosity: low;",
     ]
+
+
+def test_flashcards_prompt_falls_back_when_no_type_is_requested() -> None:
+    prompt = get_flashcards_system_prompt(flashcard_types=())
+
+    assert "basic_flashcards" in prompt
+
+
+def test_flashcards_prompt_always_asks_for_at_least_one_card_type() -> None:
+    prompt = get_flashcards_system_prompt(flashcard_types=("mystery",))
+
+    assert "basic_flashcards" in prompt
