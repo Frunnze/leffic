@@ -4,14 +4,45 @@ set -e
 
 require_binary "$mutmut_binary" mutmut
 
-echo "pre-commit: mutation testing (all services)"
+echo "pre-commit: mutation testing (staged source only)"
+
+# A name no mutant can have, so mutmut builds the mutants without running them.
+unmatchable_mutant="__no_such_mutant__"
 
 for service in $services; do
+    staged_sources=$(git diff --cached --name-only --diff-filter=ACMR \
+        -- "$service/src" | grep '\.py$' || true)
+
+    if [ -z "$staged_sources" ]; then
+        continue
+    fi
+
     rm -rf "$repository_root/$service/mutants"
+    (cd "$service" && "$mutmut_binary" run "$unmatchable_mutant") \
+        >/dev/null 2>&1 || true
+
+    every_mutant=$(cd "$service" && "$mutmut_binary" results \
+        | awk -F: '{print $1}' | tr -d ' ')
+
+    staged_mutants=""
+
+    for source_file in $staged_sources; do
+        module=$(echo "$source_file" \
+            | sed "s|^$service/src/||; s|\.py\$||; s|/|.|g")
+        matching=$(echo "$every_mutant" | grep "^$module\." || true)
+        staged_mutants="$staged_mutants $matching"
+    done
+
+    if [ -z "$(echo "$staged_mutants" | tr -d ' ')" ]; then
+        continue
+    fi
+
+    echo "pre-commit: mutating what is staged in $service"
 
     mutation_failed=""
 
-    if ! mutation_output=$(cd "$service" && "$mutmut_binary" run 2>&1); then
+    if ! mutation_output=$(cd "$service" \
+        && "$mutmut_binary" run $staged_mutants 2>&1); then
         mutation_failed=1
     fi
 

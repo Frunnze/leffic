@@ -1,4 +1,5 @@
 import pytest
+import requests
 import importlib.util
 import sys
 import os
@@ -17,10 +18,11 @@ extract_link_main_content = link_extractor.extract_link_main_content
 class MockResponse:
     def __init__(self, content, status_code=200):
         self.content = content.encode('utf-8')
+        self.text = content
         self.status_code = status_code
     def raise_for_status(self):
         if self.status_code != 200:
-            raise Exception('HTTP Error')
+            raise requests.HTTPError('HTTP Error')
 
 @patch('requests.get')
 def test_article_tag(mock_get):
@@ -66,7 +68,7 @@ def test_no_main_content(mock_get):
 
 @patch('requests.get')
 def test_error_handling(mock_get):
-    mock_get.side_effect = Exception('Network error')
+    mock_get.side_effect = requests.ConnectionError('Network error')
     result = extract_link_main_content('http://test.com')
     assert result is None
 
