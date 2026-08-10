@@ -58,3 +58,6 @@ pytest_add_cli_args_test_selection = ["tests"]
 
 [tool.deptry.per_rule_ignores]
 DEP002 = ["uvicorn", "bcrypt"]
+
+[tool.deptry]
+known_first_party = ["src", "run", "app_factory", "features", "shared"]

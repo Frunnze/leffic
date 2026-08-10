@@ -1,24 +1,17 @@
-import uuid
-
-from sqlalchemy import String, Uuid
+from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from shared.database import Base
+from shared.uuid_primary_key import UuidPrimaryKey
 
 _USERNAME_LENGTH = 50
 _EMAIL_LENGTH = 100
 _HASHED_PASSWORD_LENGTH = 200
 
 
-class User(Base):
+class User(UuidPrimaryKey, Base):
     __tablename__: str = "users"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-        nullable=False,
-    )
     username: Mapped[str] = mapped_column(
         String(_USERNAME_LENGTH), unique=True, index=True
     )
