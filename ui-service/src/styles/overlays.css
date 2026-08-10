@@ -55,8 +55,7 @@
   padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-left: 3px solid var(--ink-3);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-2);
 }
 
@@ -86,24 +85,12 @@
   margin-left: auto;
 }
 
-.toast-progress {
-  border-left-color: var(--brand);
-}
-
 .toast-progress .toast-icon {
   color: var(--brand);
 }
 
-.toast-success {
-  border-left-color: var(--success);
-}
-
 .toast-success .toast-icon {
   color: var(--success);
-}
-
-.toast-failure {
-  border-left-color: var(--danger);
 }
 
 .toast-failure .toast-icon {

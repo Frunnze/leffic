@@ -26,6 +26,7 @@ export type IconName =
   | "failure"
   | "check"
   | "chevronRight"
+  | "send"
   | "start";
 
 type IconShape = {
@@ -168,6 +169,11 @@ export const ICONS: Readonly<Record<IconName, IconShape>> = {
     viewBox: "0 0 24 24",
     body:
       "<path d=\"M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.42 1.41l4.58-4.58a1 1 0 0 0 0-1.42L10.71 6.71a1 1 0 0 0-1.42 0Z\"/>",
+  },
+  send: {
+    viewBox: "0 0 24 24",
+    body:
+      "<path d=\"M11.29 4.29a1 1 0 0 1 1.42 0l5.58 5.58a1 1 0 1 1-1.42 1.42L13 7.41V19a1 1 0 1 1-2 0V7.41l-3.87 3.88a1 1 0 0 1-1.42-1.42Z\"/>",
   },
   start: {
     viewBox: "0 0 20 20",

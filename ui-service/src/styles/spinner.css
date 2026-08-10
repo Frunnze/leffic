@@ -1,0 +1,25 @@
+.spinner {
+  width: 32px;
+  height: 32px;
+  animation: spin 0.9s linear infinite;
+}
+
+.spinner-track {
+  fill: var(--line);
+}
+
+.spinner-head {
+  fill: var(--brand);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2.4s;
+  }
+}

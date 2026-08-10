@@ -8,11 +8,6 @@ const OPENING_MESSAGE: ChatMessage = {
   content: "Ask me anything about the material in this folder.",
 };
 
-const SUGGESTIONS: readonly string[] = [
-  "Summarise this folder",
-  "Quiz me on this",
-];
-
 export type ChatbotProps = {
   readonly onClose: () => void;
 };
@@ -80,20 +75,6 @@ export function Chatbot(props: ChatbotProps): JSX.Element {
         </Show>
       </div>
 
-      <div class="chat-suggestions">
-        <For each={SUGGESTIONS}>
-          {(suggestion) => (
-            <button
-              class="chat-suggestion"
-              type="button"
-              onClick={() => void send(suggestion)}
-            >
-              {suggestion}
-            </button>
-          )}
-        </For>
-      </div>
-
       <form
         class="chatbot-compose"
         onSubmit={(event) => {
@@ -101,16 +82,27 @@ export function Chatbot(props: ChatbotProps): JSX.Element {
           void send(draft());
         }}
       >
-        <input
-          class="input"
-          type="text"
+        <textarea
+          class="chatbot-input"
+          rows="3"
           aria-label="Message"
           placeholder="Ask a question"
           value={draft()}
           onInput={(event) => setDraft(event.currentTarget.value)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" || event.shiftKey) return;
+
+            event.preventDefault();
+            void send(draft());
+          }}
         />
-        <button class="btn btn-primary" type="submit" disabled={isWaiting()}>
-          Send
+        <button
+          class="btn btn-primary btn-icon chatbot-send"
+          type="submit"
+          aria-label="Send"
+          disabled={isWaiting()}
+        >
+          <Icon name="send" size="sm" />
         </button>
       </form>
     </aside>

@@ -22,6 +22,7 @@
 }
 
 .test-card {
+  position: relative;
   display: flex;
   flex: 0 1 auto;
   flex-direction: column;
@@ -53,9 +54,9 @@
   gap: var(--space-3);
   min-height: 52px;
   padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  background: var(--surface);
+  background: var(--surface-2);
   color: var(--ink);
   font: inherit;
   font-size: var(--text-md);
@@ -65,11 +66,7 @@
 }
 
 .test-option:hover {
-  border-color: var(--ink-3);
-  background: var(--hover);
-}
-
-.test-option:active {
+  border-color: var(--line-hover);
   background: var(--surface-3);
 }
 
@@ -80,11 +77,15 @@
   flex: none;
   width: 24px;
   height: 24px;
-  border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
+  background: var(--surface-3);
   color: var(--ink-2);
   font-size: var(--text-xs);
   font-weight: 600;
+}
+
+.test-option:hover .test-key {
+  background: var(--surface);
 }
 
 .test-option[aria-pressed="true"] {
@@ -93,7 +94,6 @@
 }
 
 .test-option[aria-pressed="true"] .test-key {
-  border-color: var(--brand);
   background: var(--brand);
   color: var(--on-brand);
 }

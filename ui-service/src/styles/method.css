@@ -2,29 +2,16 @@
   width: 100%;
   max-width: 920px;
   margin: 0 auto;
-  padding: var(--space-6) var(--space-5) var(--space-8);
-  border-top: 1px solid var(--line);
-}
-
-.method-heading {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-bottom: var(--space-5);
+  padding: 0 var(--space-5) var(--space-8);
 }
 
 .method-title {
-  margin: 0;
+  margin: 0 0 var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--line);
   font-size: var(--text-lg);
   font-weight: 600;
   letter-spacing: -0.01em;
-}
-
-.method-lede {
-  max-width: 60ch;
-  margin: 0;
-  color: var(--ink-2);
-  font-size: var(--text-sm);
 }
 
 .method-list {
@@ -65,12 +52,6 @@
 }
 
 .method-claim {
-  margin: 0;
-  color: var(--ink);
-  font-size: var(--text-sm);
-}
-
-.method-applied {
   margin: 0;
   color: var(--ink-2);
   font-size: var(--text-sm);

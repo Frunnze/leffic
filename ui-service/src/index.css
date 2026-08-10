@@ -17,6 +17,13 @@
 @import "./styles/method.css";
 @import "./styles/chat.css";
 @import "./styles/auth.css";
+@import "./styles/settings.css";
+@import "./styles/api-keys.css";
+@import "./styles/tooltip.css";
+@import "./styles/edit.css";
+@import "./styles/import.css";
+@import "./styles/segmented.css";
+@import "./styles/spinner.css";
 
 *,
 *::before,
