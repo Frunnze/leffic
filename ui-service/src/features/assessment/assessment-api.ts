@@ -1,5 +1,6 @@
 import { HttpClient } from "../../shared/api/http";
 import { Json, type JsonObject } from "../../shared/api/json";
+import type { EditedTestItem } from "./TestItemEditor";
 import type {
   AssessmentItem,
   AssessmentOption,
@@ -67,6 +68,24 @@ export class AssessmentApi {
     const payload: unknown = await response.json();
 
     return { correct: Json.numberOr(Json.object(payload, "result").correct, 0) };
+  }
+
+  static async updateItem(
+    testItemId: string,
+    edited: EditedTestItem,
+  ): Promise<void> {
+    await HttpClient.json({
+      endpoint: "/api/content/update-test-item",
+      method: "PATCH",
+      body: {
+        test_item_id: Number(testItemId),
+        content: {
+          question: edited.question,
+          true_option: edited.correctAnswer,
+          false_options: edited.wrongAnswers,
+        },
+      },
+    });
   }
 
   private static toItem(raw: JsonObject): AssessmentItem {

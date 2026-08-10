@@ -5,6 +5,7 @@ import { Dropdown } from "./Dropdown";
 import { Icon } from "./icons/Icon";
 
 const HOME_ROUTE = "/folder/home";
+const SETTINGS_ROUTE = "/settings";
 
 export type RailProps = {
   readonly onToggleAsk: () => void;
@@ -59,7 +60,10 @@ export function Rail(props: RailProps): JSX.Element {
             {
               label: "Settings",
               icon: "settings",
-              onSelect: () => setProfileOpen(false),
+              onSelect: () => {
+                setProfileOpen(false);
+                navigate(SETTINGS_ROUTE);
+              },
             },
             { label: "Log out", icon: "logout", onSelect: () => void logOut() },
           ]}

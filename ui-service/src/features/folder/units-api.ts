@@ -60,6 +60,30 @@ export class UnitsApi {
     });
   }
 
+  static async rename(
+    unitId: string,
+    unitType: UnitType,
+    name: string,
+  ): Promise<void> {
+    await HttpClient.json({
+      endpoint: "/api/content/rename-unit",
+      method: "PATCH",
+      body: { unit_id: unitId, unit_type: unitType, name },
+    });
+  }
+
+  static async move(
+    unitId: string,
+    unitType: UnitType,
+    folderId: string,
+  ): Promise<void> {
+    await HttpClient.json({
+      endpoint: "/api/content/move-unit",
+      method: "PATCH",
+      body: { unit_id: unitId, unit_type: unitType, folder_id: folderId },
+    });
+  }
+
   static toUnit(raw: JsonObject): Unit {
     return {
       id: Json.identifier(raw.id, "unit.id"),

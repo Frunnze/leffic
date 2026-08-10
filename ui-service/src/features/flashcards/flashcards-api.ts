@@ -75,6 +75,25 @@ export class FlashcardsApi {
     };
   }
 
+  static async update(
+    flashcardId: string,
+    front: string,
+    back: string,
+  ): Promise<void> {
+    await HttpClient.json({
+      endpoint: "/api/content/update-flashcard",
+      method: "PATCH",
+      body: { flashcard_id: Number(flashcardId), content: { front, back } },
+    });
+  }
+
+  static async remove(flashcardId: string): Promise<void> {
+    await HttpClient.send({
+      endpoint: `/api/content/delete-flashcard/?flashcard_id=${flashcardId}`,
+      method: "DELETE",
+    });
+  }
+
   private static toFlashcard(raw: JsonObject): Flashcard {
     const content = Json.object(raw.content, "flashcard.content");
 

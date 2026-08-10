@@ -1,7 +1,9 @@
 import { For, Show, type JSX } from "solid-js";
 import { AssessmentProgress } from "./assessment-progress";
+import { TestItemActions } from "./TestItemActions";
 import { Meter } from "../../shared/ui/Meter";
 import type { AssessmentItem } from "./assessment-models";
+import type { EditedTestItem } from "./TestItemEditor";
 
 export type AssessmentQuestionProps = {
   readonly item: AssessmentItem;
@@ -9,6 +11,7 @@ export type AssessmentQuestionProps = {
   readonly position: number;
   readonly totalItems: number;
   readonly onChoose: (optionId: number) => void;
+  readonly onEdit: (edited: EditedTestItem) => void;
   readonly onBack: () => void;
   readonly onNext: () => void;
 };
@@ -26,6 +29,7 @@ export function AssessmentQuestion(props: AssessmentQuestionProps): JSX.Element 
       />
 
       <div class="test-card">
+        <TestItemActions item={props.item} onSave={props.onEdit} />
         <h1 class="test-question">{props.item.question}</h1>
         <div class="test-options">
           <For each={props.item.options}>

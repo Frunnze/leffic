@@ -1,9 +1,14 @@
 import { Show, createSignal, onCleanup, type JSX } from "solid-js";
-import { Dropdown } from "../../../shared/ui/Dropdown";
-import { Icon } from "../../../shared/ui/icons/Icon";
-import { PromptDialog } from "../../../shared/ui/PromptDialog";
-import { GenerationApi } from "./generation-api";
+import { GenerationApi, type GenerationWish } from "./generation-api";
 import { GenerationWatcher } from "./generation-watcher";
+import { Icon } from "../../../shared/ui/icons/Icon";
+import {
+  ImportDialog,
+  type ExtractedSource,
+  type ImportRequest,
+} from "./ImportDialog";
+import { ImportOptions } from "./import-options";
+import { NotesApi } from "../../notes/notes-api";
 import { useToasts } from "../../notifications/ToastContext";
 import type { GenerationSource } from "./generation-models";
 import type { Unit } from "../../../shared/models/units";
@@ -14,27 +19,21 @@ const KIND_LABELS = {
   test: "Test",
 } as const;
 
-type OpenDialog = "none" | "link" | "topic";
-
 export type ImportMenuProps = {
   readonly folderId: string;
   readonly folderName: string;
   readonly variant: "toolbar" | "empty-state";
-  readonly onUnitsAdded: (
-    units: readonly Unit[],
-    folderId: string,
-  ) => void;
+  readonly onUnitsAdded: (units: readonly Unit[], folderId: string) => void;
 };
 
 export function ImportMenu(props: ImportMenuProps): JSX.Element {
   const toasts = useToasts();
-  const [isMenuOpen, setMenuOpen] = createSignal(false);
-  const [openDialog, setOpenDialog] = createSignal<OpenDialog>("none");
-  let fileInput: HTMLInputElement | undefined;
+  const [isDialogOpen, setDialogOpen] = createSignal(false);
 
   const startGeneration = async (
     source: GenerationSource,
     sourceLabel: string,
+    wanted: GenerationWish,
   ): Promise<void> => {
     const targetFolderId = props.folderId;
     const progressToast = toasts.show({
@@ -42,7 +41,7 @@ export function ImportMenu(props: ImportMenuProps): JSX.Element {
       title: `Generating from ${sourceLabel}`,
       detail: "About a minute. You can keep working.",
     });
-    const tasks = await GenerationApi.start(source, targetFolderId);
+    const tasks = await GenerationApi.start(source, targetFolderId, wanted);
 
     const stop = GenerationWatcher.watch(tasks, (outcome) => {
       toasts.dismiss(progressToast);
@@ -65,9 +64,21 @@ export function ImportMenu(props: ImportMenuProps): JSX.Element {
     onCleanup(stop);
   };
 
-  const uploadChosenFile = async (chosen: File): Promise<void> => {
-    const targetFolderId = props.folderId;
-    const uploaded = await GenerationApi.uploadFile(chosen, targetFolderId);
+  const uploadedSource = async (
+    request: ImportRequest,
+  ): Promise<GenerationSource | null> => {
+    if (request.kind === "link") return { kind: "link", url: request.link };
+    if (request.kind === "topic") {
+      return { kind: "topic", topic: request.topic };
+    }
+    if (request.kind === "text") {
+      return { kind: "topic", topic: request.text };
+    }
+
+    const chosen = request.file;
+    if (chosen === null) return null;
+
+    const uploaded = await GenerationApi.uploadFile(chosen, props.folderId);
     props.onUnitsAdded(
       uploaded.map((file) => ({
         id: file.fileId,
@@ -78,21 +89,77 @@ export function ImportMenu(props: ImportMenuProps): JSX.Element {
         dueCount: null,
         meta: null,
       })),
-      targetFolderId,
+      props.folderId,
     );
 
     const first = uploaded[0];
-    if (first === undefined) return;
+    if (first === undefined) return null;
 
-    await startGeneration(
-      { kind: "file", fileId: first.fileId, extension: first.extension },
-      first.name,
-    );
+    return { kind: "file", fileId: first.fileId, extension: first.extension };
   };
 
-  const chooseSource = (open: () => void): void => {
-    setMenuOpen(false);
-    open();
+  const writtenNote = async (topic: string): Promise<ExtractedSource> => {
+    const tasks = await GenerationApi.start(
+      { kind: "topic", topic },
+      props.folderId,
+      { flashcardTypes: [], flashcardAmount: null, testAmount: undefined, note: true },
+    );
+    const outcome = await GenerationWatcher.awaitOne("note", tasks.noteTaskId);
+
+    if (!outcome.succeeded || outcome.unit === null) {
+      toasts.show({
+        tone: "failure",
+        title: "Couldn't write the note",
+        detail: "The topic could not be turned into a note. Try again.",
+      });
+
+      return { text: "", isNoteAlreadyMade: false };
+    }
+
+    props.onUnitsAdded([outcome.unit], props.folderId);
+    const note = await NotesApi.note(outcome.unit.id);
+
+    return { text: NotesApi.asPlainText(note.content), isNoteAlreadyMade: true };
+  };
+
+  const extractFrom = async (
+    request: ImportRequest,
+  ): Promise<ExtractedSource> => {
+    if (request.kind === "topic") return writtenNote(request.topic);
+
+    const source = await uploadedSource(request);
+    if (source === null) return { text: "", isNoteAlreadyMade: false };
+
+    return {
+      text: await GenerationApi.extractText(source),
+      isNoteAlreadyMade: false,
+    };
+  };
+
+  const sourceLabel = (request: ImportRequest): string => {
+    if (request.kind === "file") return request.file?.name ?? "your file";
+    if (request.kind === "link") return request.link;
+    if (request.kind === "topic") return request.topic;
+
+    return "your text";
+  };
+
+  const generate = (request: ImportRequest, reviewedText: string): void => {
+    setDialogOpen(false);
+    void startGeneration(
+      { kind: "topic", topic: reviewedText },
+      sourceLabel(request),
+      {
+        flashcardTypes: request.flashcards.isChosen
+          ? request.flashcards.chosenTypes
+          : [],
+        flashcardAmount: ImportOptions.totalCount(request.flashcards),
+        testAmount: request.test.isChosen
+          ? ImportOptions.totalCount(request.test)
+          : undefined,
+        note: request.note.isChosen,
+      },
+    );
   };
 
   return (
@@ -101,76 +168,19 @@ export function ImportMenu(props: ImportMenuProps): JSX.Element {
         <button
           class={props.variant === "toolbar" ? "btn" : "btn btn-primary btn-lg"}
           type="button"
-          aria-expanded={isMenuOpen()}
-          onClick={() => setMenuOpen(!isMenuOpen())}
+          onClick={() => setDialogOpen(true)}
         >
           <Icon name="aiImport" size="sm" />
           Import
         </button>
-        <Dropdown
-          isOpen={isMenuOpen()}
-          onDismiss={() => setMenuOpen(false)}
-          items={[
-            {
-              label: "File",
-              icon: "fileSmall",
-              onSelect: () => chooseSource(() => fileInput?.click()),
-            },
-            {
-              label: "Link",
-              icon: "link",
-              onSelect: () => chooseSource(() => setOpenDialog("link")),
-            },
-            {
-              label: "Topic",
-              icon: "topic",
-              onSelect: () => chooseSource(() => setOpenDialog("topic")),
-            },
-          ]}
-        />
       </div>
 
-      <input
-        ref={fileInput}
-        class="visually-hidden"
-        type="file"
-        aria-label="Choose a file to import"
-        onChange={(event) => {
-          const chosen = event.currentTarget.files?.[0];
-          event.currentTarget.value = "";
-          if (chosen !== undefined) void uploadChosenFile(chosen);
-        }}
-      />
-
-      <Show when={openDialog() === "link"}>
-        <PromptDialog
-          title="Generate from a link"
-          description={`Saved into ${props.folderName}.`}
-          label="Page address"
-          placeholder="https://"
-          inputType="url"
-          confirmLabel="Generate"
-          onCancel={() => setOpenDialog("none")}
-          onConfirm={(url) => {
-            setOpenDialog("none");
-            void startGeneration({ kind: "link", url }, url);
-          }}
-        />
-      </Show>
-
-      <Show when={openDialog() === "topic"}>
-        <PromptDialog
-          title="Generate from a topic"
-          description={`Saved into ${props.folderName}.`}
-          label="Topic"
-          placeholder="e.g. Action potentials"
-          inputType="text"
-          confirmLabel="Generate"
-          onCancel={() => setOpenDialog("none")}
-          onConfirm={(topic) => {
-            setOpenDialog("none");
-            void startGeneration({ kind: "topic", topic }, topic);
-          }}
+      <Show when={isDialogOpen()}>
+        <ImportDialog
+          folderName={props.folderName}
+          onExtract={extractFrom}
+          onGenerate={generate}
+          onCancel={() => setDialogOpen(false)}
         />
       </Show>
     </>

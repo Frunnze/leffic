@@ -1,5 +1,8 @@
 import type { IconName } from "../../shared/ui/icons/icon-shapes";
+import type { MoveDestination } from "./MoveUnitDialog";
 import type { Unit, UnitType } from "../../shared/models/units";
+
+const HOME_FOLDER_ID = "home";
 
 const UNIT_ICONS: Readonly<Record<UnitType, IconName>> = {
   folder: "folder",
@@ -10,6 +13,20 @@ const UNIT_ICONS: Readonly<Record<UnitType, IconName>> = {
 };
 
 export class UnitPresentation {
+  static moveDestinations(
+    units: readonly Unit[],
+    moving: Unit,
+  ): readonly MoveDestination[] {
+    const folders = units.filter(
+      (entry) => entry.type === "folder" && entry.id !== moving.id,
+    );
+
+    return [
+      { id: HOME_FOLDER_ID, name: "Home" },
+      ...folders.map((entry) => ({ id: entry.id, name: entry.name })),
+    ];
+  }
+
   static icon(unit: Unit): IconName {
     return UNIT_ICONS[unit.type];
   }

@@ -1,9 +1,10 @@
-import { For, Match, Show, Switch, createSignal, onMount, type JSX } from "solid-js";
+import { Match, Show, Switch, createSignal, onMount, type JSX } from "solid-js";
 import { A } from "@solidjs/router";
 import { FlashcardsApi, type DeckScope } from "./flashcards-api";
+import { FlashcardActions } from "./FlashcardActions";
+import { FlashcardRatings } from "./FlashcardRatings";
 import { FlashcardQueue } from "./flashcard-queue";
 import { FlashcardShortcuts } from "./flashcard-shortcuts";
-import { IntervalLabel } from "./interval-label";
 import { Meter } from "../../shared/ui/Meter";
 import { Icon } from "../../shared/ui/icons/Icon";
 import type {
@@ -12,20 +13,7 @@ import type {
   RatingIntervals,
 } from "./flashcard-models";
 
-type RatingChoice = {
-  readonly rating: FlashcardRating;
-  readonly label: string;
-  readonly toneClass: string;
-};
-
 const HOME_ROUTE = "/folder/home";
-
-const RATING_CHOICES: readonly RatingChoice[] = [
-  { rating: 1, label: "Again", toneClass: "rating-miss" },
-  { rating: 2, label: "Hard", toneClass: "rating-slow" },
-  { rating: 3, label: "Good", toneClass: "rating-hit" },
-  { rating: 4, label: "Easy", toneClass: "rating-hit" },
-];
 
 export type FlashcardsReviewProps = {
   readonly scope: DeckScope;
@@ -95,11 +83,27 @@ export function FlashcardsReview(props: FlashcardsReviewProps): JSX.Element {
     onRate: (rating) => void rate(rating),
   });
 
-  const intervalLabel = (rating: FlashcardRating): string => {
-    const seconds = intervals();
-    if (seconds === null) return "";
+  const saveCard = async (front: string, back: string): Promise<void> => {
+    const editing = currentCard();
 
-    return IntervalLabel.fromSeconds(seconds[rating]);
+    if (editing === undefined) return;
+
+    await FlashcardsApi.update(editing.id, front, back);
+    setCards([{ ...editing, front, back }, ...cards().slice(1)]);
+  };
+
+  const deleteCard = async (): Promise<void> => {
+    const removing = currentCard();
+
+    if (removing === undefined) return;
+
+    await FlashcardsApi.remove(removing.id);
+    setTotalToReview(Math.max(0, totalToReview() - 1));
+    setAnswerShown(false);
+
+    const remaining = cards().slice(1);
+    setCards(remaining.length === 0 ? await loadDeck() : remaining);
+    await loadIntervals(currentCard());
   };
 
   return (
@@ -140,6 +144,11 @@ export function FlashcardsReview(props: FlashcardsReviewProps): JSX.Element {
           {(card) => (
             <>
               <div class="flashcard">
+                <FlashcardActions
+                  card={card()}
+                  onSave={(front, back) => void saveCard(front, back)}
+                  onDelete={() => void deleteCard()}
+                />
                 <div class="flashcard-face">
                   <p class="flashcard-prompt">{card().front}</p>
                 </div>
@@ -162,23 +171,10 @@ export function FlashcardsReview(props: FlashcardsReviewProps): JSX.Element {
                   </button>
                 }
               >
-                <div class="review-actions">
-                  <For each={RATING_CHOICES}>
-                    {(choice) => (
-                      <button
-                        class={`rating ${choice.toneClass}`}
-                        type="button"
-                        onClick={() => void rate(choice.rating)}
-                      >
-                        <kbd class="kbd">{choice.rating}</kbd>
-                        <span class="rating-label">{choice.label}</span>
-                        <span class="rating-interval">
-                          {intervalLabel(choice.rating)}
-                        </span>
-                      </button>
-                    )}
-                  </For>
-                </div>
+                <FlashcardRatings
+                  intervals={intervals()}
+                  onRate={(rating) => void rate(rating)}
+                />
               </Show>
             </>
           )}

@@ -4,6 +4,7 @@ import { AssessmentProgress } from "./assessment-progress";
 import { AssessmentQuestion } from "./AssessmentQuestion";
 import { AssessmentResult } from "./AssessmentResult";
 import type { AssessmentItem, AssessmentPage } from "./assessment-models";
+import type { EditedTestItem } from "./TestItemEditor";
 
 const FIRST_PAGE = 1;
 
@@ -78,6 +79,14 @@ export function AssessmentReview(props: AssessmentReviewProps): JSX.Element {
     setItemIndex(0);
   };
 
+  const saveQuestion = async (
+    item: AssessmentItem,
+    edited: EditedTestItem,
+  ): Promise<void> => {
+    await AssessmentApi.updateItem(item.id, edited);
+    await loadPage(currentPage()?.page ?? 1);
+  };
+
   const goToPrevious = async (): Promise<void> => {
     const page = currentPage();
     if (page === null) return;
@@ -139,6 +148,7 @@ export function AssessmentReview(props: AssessmentReviewProps): JSX.Element {
               position={position()}
               totalItems={totalItems()}
               onChoose={(optionId) => chooseAnswer(item(), optionId)}
+              onEdit={(edited) => void saveQuestion(item(), edited)}
               onBack={() => void goToPrevious()}
               onNext={() => void goToNext()}
             />

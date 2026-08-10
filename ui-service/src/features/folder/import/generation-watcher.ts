@@ -11,6 +11,20 @@ export type GenerationOutcome = {
 };
 
 export class GenerationWatcher {
+  static awaitOne(
+    kind: GeneratedKind,
+    taskId: string | null,
+  ): Promise<GenerationOutcome> {
+    return new Promise((resolve) => {
+      if (taskId === null) {
+        resolve({ kind, succeeded: false, unit: null });
+        return;
+      }
+
+      GenerationWatcher.poll(kind, taskId, resolve);
+    });
+  }
+
   static watch(
     tasks: GenerationTaskIds,
     onOutcome: (outcome: GenerationOutcome) => void,

@@ -17,6 +17,20 @@ const STATUS_ENDPOINTS = {
 
 export type GeneratedKind = keyof typeof STATUS_ENDPOINTS;
 
+export type GenerationWish = {
+  readonly flashcardTypes: readonly string[];
+  readonly flashcardAmount: number | null;
+  readonly testAmount: number | null | undefined;
+  readonly note: boolean;
+};
+
+const DEFAULT_WISH: GenerationWish = {
+  flashcardTypes: ["basic"],
+  flashcardAmount: null,
+  testAmount: null,
+  note: true,
+};
+
 export type TaskProgress = {
   readonly status: TaskStatus;
   readonly unit: Unit | null;
@@ -43,17 +57,26 @@ export class GenerationApi {
     );
   }
 
+  static async extractText(source: GenerationSource): Promise<string> {
+    const payload = await HttpClient.json({
+      endpoint: "/api/files/extract-text",
+      method: "POST",
+      body: GenerationApi.sourceBody(source),
+    });
+
+    return Json.string(Json.object(payload, "extraction").text, "text");
+  }
+
   static async start(
     source: GenerationSource,
     folderId: string,
+    wanted: GenerationWish = DEFAULT_WISH,
   ): Promise<GenerationTaskIds> {
     const payload = await HttpClient.json({
       endpoint: "/api/files/generate-study-units",
       method: "POST",
       body: {
-        note: {},
-        test: {},
-        flashcards: {},
+        ...GenerationApi.wishBody(wanted),
         folder_id: folderId,
         ...GenerationApi.sourceBody(source),
       },
@@ -78,6 +101,27 @@ export class GenerationApi {
       status,
       unit: status === "SUCCESS" ? GenerationApi.toGeneratedUnit(kind, raw) : null,
     };
+  }
+
+  private static wishBody(
+    wanted: GenerationWish,
+  ): Readonly<Record<string, unknown>> {
+    const body: Record<string, unknown> = {};
+
+    if (wanted.note) body.note = {};
+
+    if (wanted.flashcardTypes.length > 0) {
+      body.flashcards = {
+        types: wanted.flashcardTypes,
+        amount: wanted.flashcardAmount,
+      };
+    }
+
+    if (wanted.testAmount !== undefined) {
+      body.test = wanted.testAmount === null ? {} : { amount: wanted.testAmount };
+    }
+
+    return body;
   }
 
   private static sourceBody(source: GenerationSource): Readonly<Record<string, unknown>> {

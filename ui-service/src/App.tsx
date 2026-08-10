@@ -7,6 +7,7 @@ import FolderPage from "./features/folder/FolderPage";
 import LandingPage from "./features/landing/LandingPage";
 import LoginPage from "./features/authentication/LoginPage";
 import NotePage from "./features/notes/NotePage";
+import SettingsPage from "./features/settings/SettingsPage";
 import SignUpPage from "./features/authentication/SignUpPage";
 import { Toasts } from "./features/notifications/Toasts";
 import { useToasts } from "./features/notifications/ToastContext";
@@ -25,6 +26,7 @@ export function App(): JSX.Element {
         <Route path="/test/:id" component={AssessmentPage} />
         <Route path="/note/:id" component={NotePage} />
         <Route path="/file/:id/:extension" component={FilePage} />
+        <Route path="/settings" component={SettingsPage} />
       </Router>
 
       <Toasts toasts={toasts.toasts()} onDismiss={toasts.dismiss} />

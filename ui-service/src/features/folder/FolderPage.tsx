@@ -43,6 +43,32 @@ export default function FolderPage(): JSX.Element {
     void refetchBreakdown();
   };
 
+  const renameUnit = async (unit: Unit, name: string): Promise<void> => {
+    const current = folder();
+    if (current === undefined) return;
+
+    await UnitsApi.rename(unit.id, unit.type, name);
+    setFolder({
+      ...current,
+      units: current.units.map((entry) =>
+        entry.id === unit.id ? { ...entry, name } : entry,
+      ),
+    });
+  };
+
+  const moveUnit = async (unit: Unit, folderId: string): Promise<void> => {
+    const current = folder();
+    if (current === undefined) return;
+
+    await UnitsApi.move(unit.id, unit.type, folderId);
+    setFolder({
+      ...current,
+      units: current.units.filter((kept) => kept.id !== unit.id),
+    });
+
+    void refetchBreakdown();
+  };
+
   const deleteUnit = async (unit: Unit): Promise<void> => {
     const current = folder();
     if (current === undefined) return;
@@ -130,6 +156,16 @@ export default function FolderPage(): JSX.Element {
                         <UnitRow
                           unit={unit}
                           onDelete={(target) => void deleteUnit(target)}
+                          onRename={(target, name) =>
+                            void renameUnit(target, name)
+                          }
+                          onMove={(target, folderId) =>
+                            void moveUnit(target, folderId)
+                          }
+                          destinations={UnitPresentation.moveDestinations(
+                            folder()?.units ?? [],
+                            unit,
+                          )}
                         />
                       )}
                     </For>

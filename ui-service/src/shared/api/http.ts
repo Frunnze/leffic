@@ -1,6 +1,6 @@
 import { Session } from "./session";
 
-export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
+export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export type RequestBody = Readonly<Record<string, unknown>> | FormData | null;
 
