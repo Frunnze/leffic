@@ -1,0 +1,95 @@
+from collections.abc import Iterator
+from typing import cast
+from unittest import mock
+
+import jwt
+import pytest
+from fastapi.testclient import TestClient
+
+from app_factory import create_app
+from features.study_units_generation import (
+    study_units_router as router_module,
+)
+
+_USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"
+_PAGE_TEXT = "A neuron at rest sits near -70 mV."
+
+
+@pytest.fixture
+def client() -> Iterator[TestClient]:
+    with TestClient(create_app()) as test_client:
+        yield test_client
+
+
+def _authorization() -> dict[str, str]:
+    token = jwt.encode({"user_id": _USER_ID}, "secret", algorithm="HS256")
+
+    return {"Authorization": f"Bearer {token}"}
+
+
+def _extract(
+    client: TestClient, payload: dict[str, object]
+) -> tuple[int, dict[str, object]]:
+    response = client.post(
+        "/extract-text", json=payload, headers=_authorization()
+    )
+
+    return response.status_code, cast("dict[str, object]", response.json())
+
+
+def test_a_topic_is_not_extracted_but_written_into_a_note(
+    client: TestClient,
+) -> None:
+    code, body = _extract(client, {"topic_metadata": "photosynthesis"})
+
+    assert code == 400
+    assert body["msg"] == "A topic is written into a note, not extracted."
+
+
+def test_a_link_is_read_into_text(client: TestClient) -> None:
+    with mock.patch.object(
+        router_module, "text_from_link", return_value=_PAGE_TEXT
+    ):
+        code, body = _extract(
+            client, {"link_metadata": "https://example.com/neurons"}
+        )
+
+    assert code == 200
+    assert body == {"text": _PAGE_TEXT}
+
+
+def test_a_file_is_read_into_text(client: TestClient) -> None:
+    with mock.patch.object(
+        router_module, "text_from_files", return_value=_PAGE_TEXT
+    ):
+        code, body = _extract(
+            client,
+            {
+                "file_metadata": [
+                    {
+                        "file_id": "6f1c7d4e-0000-4000-8000-00000000000a",
+                        "name": "action-potentials.pdf",
+                        "extension": "pdf",
+                    }
+                ]
+            },
+        )
+
+    assert code == 200
+    assert body == {"text": _PAGE_TEXT}
+
+
+def test_a_source_that_yields_nothing_is_rejected(
+    client: TestClient,
+) -> None:
+    code, _ = _extract(client, {})
+
+    assert code == 400
+
+
+def test_extraction_needs_a_token(client: TestClient) -> None:
+    response = client.post(
+        "/extract-text", json={"topic_metadata": "photosynthesis"}
+    )
+
+    assert response.status_code == 401

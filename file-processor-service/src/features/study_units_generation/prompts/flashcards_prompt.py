@@ -25,6 +25,19 @@ _TYPE_OUTPUT_FORMATS: dict[str, str] = {
                 // for the learner to remember.
             }
         ],""",
+    "feynman": """
+        "feynman_flashcards": [
+            // feynman flashcards ask the learner to explain a concept
+            // from the extracted text in plain language, as if
+            // teaching it to someone new to the subject
+            {
+                "prompt": string,
+                // asks the learner to explain one concept simply
+                "reference_explanation": string
+                // a short plain-language explanation to compare
+                // the learner's own answer against
+            }
+        ],""",
     "list": """
         "list_flashcards": [
             // list flashcards are useful for remembering a list of

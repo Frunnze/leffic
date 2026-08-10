@@ -20,13 +20,16 @@ study_units_router = APIRouter()
 
 _HOME_FOLDER = "home"
 _NO_TEXT = "Could not extract text!"
+_TOPIC_IS_WRITTEN = "A topic is written into a note, not extracted."
 _DEFAULT_TEST_AMOUNT = 10
 
 
 class FlashcardsMetadata(BaseModel):
     comprehensiveness: Literal["high", "medium", "low"] | None = "medium"
     verbosity: Literal["high", "medium", "low"] | None = "low"
-    types: list[Literal["basic", "list", "cloze"]] | None = None
+    types: (
+        list[Literal["basic", "list", "cloze", "feynman"]] | None
+    ) = None
     amount: int | None = None
 
 
@@ -122,3 +125,26 @@ async def generate_study_units(
         )
 
     return _queued_tasks(request_data, extracted_text, folder_id, user_id)
+
+
+@study_units_router.post("/extract-text", response_model=None)
+async def extract_text(
+    request_data: StudyUnitsMetadata, user_id: AuthenticatedUserId
+) -> dict[str, str] | JSONResponse:
+    _ = user_id
+
+    if request_data.topic_metadata:
+        return JSONResponse(
+            content={"msg": _TOPIC_IS_WRITTEN},
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    extracted_text = _extracted_text(request_data)
+
+    if not extracted_text:
+        return JSONResponse(
+            content={"msg": _NO_TEXT},
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    return {"text": extracted_text}
