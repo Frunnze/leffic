@@ -3,9 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from features.file_system.content_router import content_router
 from features.file_system.folder_router import folder_router
+from features.file_system.unit_router import unit_router
+from features.study_units.assessment_editing_router import (
+    assessment_editing_router,
+)
 from features.study_units.assessment_router import assessment_router
 from features.study_units.assessment_stats_router import (
     assessment_stats_router,
+)
+from features.study_units.flashcard_editing_router import (
+    flashcard_editing_router,
 )
 from features.study_units.flashcard_router import flashcard_router
 from features.study_units.flashcard_stats_router import (
@@ -28,12 +35,15 @@ def create_app() -> FastAPI:
 
     app.include_router(study_unit_saving)
     app.include_router(flashcard_router)
+    app.include_router(flashcard_editing_router)
     app.include_router(flashcard_stats_router)
     app.include_router(assessment_router)
+    app.include_router(assessment_editing_router)
     app.include_router(assessment_stats_router)
     app.include_router(note_router)
     app.include_router(folder_router)
     app.include_router(content_router)
+    app.include_router(unit_router)
 
     Base.metadata.create_all(bind=engine)
 
