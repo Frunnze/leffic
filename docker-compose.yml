@@ -15,9 +15,11 @@ x-content-service: &content-service
     - SCHEDULER_SERVICE=http://scheduler-service:8000
     - REDIS_HOST=redis:6379
     - OPENAI_API_KEY=${OPENAI_API_KEY}
+    - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
   depends_on:
     - postgres
     - redis
+    - rabbitmq
   restart: unless-stopped
 
 x-postgres-client: &postgres-client
@@ -65,6 +67,15 @@ services:
       - content-management-service
     command: celery -A shared.celery_app worker --loglevel info
 
+  user-events-consumer:
+    <<: *content-service
+    depends_on:
+      - rabbitmq
+      - content-management-service
+    volumes:
+      - files:/app/files
+    command: python run_consumer.py
+
   user-service:
     <<: *postgres-client
     build: ./user-service
@@ -74,6 +85,10 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - postgres
+      - rabbitmq
 
   scheduler-service:
     build: ./scheduler-service
@@ -81,6 +96,12 @@ services:
       - MONGODB_HOST=mongodb:27017
     depends_on:
       - mongodb
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.13-alpine
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
     restart: unless-stopped
 
   redis:
@@ -105,6 +126,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  rabbitmq:
   redis-data:
   files:
   postgres:

@@ -11,6 +11,7 @@ from features.authentication.access import hash_password
 from features.authentication.models import User
 from shared.claims_extractor import get_user_id_from_jwt
 from shared.database import get_db
+from shared.events import USER_DELETED, BrokerUnavailableError, publish
 
 account_router = APIRouter(prefix="/account")
 
@@ -21,6 +22,7 @@ _MINIMUM_PASSWORD_LENGTH = 4
 _TAKEN_USERNAME = "That username is taken."
 _BLANK_USERNAME = "Username cannot be blank."
 _SHORT_NEW_CREDENTIALS = "The new password is too short."
+_CLEANUP_UNAVAILABLE = "Deletion is unavailable right now. Try again."
 
 
 class UsernameRequest(BaseModel):
@@ -100,6 +102,8 @@ async def delete_account(
 ) -> JSONResponse:
     user = confirmed_account(db, user_id, request_data.password)
 
+    _announce_deletion(user_id)
+
     keys = (
         db.query(ProviderKey)
         .filter(ProviderKey.user_id == user.id)
@@ -113,3 +117,13 @@ async def delete_account(
     db.commit()
 
     return JSONResponse(content={"msg": "Account deleted!"})
+
+
+def _announce_deletion(user_id: str) -> None:
+    try:
+        publish(USER_DELETED, {"user_id": user_id})
+    except BrokerUnavailableError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=_CLEANUP_UNAVAILABLE,
+        ) from error
