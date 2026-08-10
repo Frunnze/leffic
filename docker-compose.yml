@@ -2,8 +2,22 @@ x-file-processor: &file-processor
   build: ./file-processor-service
   environment:
     - REDIS_HOST=redis:6379
-    - OPENAI_API_KEY=${OPENAI_API_KEY}
     - CONTENT_MANAGEMENT_SERVICE=http://content-management-service:8000
+  restart: unless-stopped
+
+x-content-service: &content-service
+  build: ./content-management-service
+  environment:
+    - CM_DB_USER=postgres
+    - CM_DB_PASS=postgres
+    - CM_DB_HOST=postgres
+    - CM_DB_PORT=5432
+    - SCHEDULER_SERVICE=http://scheduler-service:8000
+    - REDIS_HOST=redis:6379
+    - OPENAI_API_KEY=${OPENAI_API_KEY}
+  depends_on:
+    - postgres
+    - redis
   restart: unless-stopped
 
 x-postgres-client: &postgres-client
@@ -39,24 +53,17 @@ services:
       - redis
       - content-management-service
 
-  celery-worker:
-    <<: *file-processor
-    depends_on:
-      - redis
-      - file-processor-service
-    command: celery -A shared.celery_app worker --loglevel info
-
   content-management-service:
-    <<: *postgres-client
-    build: ./content-management-service
-    environment:
-      - CM_DB_USER=postgres
-      - CM_DB_PASS=postgres
-      - CM_DB_HOST=postgres
-      - CM_DB_PORT=5432
-      - SCHEDULER_SERVICE=http://scheduler-service:8000
+    <<: *content-service
     volumes:
       - files:/app/files
+
+  celery-worker:
+    <<: *content-service
+    depends_on:
+      - redis
+      - content-management-service
+    command: celery -A shared.celery_app worker --loglevel info
 
   user-service:
     <<: *postgres-client

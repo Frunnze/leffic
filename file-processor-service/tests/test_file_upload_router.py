@@ -80,9 +80,7 @@ def test_uploading_stores_each_file_and_registers_the_names(
 ) -> None:
     with (
         mock.patch.object(upload_module, "_FILES_DIRECTORY", str(tmp_path)),
-        mock.patch.object(
-            upload_module, "save_study_unit", return_value={}
-        ) as save,
+        mock.patch.object(upload_module, "register_files") as save,
     ):
         response = client.post(
             "/upload-files",
@@ -99,11 +97,8 @@ def test_uploading_stores_each_file_and_registers_the_names(
     assert stored["extension"] == "pdf"
     assert stored["name"] == "notes.pdf"
     assert uuid.UUID(stored["file_id"]).version == 4
-    assert save.call_args.args[0] == "/save-file-names"
-    assert save.call_args.args[1] == {
-        "file_metadata": [stored],
-        "folder_id": _FOLDER_ID,
-    }
+    assert save.call_args.args[0] == [stored]
+    assert save.call_args.args[1] == _FOLDER_ID
     assert (tmp_path / f"{stored['file_id']}.pdf").read_bytes() == b"payload"
 
 
@@ -112,9 +107,7 @@ def test_uploading_to_home_uses_the_caller_folder(
 ) -> None:
     with (
         mock.patch.object(upload_module, "_FILES_DIRECTORY", str(tmp_path)),
-        mock.patch.object(
-            upload_module, "save_study_unit", return_value={}
-        ) as save,
+        mock.patch.object(upload_module, "register_files") as save,
     ):
         _ = client.post(
             "/upload-files",
@@ -123,4 +116,4 @@ def test_uploading_to_home_uses_the_caller_folder(
             headers=_authorization(),
         )
 
-    assert save.call_args.args[1]["folder_id"] == _USER_ID
+    assert save.call_args.args[1] == _USER_ID

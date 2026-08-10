@@ -4,21 +4,21 @@ from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from features.study_units_generation.generation_tasks import (
-    generate_flashcards_task,
-    generate_note_task,
-    generate_test_task,
-)
 from features.study_units_generation.text_sources import (
     FileMetadata,
     text_from_files,
     text_from_link,
 )
+from shared.celery_app import celery_app
 from shared.dependencies import AuthenticatedUserId
 
 study_units_router = APIRouter()
 
 _HOME_FOLDER = "home"
+FLASHCARDS_TASK = "generate_flashcards"
+NOTE_TASK = "generate_note"
+TEST_TASK = "generate_test"
+
 _NO_TEXT = "Could not extract text!"
 _TOPIC_IS_WRITTEN = "A topic is written into a note, not extracted."
 _DEFAULT_TEST_AMOUNT = 10
@@ -69,33 +69,32 @@ def _queued_tasks(
     request_data: StudyUnitsMetadata,
     extracted_text: str,
     folder_id: str,
-    user_id: str,
 ) -> dict[str, object]:
     queued: dict[str, object] = {}
 
+    shared_arguments: dict[str, object] = {
+        "ai_model": request_data.ai_model,
+        "extracted_text": extracted_text,
+        "folder_id": folder_id,
+    }
+
     if request_data.note:
-        queued["note_task_id"] = generate_note_task.delay(
-            ai_model=request_data.ai_model,
-            extracted_text=extracted_text,
-            folder_id=folder_id,
-            user_id=user_id,
+        queued["note_task_id"] = celery_app.send_task(
+            NOTE_TASK, kwargs=shared_arguments
         ).id
 
     if request_data.flashcards:
-        queued["task_id"] = generate_flashcards_task.delay(
-            ai_model=request_data.ai_model,
-            extracted_text=extracted_text,
-            flashcards_metadata=request_data.flashcards.model_dump(),
-            folder_id=folder_id,
-            user_id=user_id,
+        queued["task_id"] = celery_app.send_task(
+            FLASHCARDS_TASK,
+            kwargs={
+                **shared_arguments,
+                "flashcards_metadata": request_data.flashcards.model_dump(),
+            },
         ).id
 
     if request_data.test:
-        queued["test_task_id"] = generate_test_task.delay(
-            ai_model=request_data.ai_model,
-            extracted_text=extracted_text,
-            folder_id=folder_id,
-            user_id=user_id,
+        queued["test_task_id"] = celery_app.send_task(
+            TEST_TASK, kwargs=shared_arguments
         ).id
 
     return queued
@@ -124,7 +123,7 @@ async def generate_study_units(
             f"{request_data.link_metadata}"
         )
 
-    return _queued_tasks(request_data, extracted_text, folder_id, user_id)
+    return _queued_tasks(request_data, extracted_text, folder_id)
 
 
 @study_units_router.post("/extract-text", response_model=None)

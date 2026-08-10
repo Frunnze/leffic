@@ -43,7 +43,7 @@ def test_every_router_is_registered() -> None:
     }
 
     assert {
-        "/save-flashcards",
+        "/chat",
         "/flashcards",
         "/flashcards-stats",
         "/test-items",

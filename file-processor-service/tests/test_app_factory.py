@@ -47,5 +47,5 @@ def test_every_route_is_registered() -> None:
         "/flashcards-status/{task_id}",
         "/upload-files",
         "/file",
-        "/chat",
+        "/extract-text",
     } <= paths

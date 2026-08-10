@@ -3,6 +3,7 @@ typeCheckingMode = "all"
 pythonVersion = "3.12"
 venvPath = ".."
 venv = ".venv"
+stubPath = "stubs"
 include = ["src", "run.py", "tests"]
 extraPaths = [".", "src"]
 

@@ -21,6 +21,20 @@ class FakeTaskResult:
         self.id: str = task_id
 
 
+class FakeBroker:
+    def __init__(self, task_ids: dict[str, str]) -> None:
+        super().__init__()
+        self.task_ids: dict[str, str] = task_ids
+        self.sent: list[tuple[str, dict[str, object]]] = []
+
+    def send_task(
+        self, name: str, kwargs: dict[str, object]
+    ) -> FakeTaskResult:
+        self.sent.append((name, kwargs))
+
+        return FakeTaskResult(self.task_ids[name])
+
+
 class FakeTask:
     def __init__(self, task_id: str) -> None:
         super().__init__()
@@ -86,15 +100,13 @@ def _generate(
 
 
 def test_generation_from_files_queues_flashcards(client: TestClient) -> None:
-    flashcards_task = FakeTask("cards-1")
+    broker = FakeBroker({"generate_flashcards": "cards-1"})
 
     with (
         mock.patch.object(
             router_module, "text_from_files", return_value="file text"
         ) as from_files,
-        mock.patch.object(
-            router_module, "generate_flashcards_task", flashcards_task
-        ),
+        mock.patch.object(router_module, "celery_app", broker),
     ):
         body = _generate(
             client,
@@ -110,7 +122,7 @@ def test_generation_from_files_queues_flashcards(client: TestClient) -> None:
     requested = cast("list[object]", from_files.call_args.args[0])
 
     assert getattr(requested[0], "file_id", None) == "f1"
-    assert flashcards_task.calls[0] == {
+    assert broker.sent[0][1] == {
         "ai_model": "gpt-4.1-nano",
         "extracted_text": "file text",
         "flashcards_metadata": {
@@ -120,20 +132,19 @@ def test_generation_from_files_queues_flashcards(client: TestClient) -> None:
             "amount": None,
         },
         "folder_id": _FOLDER_ID,
-        "user_id": _USER_ID,
     }
 
 
 def test_generation_from_a_link_mentions_the_source(
     client: TestClient,
 ) -> None:
-    test_task = FakeTask("test-1")
+    broker = FakeBroker({"generate_test": "test-1"})
 
     with (
         mock.patch.object(
             router_module, "text_from_link", return_value="link text"
         ) as from_link,
-        mock.patch.object(router_module, "generate_test_task", test_task),
+        mock.patch.object(router_module, "celery_app", broker),
     ):
         body = _generate(
             client,
@@ -147,27 +158,26 @@ def test_generation_from_a_link_mentions_the_source(
 
     assert body == {"test_task_id": "test-1"}
     assert from_link.call_args.args[0] == "https://example.com"
-    assert test_task.calls[0] == {
+    assert broker.sent[0][1] == {
         "ai_model": "gpt-4.1-nano",
         "extracted_text": (
             "link textThe source link to mention in notes: "
             "https://example.com"
         ),
         "folder_id": _FOLDER_ID,
-        "user_id": _USER_ID,
     }
 
 
 def test_generation_resolves_the_home_folder(client: TestClient) -> None:
-    note_task = FakeTask("note-2")
+    broker = FakeBroker({"generate_note": "note-2"})
 
-    with mock.patch.object(router_module, "generate_note_task", note_task):
+    with mock.patch.object(router_module, "celery_app", broker):
         _ = _generate(
             client,
             {"folder_id": "home", "topic_metadata": "algebra", "note": {}},
         )
 
-    assert note_task.calls[0]["folder_id"] == _USER_ID
+    assert broker.sent[0][1]["folder_id"] == _USER_ID
 
 
 def test_generation_rejects_a_missing_folder(client: TestClient) -> None:

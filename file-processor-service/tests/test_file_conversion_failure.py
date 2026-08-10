@@ -102,7 +102,7 @@ def test_a_file_without_an_extension_keeps_an_empty_one(
 ) -> None:
     with (
         mock.patch.object(upload_module, "_FILES_DIRECTORY", str(tmp_path)),
-        mock.patch.object(upload_module, "save_study_unit", return_value={}),
+        mock.patch.object(upload_module, "register_files"),
     ):
         response = client.post(
             "/upload-files",
@@ -123,7 +123,7 @@ def test_an_extension_starting_with_a_letter_keeps_it(
 ) -> None:
     with (
         mock.patch.object(upload_module, "_FILES_DIRECTORY", str(tmp_path)),
-        mock.patch.object(upload_module, "save_study_unit", return_value={}),
+        mock.patch.object(upload_module, "register_files"),
     ):
         response = client.post(
             "/upload-files",

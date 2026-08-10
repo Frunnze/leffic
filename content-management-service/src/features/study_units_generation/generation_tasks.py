@@ -1,8 +1,6 @@
+from collections.abc import Sequence
 from typing import TypedDict
 
-from features.study_units_generation.content_management_client import (
-    save_study_unit,
-)
 from features.study_units_generation.prompts.flashcards_prompt import (
     get_flashcards_system_prompt,
 )
@@ -12,10 +10,20 @@ from features.study_units_generation.prompts.notes_prompt import (
 from features.study_units_generation.prompts.tests_prompt import (
     get_test_system_prompt,
 )
+from features.study_units_generation.study_unit_writer import (
+    save_flashcard_deck,
+    save_note,
+    save_test,
+)
 from shared.ai_manager import ai_factory
 from shared.celery_app import celery_app
+from shared.database import SessionLocal
 
 _DECK_NAME = "deck_name"
+
+FLASHCARDS_TASK = "generate_flashcards"
+NOTE_TASK = "generate_note"
+TEST_TASK = "generate_test"
 
 
 class FlashcardsMetadata(TypedDict):
@@ -30,10 +38,9 @@ def _generate_flashcards_task(
     extracted_text: str,
     flashcards_metadata: FlashcardsMetadata,
     folder_id: str,
-    user_id: str,
 ) -> dict[str, object]:
     ai = ai_factory.get_ai(ai_model)
-    flashcards, _ = ai.get_ai_res(
+    flashcards, _unused = ai.get_ai_res(
         system_prompt=get_flashcards_system_prompt(
             comprehensiveness=flashcards_metadata["comprehensiveness"],
             verbosity=flashcards_metadata["verbosity"],
@@ -44,80 +51,62 @@ def _generate_flashcards_task(
     )
     deck_name = flashcards.pop(_DECK_NAME)
 
-    # Save the flashcards in the content's db
-    saved = save_study_unit(
-        "/save-flashcards",
-        {
-            "flashcards": flashcards,
-            "deck_name": deck_name,
-            "folder_id": folder_id,
-            "user_id": user_id,
-        },
-    )
+    with SessionLocal() as db:
+        deck_id = save_flashcard_deck(
+            db, folder_id, str(deck_name), flashcards
+        )
 
-    return {
-        "flashcard_deck_id": saved.get("flashcard_deck_id"),
-        "deck_name": deck_name,
-    }
+    return {"flashcard_deck_id": deck_id, "deck_name": deck_name}
 
 
 def _generate_note_task(
     ai_model: str | None,
     extracted_text: str,
     folder_id: str,
-    user_id: str,
 ) -> dict[str, object]:
     ai = ai_factory.get_ai(ai_model)
-    note, _ = ai.get_ai_res(
+    note, _unused = ai.get_ai_res(
         system_prompt=get_notes_system_prompt(),
         user_prompt=extracted_text,
     )
+    note_name = str(note.get("note_name"))
 
-    # Save the flashcards in the content's db
-    saved = save_study_unit(
-        "/save-note",
-        {
-            "note_content": note.get("note_content"),
-            "note_name": note.get("note_name"),
-            "folder_id": folder_id,
-            "user_id": user_id,
-        },
-    )
+    with SessionLocal() as db:
+        note_id = save_note(
+            db, folder_id, note_name, str(note.get("note_content"))
+        )
 
-    return {
-        "note_id": saved.get("note_id"),
-        "note_name": note.get("note_name"),
-    }
+    return {"note_id": note_id, "note_name": note_name}
+
+
+def _test_items(generated: object) -> list[dict[str, object]]:
+    if not isinstance(generated, Sequence) or isinstance(generated, str):
+        return []
+
+    return [item for item in generated if isinstance(item, dict)]
 
 
 def _generate_test_task(
     ai_model: str | None,
     extracted_text: str,
     folder_id: str,
-    user_id: str,
 ) -> dict[str, object]:
     ai = ai_factory.get_ai(ai_model)
-    test, _ = ai.get_ai_res(
+    test, _unused = ai.get_ai_res(
         system_prompt=get_test_system_prompt(),
         user_prompt=extracted_text,
     )
+    test_name = str(test.get("test_name"))
+    items = _test_items(test.get("multiple_choice_test_items"))
 
-    saved = save_study_unit(
-        "/save-test",
-        {
-            "test_items": test.get("multiple_choice_test_items"),
-            "test_name": test.get("test_name"),
-            "folder_id": folder_id,
-            "user_id": user_id,
-        },
-    )
+    with SessionLocal() as db:
+        test_id = save_test(db, folder_id, test_name, items)
 
-    return {
-        "test_id": saved.get("test_id"),
-        "test_name": test.get("test_name"),
-    }
+    return {"test_id": test_id, "test_name": test_name}
 
 
-generate_flashcards_task = celery_app.task(_generate_flashcards_task)
-generate_note_task = celery_app.task(_generate_note_task)
-generate_test_task = celery_app.task(_generate_test_task)
+generate_flashcards_task = celery_app.task(
+    _generate_flashcards_task, name=FLASHCARDS_TASK
+)
+generate_note_task = celery_app.task(_generate_note_task, name=NOTE_TASK)
+generate_test_task = celery_app.task(_generate_test_task, name=TEST_TASK)

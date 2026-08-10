@@ -21,6 +21,20 @@ class FakeTaskResult:
         self.id: str = task_id
 
 
+class FakeBroker:
+    def __init__(self, task_ids: dict[str, str]) -> None:
+        super().__init__()
+        self.task_ids: dict[str, str] = task_ids
+        self.sent: list[tuple[str, dict[str, object]]] = []
+
+    def send_task(
+        self, name: str, kwargs: dict[str, object]
+    ) -> FakeTaskResult:
+        self.sent.append((name, kwargs))
+
+        return FakeTaskResult(self.task_ids[name])
+
+
 class FakeTask:
     def __init__(self, task_id: str) -> None:
         super().__init__()
@@ -86,9 +100,9 @@ def _generate(
 
 
 def test_generation_from_a_topic_queues_a_note(client: TestClient) -> None:
-    note_task = FakeTask("note-1")
+    broker = FakeBroker({"generate_note": "note-1"})
 
-    with mock.patch.object(router_module, "generate_note_task", note_task):
+    with mock.patch.object(router_module, "celery_app", broker):
         body = _generate(
             client,
             {
@@ -100,9 +114,9 @@ def test_generation_from_a_topic_queues_a_note(client: TestClient) -> None:
         )
 
     assert body == {"note_task_id": "note-1"}
-    assert note_task.calls[0] == {
+    assert broker.sent[0][0] == "generate_note"
+    assert broker.sent[0][1] == {
         "ai_model": "gpt-4.1-nano",
         "extracted_text": "Topic/Text: photosynthesis",
         "folder_id": _FOLDER_ID,
-        "user_id": _USER_ID,
     }

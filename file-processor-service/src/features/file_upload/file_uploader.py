@@ -8,9 +8,7 @@ from uuid import uuid4
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse, Response
 
-from features.study_units_generation.content_management_client import (
-    save_study_unit,
-)
+from features.file_upload.content_client import register_files
 from shared.dependencies import AuthenticatedUserId
 
 file_uploader = APIRouter()
@@ -57,14 +55,7 @@ async def upload_files(
     )
     uploaded_files = [_stored_file(file) for file in files]
 
-    # Save the file names
-    _ = save_study_unit(
-        "/save-file-names",
-        {
-            "file_metadata": uploaded_files,
-            "folder_id": resolved_folder_id,
-        },
-    )
+    register_files(uploaded_files, resolved_folder_id)
 
     return {"msg": "Files uploaded!", "file_metadata": uploaded_files}
 

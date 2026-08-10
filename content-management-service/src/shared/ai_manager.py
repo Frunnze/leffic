@@ -7,8 +7,8 @@ from openai.types.responses import (
     Response,
     ResponseInputItemParam,
 )
-
 from shared.json_extraction import get_dict_from_text
+
 from shared.model_rates import GPT_5_MINI, MODEL_RATES, ModelRates
 
 _ATTEMPTS = 2

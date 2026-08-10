@@ -1,13 +1,10 @@
 from collections.abc import Iterator
-from typing import cast
-from unittest import mock
 
 import jwt
 import pytest
 from fastapi.testclient import TestClient
 
 from app_factory import create_app
-from features.chatbot import chatbot as chatbot_module
 
 _USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"
 _FOLDER_ID = "6f1c7d4e-0000-4000-8000-000000000002"
@@ -71,17 +68,6 @@ def _authorization() -> dict[str, str]:
     token = jwt.encode({"user_id": _USER_ID}, "secret", algorithm="HS256")
 
     return {"Authorization": f"Bearer {token}"}
-
-
-def test_chat_answers_with_the_model_reply(client: TestClient) -> None:
-    with mock.patch.object(chatbot_module, "ai_factory", FakeFactory()):
-        response = client.post(
-            "/chat", json={"conversation": [{"role": "user", "content": "x"}]}
-        )
-
-    body = cast("dict[str, str]", response.json())
-
-    assert body["answer"].startswith("answered 1")
 
 
 def test_generation_requires_a_token(client: TestClient) -> None:
