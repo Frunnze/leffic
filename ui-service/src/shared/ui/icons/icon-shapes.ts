@@ -27,6 +27,7 @@ export type IconName =
   | "check"
   | "chevronRight"
   | "send"
+  | "bookmark"
   | "start";
 
 type IconShape = {
@@ -174,6 +175,11 @@ export const ICONS: Readonly<Record<IconName, IconShape>> = {
     viewBox: "0 0 24 24",
     body:
       "<path d=\"M11.29 4.29a1 1 0 0 1 1.42 0l5.58 5.58a1 1 0 1 1-1.42 1.42L13 7.41V19a1 1 0 1 1-2 0V7.41l-3.87 3.88a1 1 0 0 1-1.42-1.42Z\"/>",
+  },
+  bookmark: {
+    viewBox: "0 0 24 24",
+    body:
+      "<path d=\"M7 3a2 2 0 0 0-2 2v15a1 1 0 0 0 1.55.83L12 17.2l5.45 3.63A1 1 0 0 0 19 20V5a2 2 0 0 0-2-2Zm0 2h10v13.13l-4.45-2.96a1 1 0 0 0-1.1 0L7 18.13Z\"/>",
   },
   start: {
     viewBox: "0 0 20 20",

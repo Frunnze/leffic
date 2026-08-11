@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from features.chatbot.chatbot import chatbot
+from features.file_system.bookmark_router import bookmark_router
 from features.file_system.content_router import content_router
 from features.file_system.folder_router import folder_router
 from features.file_system.unit_router import unit_router
@@ -58,6 +59,7 @@ def create_app() -> FastAPI:
     app.include_router(unit_router)
     app.include_router(chatbot)
     app.include_router(file_uploader)
+    app.include_router(bookmark_router)
     app.include_router(rating_intervals_router)
     app.include_router(extraction_router)
     app.include_router(generation_router)
