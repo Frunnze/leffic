@@ -2,6 +2,7 @@ import { Match, Show, Switch, createSignal, type JSX } from "solid-js";
 import { GenerationChoices } from "./GenerationChoices";
 import { Icon } from "../../../shared/ui/icons/Icon";
 import { ImportOptions } from "./import-options";
+import { ImportRequestReading } from "./import-request";
 import { ImportFooter } from "./ImportFooter";
 import { ImportSource } from "./ImportSource";
 import { ImportReview, ImportWait } from "./ImportReview";
@@ -13,6 +14,8 @@ export type ImportRequest = {
   readonly link: string;
   readonly text: string;
   readonly topic: string;
+  readonly firstPage: number | null;
+  readonly lastPage: number | null;
   readonly flashcards: UnitChoice;
   readonly test: UnitChoice;
   readonly note: UnitChoice;
@@ -36,6 +39,8 @@ export function ImportDialog(props: ImportDialogProps): JSX.Element {
   const [link, setLink] = createSignal("");
   const [text, setText] = createSignal("");
   const [topic, setTopic] = createSignal("");
+  const [firstPage, setFirstPage] = createSignal("");
+  const [lastPage, setLastPage] = createSignal("");
   const [extractedText, setExtractedText] = createSignal<string | null>(null);
   const [isExtracting, setExtracting] = createSignal(false);
   const [isNoteAlreadyMade, setNoteAlreadyMade] = createSignal(false);
@@ -56,38 +61,20 @@ export function ImportDialog(props: ImportDialogProps): JSX.Element {
     link: link(),
     text: text(),
     topic: topic(),
+    firstPage: ImportRequestReading.chosenPage(firstPage()),
+    lastPage: ImportRequestReading.chosenPage(lastPage()),
     flashcards: flashcards(),
     test: test(),
     note: note(),
   });
 
-  const missingSource = (): string | null => {
-    if (kind() === "file" && chosenFile() === null) {
-      return "Choose a file first.";
-    }
-    if (kind() === "link" && link().trim().length === 0) {
-      return "Paste a link first.";
-    }
-    if (kind() === "topic" && topic().trim().length === 0) {
-      return "Name a topic first.";
-    }
-    if (kind() === "text" && text().trim().length === 0) {
-      return "Paste some text first.";
-    }
+  const missingSource = (): string | null =>
+    ImportRequestReading.missingSource(request());
 
-    return null;
-  };
-
-  const sourceName = (): string => {
-    if (kind() === "file") return chosenFile()?.name ?? "";
-    if (kind() === "link") return link();
-    if (kind() === "topic") return topic();
-
-    return "your text";
-  };
+  const sourceName = (): string => ImportRequestReading.sourceName(request());
 
   const nothingChosen = (): boolean =>
-    !flashcards().isChosen && !test().isChosen && !note().isChosen;
+    ImportRequestReading.nothingChosen(request());
 
   const isShowingOptions = (): boolean =>
     kind() === "text" || extractedText() !== null;
@@ -159,6 +146,10 @@ export function ImportDialog(props: ImportDialogProps): JSX.Element {
                 link={link()}
                 text={text()}
                 topic={topic()}
+                firstPage={firstPage()}
+                lastPage={lastPage()}
+                onFirstPageChange={setFirstPage}
+                onLastPageChange={setLastPage}
                 onKindChange={setKind}
                 onFileChosen={setChosenFile}
                 onLinkChange={setLink}

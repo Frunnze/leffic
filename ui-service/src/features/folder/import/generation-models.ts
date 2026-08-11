@@ -1,7 +1,13 @@
 export type TaskStatus = "PENDING" | "SUCCESS" | "FAILURE";
 
 export type GenerationSource =
-  | { readonly kind: "file"; readonly fileId: string; readonly extension: string }
+  | {
+      readonly kind: "file";
+      readonly fileId: string;
+      readonly extension: string;
+      readonly firstPage: number | null;
+      readonly lastPage: number | null;
+    }
   | { readonly kind: "link"; readonly url: string }
   | { readonly kind: "topic"; readonly topic: string };
 

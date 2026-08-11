@@ -10,6 +10,7 @@ from app_factory import create_app
 from features.study_units_generation import (
     extraction_router as router_module,
 )
+from features.study_units_generation.pdf_pages import PageSelectionError
 
 if TYPE_CHECKING:
     from features.study_units_generation.text_sources import (
@@ -18,6 +19,7 @@ if TYPE_CHECKING:
 
 _USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"
 _PAGE_TEXT = "A neuron at rest sits near -70 mV."
+_TOO_FEW_PAGES = "The document has only 4 pages"
 
 
 @pytest.fixture
@@ -102,3 +104,65 @@ def test_extraction_needs_a_token(client: TestClient) -> None:
     )
 
     assert response.status_code == 401
+
+
+def test_a_page_range_that_the_document_cannot_serve_is_refused(
+    client: TestClient,
+) -> None:
+    with mock.patch.object(
+        router_module,
+        "text_from_files",
+        mock.Mock(side_effect=PageSelectionError(_TOO_FEW_PAGES)),
+    ):
+        response = client.post(
+            "/extract-text",
+            json={
+                "file_metadata": [
+                    {
+                        "file_id": "f1",
+                        "extension": "pdf",
+                        "pages": {"first": 9, "last": 12},
+                    }
+                ]
+            },
+            headers=_authorization(),
+        )
+
+    assert response.status_code == 400
+    assert cast("dict[str, str]", response.json())["msg"] == _TOO_FEW_PAGES
+
+
+def test_half_a_page_range_is_rejected(client: TestClient) -> None:
+    response = client.post(
+        "/extract-text",
+        json={
+            "file_metadata": [
+                {
+                    "file_id": "f1",
+                    "extension": "pdf",
+                    "pages": {"first": 2},
+                }
+            ]
+        },
+        headers=_authorization(),
+    )
+
+    assert response.status_code == 422
+
+
+def test_a_backwards_page_range_is_rejected(client: TestClient) -> None:
+    response = client.post(
+        "/extract-text",
+        json={
+            "file_metadata": [
+                {
+                    "file_id": "f1",
+                    "extension": "pdf",
+                    "pages": {"first": 8, "last": 3},
+                }
+            ]
+        },
+        headers=_authorization(),
+    )
+
+    assert response.status_code == 422

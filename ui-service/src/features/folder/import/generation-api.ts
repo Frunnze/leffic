@@ -139,8 +139,15 @@ export class GenerationApi {
     if (source.kind === "link") return { link_metadata: source.url };
     if (source.kind === "topic") return { topic_metadata: source.topic };
 
+    const asked =
+      source.firstPage === null || source.lastPage === null
+        ? {}
+        : { pages: { first: source.firstPage, last: source.lastPage } };
+
     return {
-      file_metadata: [{ file_id: source.fileId, extension: source.extension }],
+      file_metadata: [
+        { file_id: source.fileId, extension: source.extension, ...asked },
+      ],
     };
   }
 

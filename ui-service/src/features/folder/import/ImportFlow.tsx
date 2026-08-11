@@ -102,7 +102,13 @@ export function ImportFlow(props: ImportFlowProps): JSX.Element {
     const first = uploaded[0];
     if (first === undefined) return null;
 
-    return { kind: "file", fileId: first.fileId, extension: first.extension };
+    return {
+      kind: "file",
+      fileId: first.fileId,
+      extension: first.extension,
+      firstPage: request.firstPage,
+      lastPage: request.lastPage,
+    };
   };
 
   const writtenNote = async (topic: string): Promise<ExtractedSource> => {

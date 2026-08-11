@@ -1,5 +1,6 @@
-import { For, Match, Switch, type JSX } from "solid-js";
+import { For, Match, Show, Switch, type JSX } from "solid-js";
 import { Icon } from "../../../shared/ui/icons/Icon";
+import { PdfPageRange } from "./PdfPageRange";
 import { SOURCE_KINDS, type SourceKind } from "./import-options";
 
 export type ImportSourceProps = {
@@ -8,6 +9,10 @@ export type ImportSourceProps = {
   readonly link: string;
   readonly text: string;
   readonly topic: string;
+  readonly firstPage: string;
+  readonly lastPage: string;
+  readonly onFirstPageChange: (page: string) => void;
+  readonly onLastPageChange: (page: string) => void;
   readonly onKindChange: (kind: SourceKind) => void;
   readonly onFileChosen: (file: File) => void;
   readonly onLinkChange: (link: string) => void;
@@ -17,6 +22,9 @@ export type ImportSourceProps = {
 
 export function ImportSource(props: ImportSourceProps): JSX.Element {
   let fileInput: HTMLInputElement | undefined;
+
+  const isPdfChosen = (): boolean =>
+    props.chosenFile?.name.toLowerCase().endsWith(".pdf") === true;
 
   return (
     <>
@@ -67,6 +75,15 @@ export function ImportSource(props: ImportSourceProps): JSX.Element {
                 Replace
               </button>
             </div>
+
+            <Show when={isPdfChosen()}>
+              <PdfPageRange
+                firstPage={props.firstPage}
+                lastPage={props.lastPage}
+                onFirstPageChange={props.onFirstPageChange}
+                onLastPageChange={props.onLastPageChange}
+              />
+            </Show>
           </Match>
 
           <Match when={props.kind === "link"}>

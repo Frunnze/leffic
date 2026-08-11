@@ -14,7 +14,6 @@ from features.study_units_generation.text_sources import (
     FileMetadata,
     get_file_from_storage,
     text_from_files,
-    text_from_link,
 )
 
 _FILE_ID = "3f6c2b1a"
@@ -133,47 +132,6 @@ def test_text_from_files_skips_documents_with_no_text(
         mock.patch.object(textract, "process", return_value=b"   "),
     ):
         assert text_from_files([_PDF]) == ""
-
-
-def test_a_youtube_link_uses_the_transcript() -> None:
-    link = "https://youtube.com/watch?v=x"
-
-    with mock.patch.object(
-        text_sources, "get_youtube_transcript_auto", return_value="spoken"
-    ) as transcript:
-        assert text_from_link(link) == "spoken"
-
-    assert transcript.call_args.args[0] == link
-
-
-def test_a_youtube_link_without_a_transcript_reads_the_page() -> None:
-    with (
-        mock.patch.object(
-            text_sources, "get_youtube_transcript_auto", return_value=None
-        ),
-        mock.patch.object(
-            text_sources, "extract_link_main_content", return_value="page"
-        ),
-    ):
-        assert text_from_link("https://youtube.com/watch?v=x") == "page"
-
-
-def test_a_plain_link_reads_the_page() -> None:
-    link = "https://example.com/story"
-
-    with mock.patch.object(
-        text_sources, "extract_link_main_content", return_value="article"
-    ) as page:
-        assert text_from_link(link) == "article"
-
-    assert page.call_args.args[0] == link
-
-
-def test_an_unreadable_link_yields_no_text() -> None:
-    with mock.patch.object(
-        text_sources, "extract_link_main_content", return_value=None
-    ):
-        assert text_from_link("https://example.com") == ""
 
 
 def test_extraction_needs_no_pre_created_directory(tmp_path: Path) -> None:

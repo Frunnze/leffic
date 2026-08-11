@@ -2,6 +2,7 @@ from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from features.study_units_generation.pdf_pages import PageSelectionError
 from features.study_units_generation.text_sources import (
     FileMetadata,
     text_from_files,
@@ -43,7 +44,13 @@ async def extract_text(
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-    extracted_text = _extracted_text(request_data)
+    try:
+        extracted_text = _extracted_text(request_data)
+    except PageSelectionError as refusal:
+        return JSONResponse(
+            content={"msg": str(refusal)},
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
 
     if not extracted_text:
         return JSONResponse(
