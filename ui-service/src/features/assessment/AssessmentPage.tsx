@@ -1,15 +1,26 @@
 import type { JSX } from "solid-js";
-import { useParams } from "@solidjs/router";
+import { useNavigate, useParams } from "@solidjs/router";
 import { AppShell } from "../../shared/ui/AppShell";
+import { ReviewBar } from "../../shared/ui/ReviewBar";
 import { AssessmentReview } from "./AssessmentReview";
 
-export default function AssessmentPage(): JSX.Element {
+export type AssessmentPageProps = {
+  readonly scope: "test" | "folder";
+};
+
+export default function AssessmentPage(
+  props: AssessmentPageProps,
+): JSX.Element {
   const params = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   return (
-    <AppShell>
-      <div class="test-stage">
-        <AssessmentReview scope="test" scopeId={params.id} />
+    <AppShell fillsViewport>
+      <div class="review-page">
+        <ReviewBar title="Test" onClose={() => navigate(-1)} />
+        <div class="test-stage">
+          <AssessmentReview scope={props.scope} scopeId={params.id} />
+        </div>
       </div>
     </AppShell>
   );

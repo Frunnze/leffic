@@ -1,12 +1,8 @@
 import { For, Show, createResource, createSignal, type JSX } from "solid-js";
-import { useParams } from "@solidjs/router";
+import { useNavigate, useParams } from "@solidjs/router";
 import { AppShell } from "../../shared/ui/AppShell";
 import { Icon } from "../../shared/ui/icons/Icon";
 import { DueSection } from "./DueSection";
-import {
-  FolderReviewOverlays,
-  type OpenReview,
-} from "./FolderReviewOverlays";
 import { ImportButton } from "./import/ImportButton";
 import { ImportFlow } from "./import/ImportFlow";
 import { NewFolderButton } from "./NewFolderButton";
@@ -19,6 +15,7 @@ import type { Unit } from "../../shared/models/units";
 
 export default function FolderPage(): JSX.Element {
   const params = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [folder, { mutate: setFolder }] = createResource(
     () => params.id,
     UnitsApi.folderContent,
@@ -27,7 +24,6 @@ export default function FolderPage(): JSX.Element {
     () => params.id,
     StatsApi.dueBreakdown,
   );
-  const [openReview, setOpenReview] = createSignal<OpenReview>("none");
   const [isImportOpen, setImportOpen] = createSignal(false);
 
   const addUnits = (added: readonly Unit[], targetFolderId: string): void => {
@@ -83,11 +79,6 @@ export default function FolderPage(): JSX.Element {
     void refetchBreakdown();
   };
 
-  const closeReview = (): void => {
-    setOpenReview("none");
-    void refetchBreakdown();
-  };
-
   return (
     <AppShell>
       <div class="page">
@@ -114,8 +105,10 @@ export default function FolderPage(): JSX.Element {
             {(due) => (
               <DueSection
                 breakdown={due()}
-                onReviewFlashcards={() => setOpenReview("flashcards")}
-                onReviewTest={() => setOpenReview("assessment")}
+                onReviewFlashcards={() =>
+                  navigate(`/folder/${params.id}/flashcards`)
+                }
+                onReviewTest={() => navigate(`/folder/${params.id}/test`)}
               />
             )}
           </Show>
@@ -174,11 +167,6 @@ export default function FolderPage(): JSX.Element {
         </div>
       </div>
 
-      <FolderReviewOverlays
-        folderId={params.id}
-        openReview={openReview()}
-        onClose={closeReview}
-      />
 
       <ImportFlow
         folderId={params.id}
