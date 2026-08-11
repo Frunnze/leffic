@@ -12,12 +12,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from shared.database import Base
 from shared.models.columns import FlexibleUuid
-from shared.models.mixins import FolderContent
+from shared.models.mixins import GeneratedContent
 
 _CASCADE_ORPHANS = "all, delete-orphan"
 
 
-class FlashcardDeck(FolderContent, Base):
+class FlashcardDeck(GeneratedContent, Base):
     __tablename__: str = "flashcard_decks"
 
 

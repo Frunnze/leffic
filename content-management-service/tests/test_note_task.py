@@ -68,6 +68,8 @@ def _run_note(
             ai_model=model,
             extracted_text=_TEXT,
             folder_id=USER_ID,
+            source_kind="topic",
+            source_reference="roman empire",
         )
 
 
@@ -83,6 +85,8 @@ def test_a_generated_note_lands_with_its_content(
 
         assert result == {"note_id": str(note.id), "note_name": "Neurons"}
         assert note.name == "Neurons"
+        assert note.source_kind == "topic"
+        assert note.source_reference == "roman empire"
         assert note.content == "<p>Hi</p>"
         assert note.type == "general"
 

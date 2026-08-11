@@ -39,6 +39,8 @@ class TestMetadata(BaseModel):
 class GenerationRequest(BaseModel):
     text: str
     folder_id: str | None = None
+    source_kind: Literal["file", "link", "topic", "text"] | None = None
+    source_reference: str | None = None
     flashcards: FlashcardsMetadata | None = None
     note: NoteMetadata | None = None
     test: TestMetadata | None = None
@@ -73,6 +75,8 @@ def _queued_tasks(
         "ai_model": request_data.ai_model,
         "extracted_text": request_data.text,
         "folder_id": folder_id,
+        "source_kind": request_data.source_kind,
+        "source_reference": request_data.source_reference,
     }
 
     if request_data.note:

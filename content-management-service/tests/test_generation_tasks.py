@@ -73,6 +73,8 @@ def _generate(
             extracted_text=_TEXT,
             flashcards_metadata=_METADATA,
             folder_id=USER_ID,
+            source_kind="link",
+            source_reference="https://example.com/neurons",
         )
 
     return result, factory
@@ -98,6 +100,8 @@ def test_generated_flashcards_land_in_a_new_deck(
             "deck_name": "Neurons",
         }
         assert deck.name == "Neurons"
+        assert deck.source_kind == "link"
+        assert deck.source_reference == "https://example.com/neurons"
         assert card.type == "cloze"
         assert card.content == {"text": "a", "hidden_parts": ["a"]}
 

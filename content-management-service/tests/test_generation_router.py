@@ -86,6 +86,8 @@ def test_a_note_is_queued_with_the_reviewed_text(
                 "folder_id": _FOLDER_ID,
                 "ai_model": "gpt-4.1-nano",
                 "note": {},
+                "source_kind": "link",
+                "source_reference": "https://example.com/neurons",
             },
         )
 
@@ -95,6 +97,8 @@ def test_a_note_is_queued_with_the_reviewed_text(
         "ai_model": "gpt-4.1-nano",
         "extracted_text": _TEXT,
         "folder_id": _FOLDER_ID,
+        "source_kind": "link",
+        "source_reference": "https://example.com/neurons",
     }
 
 

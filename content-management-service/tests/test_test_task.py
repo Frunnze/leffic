@@ -68,6 +68,8 @@ def _run_test(
             ai_model=model,
             extracted_text=_TEXT,
             folder_id=USER_ID,
+            source_kind="file",
+            source_reference="biology.pdf",
         )
 
 
@@ -88,6 +90,8 @@ def test_a_generated_test_lands_with_its_items(
 
         assert result == {"test_id": str(test.id), "test_name": "Neurons"}
         assert test.name == "Neurons"
+        assert test.source_kind == "file"
+        assert test.source_reference == "biology.pdf"
         assert item.content == {"question": "q"}
         assert item.type == "mult_choice"
 

@@ -10,6 +10,9 @@ from features.study_units_generation.prompts.notes_prompt import (
 from features.study_units_generation.prompts.tests_prompt import (
     get_test_system_prompt,
 )
+from features.study_units_generation.study_unit_source import (
+    StudyUnitSource,
+)
 from features.study_units_generation.study_unit_writer import (
     save_flashcard_deck,
     save_note,
@@ -34,10 +37,13 @@ class FlashcardsMetadata(TypedDict):
 
 
 def _generate_flashcards_task(
+    *,
     ai_model: str | None,
     extracted_text: str,
     flashcards_metadata: FlashcardsMetadata,
     folder_id: str,
+    source_kind: str | None,
+    source_reference: str | None,
 ) -> dict[str, object]:
     ai = ai_factory.get_ai(ai_model)
     flashcards, _unused = ai.get_ai_res(
@@ -53,16 +59,23 @@ def _generate_flashcards_task(
 
     with SessionLocal() as db:
         deck_id = save_flashcard_deck(
-            db, folder_id, str(deck_name), flashcards
+            db,
+            folder_id,
+            str(deck_name),
+            flashcards,
+            StudyUnitSource(kind=source_kind, reference=source_reference),
         )
 
     return {"flashcard_deck_id": deck_id, "deck_name": deck_name}
 
 
 def _generate_note_task(
+    *,
     ai_model: str | None,
     extracted_text: str,
     folder_id: str,
+    source_kind: str | None,
+    source_reference: str | None,
 ) -> dict[str, object]:
     ai = ai_factory.get_ai(ai_model)
     note, _unused = ai.get_ai_res(
@@ -73,7 +86,11 @@ def _generate_note_task(
 
     with SessionLocal() as db:
         note_id = save_note(
-            db, folder_id, note_name, str(note.get("note_content"))
+            db,
+            folder_id,
+            note_name,
+            str(note.get("note_content")),
+            StudyUnitSource(kind=source_kind, reference=source_reference),
         )
 
     return {"note_id": note_id, "note_name": note_name}
@@ -87,9 +104,12 @@ def _test_items(generated: object) -> list[dict[str, object]]:
 
 
 def _generate_test_task(
+    *,
     ai_model: str | None,
     extracted_text: str,
     folder_id: str,
+    source_kind: str | None,
+    source_reference: str | None,
 ) -> dict[str, object]:
     ai = ai_factory.get_ai(ai_model)
     test, _unused = ai.get_ai_res(
@@ -100,7 +120,13 @@ def _generate_test_task(
     items = _test_items(test.get("multiple_choice_test_items"))
 
     with SessionLocal() as db:
-        test_id = save_test(db, folder_id, test_name, items)
+        test_id = save_test(
+            db,
+            folder_id,
+            test_name,
+            items,
+            StudyUnitSource(kind=source_kind, reference=source_reference),
+        )
 
     return {"test_id": test_id, "test_name": test_name}
 

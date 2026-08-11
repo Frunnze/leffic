@@ -13,12 +13,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from shared.database import Base
 from shared.models.columns import FlexibleUuid
-from shared.models.mixins import FolderContent, UuidPrimaryKey
+from shared.models.mixins import GeneratedContent, UuidPrimaryKey
 
 _CASCADE_ORPHANS = "all, delete-orphan"
 
 
-class Test(FolderContent, Base):
+class Test(GeneratedContent, Base):
     __tablename__: str = "tests"
 
 

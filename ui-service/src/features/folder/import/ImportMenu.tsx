@@ -10,7 +10,10 @@ import {
 import { ImportOptions } from "./import-options";
 import { NotesApi } from "../../notes/notes-api";
 import { useToasts } from "../../notifications/ToastContext";
-import type { GenerationSource } from "./generation-models";
+import type {
+  GenerationOrigin,
+  GenerationSource,
+} from "./generation-models";
 import type { Unit } from "../../../shared/models/units";
 
 const KIND_LABELS = {
@@ -32,6 +35,7 @@ export function ImportMenu(props: ImportMenuProps): JSX.Element {
 
   const startGeneration = async (
     source: GenerationSource,
+    origin: GenerationOrigin,
     sourceLabel: string,
     wanted: GenerationWish,
   ): Promise<void> => {
@@ -40,7 +44,12 @@ export function ImportMenu(props: ImportMenuProps): JSX.Element {
       tone: "progress",
       title: `Generating from ${sourceLabel}`,
     });
-    const tasks = await GenerationApi.start(source, targetFolderId, wanted);
+    const tasks = await GenerationApi.start(
+      source,
+      origin,
+      targetFolderId,
+      wanted,
+    );
 
     const stop = GenerationWatcher.watch(tasks, (outcome) => {
       toasts.dismiss(progressToast);
@@ -100,6 +109,7 @@ export function ImportMenu(props: ImportMenuProps): JSX.Element {
   const writtenNote = async (topic: string): Promise<ExtractedSource> => {
     const tasks = await GenerationApi.start(
       { kind: "topic", topic },
+      { kind: "topic", reference: topic },
       props.folderId,
       { flashcardTypes: [], flashcardAmount: null, testAmount: undefined, note: true },
     );
@@ -135,6 +145,20 @@ export function ImportMenu(props: ImportMenuProps): JSX.Element {
     };
   };
 
+  const originOf = (request: ImportRequest): GenerationOrigin => {
+    if (request.kind === "file") {
+      return { kind: "file", reference: request.file?.name ?? "" };
+    }
+    if (request.kind === "link") {
+      return { kind: "link", reference: request.link };
+    }
+    if (request.kind === "topic") {
+      return { kind: "topic", reference: request.topic };
+    }
+
+    return { kind: "text", reference: "" };
+  };
+
   const sourceLabel = (request: ImportRequest): string => {
     if (request.kind === "file") return request.file?.name ?? "your file";
     if (request.kind === "link") return request.link;
@@ -147,6 +171,7 @@ export function ImportMenu(props: ImportMenuProps): JSX.Element {
     setDialogOpen(false);
     void startGeneration(
       { kind: "topic", topic: reviewedText },
+      originOf(request),
       sourceLabel(request),
       {
         flashcardTypes: request.flashcards.isChosen

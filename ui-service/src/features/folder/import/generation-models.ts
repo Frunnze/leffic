@@ -5,6 +5,11 @@ export type GenerationSource =
   | { readonly kind: "link"; readonly url: string }
   | { readonly kind: "topic"; readonly topic: string };
 
+export type GenerationOrigin = {
+  readonly kind: "file" | "link" | "topic" | "text";
+  readonly reference: string;
+};
+
 export type GenerationTaskIds = {
   readonly flashcardsTaskId: string | null;
   readonly noteTaskId: string | null;

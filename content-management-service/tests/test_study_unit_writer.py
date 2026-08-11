@@ -3,6 +3,9 @@ import uuid
 import pytest
 from sqlalchemy.orm import Session, sessionmaker
 
+from features.study_units_generation.study_unit_source import (
+    StudyUnitSource,
+)
 from features.study_units_generation.study_unit_writer import (
     MissingFolderError,
     save_flashcard_deck,
@@ -13,6 +16,7 @@ from shared.models import Flashcard, FlashcardDeck, Folder, Note, Test
 from tests.support import USER_ID, in_memory_sessions
 
 HOME_ID = uuid.UUID(USER_ID)
+_SOURCE = StudyUnitSource(kind="file", reference="biology.pdf")
 
 
 @pytest.fixture
@@ -36,6 +40,7 @@ def test_a_deck_is_saved_with_its_cards(
             USER_ID,
             "Neurons",
             {"basic_flashcards": [{"front": "q", "back": "a"}]},
+            _SOURCE,
         )
 
     with sessions() as session:
@@ -44,6 +49,8 @@ def test_a_deck_is_saved_with_its_cards(
 
         assert deck.name == "Neurons"
         assert str(deck.folder_id) == USER_ID
+        assert deck.source_kind == "file"
+        assert deck.source_reference == "biology.pdf"
         assert len(cards) == 1
         assert cards[0].type == "basic"
         assert cards[0].content == {"front": "q", "back": "a"}
@@ -63,6 +70,7 @@ def test_each_flashcard_type_keeps_its_own_name(
                 "basic_flashcards": [{"front": "q", "back": "a"}],
                 "cloze_flashcards": [{"text": "t", "hidden_parts": ["t"]}],
             },
+            _SOURCE,
         )
 
     with sessions() as session:
@@ -78,7 +86,11 @@ def test_a_card_list_that_is_not_a_list_is_skipped(
         _home_folder(session)
 
         _ = save_flashcard_deck(
-            session, USER_ID, "Neurons", {"basic_flashcards": "oops"}
+            session,
+            USER_ID,
+            "Neurons",
+            {"basic_flashcards": "oops"},
+            _SOURCE,
         )
 
     with sessions() as session:
@@ -91,7 +103,7 @@ def test_a_note_is_saved_with_its_content(
     with sessions() as session:
         _home_folder(session)
 
-        note_id = save_note(session, USER_ID, "Neurons", "<p>Hi</p>")
+        note_id = save_note(session, USER_ID, "Neurons", "<p>Hi</p>", _SOURCE)
 
     with sessions() as session:
         note = session.query(Note).filter_by(id=note_id).one()
@@ -100,6 +112,8 @@ def test_a_note_is_saved_with_its_content(
         assert note.content == "<p>Hi</p>"
         assert note.type == "general"
         assert str(note.folder_id) == USER_ID
+        assert note.source_kind == "file"
+        assert note.source_reference == "biology.pdf"
 
 
 def test_a_test_is_saved_with_its_items(
@@ -109,7 +123,7 @@ def test_a_test_is_saved_with_its_items(
         _home_folder(session)
 
         test_id = save_test(
-            session, USER_ID, "Neurons", [{"question": "q"}]
+            session, USER_ID, "Neurons", [{"question": "q"}], _SOURCE
         )
 
     with sessions() as session:
@@ -117,6 +131,8 @@ def test_a_test_is_saved_with_its_items(
 
         assert saved.name == "Neurons"
         assert str(saved.folder_id) == USER_ID
+        assert saved.source_kind == "file"
+        assert saved.source_reference == "biology.pdf"
         assert len(saved.test_items) == 1
         assert saved.test_items[0].type == "mult_choice"
         assert saved.test_items[0].content == {"question": "q"}
@@ -126,19 +142,23 @@ def test_saving_into_a_missing_folder_is_refused(
     sessions: sessionmaker[Session],
 ) -> None:
     with sessions() as session, pytest.raises(MissingFolderError) as refusal:
-        _ = save_note(session, str(uuid.uuid4()), "Ghost", "<p>Hi</p>")
+        _ = save_note(
+            session, str(uuid.uuid4()), "Ghost", "<p>Hi</p>", _SOURCE
+        )
 
     assert str(refusal.value) == "Folder does not exist!"
 
 
 def test_a_deck_needs_a_folder(sessions: sessionmaker[Session]) -> None:
     with sessions() as session, pytest.raises(MissingFolderError):
-        _ = save_flashcard_deck(session, str(uuid.uuid4()), "Ghost", {})
+        _ = save_flashcard_deck(
+            session, str(uuid.uuid4()), "Ghost", {}, _SOURCE
+        )
 
 
 def test_a_test_needs_a_folder(sessions: sessionmaker[Session]) -> None:
     with sessions() as session, pytest.raises(MissingFolderError):
-        _ = save_test(session, str(uuid.uuid4()), "Ghost", [])
+        _ = save_test(session, str(uuid.uuid4()), "Ghost", [], _SOURCE)
 
 
 def test_only_dictionary_cards_are_saved(
@@ -152,6 +172,7 @@ def test_only_dictionary_cards_are_saved(
             USER_ID,
             "Neurons",
             {"basic_flashcards": [{"front": "q", "back": "a"}, "junk"]},
+            _SOURCE,
         )
 
     with sessions() as session:
@@ -165,7 +186,7 @@ def test_a_card_field_that_cannot_be_iterated_is_skipped(
         _home_folder(session)
 
         _ = save_flashcard_deck(
-            session, USER_ID, "Neurons", {"basic_flashcards": 42}
+            session, USER_ID, "Neurons", {"basic_flashcards": 42}, _SOURCE
         )
 
     with sessions() as session:

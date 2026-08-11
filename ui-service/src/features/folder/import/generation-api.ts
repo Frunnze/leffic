@@ -1,6 +1,7 @@
 import { HttpClient } from "../../../shared/api/http";
 import { Json, type JsonObject } from "../../../shared/api/json";
 import type {
+  GenerationOrigin,
   GenerationSource,
   GenerationTaskIds,
   TaskStatus,
@@ -69,6 +70,7 @@ export class GenerationApi {
 
   static async start(
     source: GenerationSource,
+    origin: GenerationOrigin,
     folderId: string,
     wanted: GenerationWish = DEFAULT_WISH,
   ): Promise<GenerationTaskIds> {
@@ -80,6 +82,8 @@ export class GenerationApi {
         ...GenerationApi.wishBody(wanted),
         folder_id: folderId,
         text,
+        source_kind: origin.kind,
+        source_reference: origin.reference,
       },
     });
     const raw = Json.object(payload, "generation");

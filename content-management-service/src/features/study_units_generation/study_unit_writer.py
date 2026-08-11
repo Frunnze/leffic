@@ -2,6 +2,9 @@ from collections.abc import Mapping, Sequence
 
 from sqlalchemy.orm import Session
 
+from features.study_units_generation.study_unit_source import (
+    StudyUnitSource,
+)
 from shared.models import (
     Flashcard,
     FlashcardDeck,
@@ -41,9 +44,15 @@ def save_flashcard_deck(
     folder_id: str,
     deck_name: str,
     flashcards: Mapping[str, object],
+    source: StudyUnitSource,
 ) -> str:
     folder = _owned_folder(db, folder_id)
-    deck = FlashcardDeck(folder_id=folder.id, name=deck_name)
+    deck = FlashcardDeck(
+        folder_id=folder.id,
+        name=deck_name,
+        source_kind=source.kind,
+        source_reference=source.reference,
+    )
     db.add(deck)
 
     for flashcard_type, cards in flashcards.items():
@@ -60,7 +69,11 @@ def save_flashcard_deck(
 
 
 def save_note(
-    db: Session, folder_id: str, note_name: str, note_content: str
+    db: Session,
+    folder_id: str,
+    note_name: str,
+    note_content: str,
+    source: StudyUnitSource,
 ) -> str:
     folder = _owned_folder(db, folder_id)
     note = Note(
@@ -68,6 +81,8 @@ def save_note(
         name=note_name,
         content=note_content,
         type="general",
+        source_kind=source.kind,
+        source_reference=source.reference,
     )
     db.add(note)
     db.commit()
@@ -80,9 +95,15 @@ def save_test(
     folder_id: str,
     test_name: str,
     test_items: list[dict[str, object]],
+    source: StudyUnitSource,
 ) -> str:
     folder = _owned_folder(db, folder_id)
-    test = Test(folder_id=folder.id, name=test_name)
+    test = Test(
+        folder_id=folder.id,
+        name=test_name,
+        source_kind=source.kind,
+        source_reference=source.reference,
+    )
     db.add(test)
 
     for test_item in test_items:
