@@ -44,9 +44,11 @@ Set `OPENAI_API_KEY`, `JWT_SECRET_KEY` and the Postgres credentials from
 
 ## Architecture
 
-Six deployables and four datastores. Every backend service is FastAPI on
+Eight deployables and five datastores. Every backend service is FastAPI on
 Python 3.12 with the same layout — `run.py` → `app_factory.py` →
-`features/` and `shared/`.
+`features/` and `shared/`. Two of the deployables are background workers
+built from the content service image: the Celery generation worker and the
+user-events consumer.
 
 <p align="center">
   <img src="docs/diagrams/c1/c1-system-context.png" alt="System context (C1)" width="620">
@@ -63,18 +65,24 @@ Python 3.12 with the same layout — `run.py` → `app_factory.py` →
 | Service | Holds | Talks to |
 |---|---|---|
 | `ui-service` | SolidJS SPA, built by Vite, served by nginx | the gateway |
-| `api-gateway` | Kong, DB-less; verifies the JWT and applies CORS | every service |
-| `user-service` | Accounts and the only JWT issuer | Postgres `users` |
-| `content-management-service` | Folders, decks, cards, tests, notes, file rows, reviews | Postgres `content`, scheduler |
-| `file-processor-service` | Uploads, text extraction, PDF conversion, chatbot | Redis, OpenAI, content service |
-| `celery-worker` | The three generation tasks, same image as the file processor | OpenAI, content service |
+| `api-gateway` | nginx with njs; verifies the JWT and applies CORS | every service |
+| `user-service` | Accounts, sealed AI provider keys, and the only JWT issuer | Postgres `users`, RabbitMQ |
+| `content-management-service` | Folders, decks, cards, tests, notes, file rows, reviews, and the chatbot | Postgres `content`, scheduler, OpenAI |
+| `file-processor-service` | Uploads, text extraction, PDF conversion | Redis, content service |
+| `celery-worker` | The three generation tasks, same image as the content service | OpenAI, Postgres `content` |
+| `user-events-consumer` | Removes a deleted account's content, same image as the content service | RabbitMQ, Postgres `content` |
 | `scheduler-service` | FSRS next-review dates and interval labels | MongoDB |
 
 ### How an import flows
 
 The file processor extracts the text, then enqueues one Celery task per
-study-unit type. The browser polls each task id until it succeeds, and each
-finished task posts its result to the content service.
+study-unit type by name. The browser polls each task id until it succeeds,
+and the worker — which runs the content service image — writes each finished
+study unit straight to the content database.
+
+Deleting an account publishes a durable `user.deleted` event to RabbitMQ
+before the account row goes, and a consumer on the content side removes that
+learner's folders, study units and uploaded documents.
 
 ## Data
 
