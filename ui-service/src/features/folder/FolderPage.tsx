@@ -1,12 +1,14 @@
 import { For, Show, createResource, createSignal, type JSX } from "solid-js";
 import { useParams } from "@solidjs/router";
 import { AppShell } from "../../shared/ui/AppShell";
-import { ReviewOverlay } from "../../shared/ui/ReviewOverlay";
 import { Icon } from "../../shared/ui/icons/Icon";
-import { AssessmentReview } from "../assessment/AssessmentReview";
-import { FlashcardsReview } from "../flashcards/FlashcardsReview";
 import { DueSection } from "./DueSection";
-import { ImportMenu } from "./import/ImportMenu";
+import {
+  FolderReviewOverlays,
+  type OpenReview,
+} from "./FolderReviewOverlays";
+import { ImportButton } from "./import/ImportButton";
+import { ImportFlow } from "./import/ImportFlow";
 import { NewFolderButton } from "./NewFolderButton";
 import { StatsApi } from "./stats-api";
 import { UnitListSkeleton } from "./UnitListSkeleton";
@@ -14,8 +16,6 @@ import { UnitPresentation } from "./unit-presentation";
 import { UnitRow } from "./UnitRow";
 import { UnitsApi } from "./units-api";
 import type { Unit } from "../../shared/models/units";
-
-type OpenReview = "none" | "flashcards" | "assessment";
 
 export default function FolderPage(): JSX.Element {
   const params = useParams<{ id: string }>();
@@ -28,6 +28,7 @@ export default function FolderPage(): JSX.Element {
     StatsApi.dueBreakdown,
   );
   const [openReview, setOpenReview] = createSignal<OpenReview>("none");
+  const [isImportOpen, setImportOpen] = createSignal(false);
 
   const addUnits = (added: readonly Unit[], targetFolderId: string): void => {
     if (targetFolderId !== params.id) return;
@@ -100,11 +101,9 @@ export default function FolderPage(): JSX.Element {
                   onFolderCreated={(created) => addUnits(created, params.id)}
                 />
                 <Show when={(folder()?.units.length ?? 0) > 0}>
-                  <ImportMenu
-                    folderId={params.id}
-                    folderName={folder()?.parentFolderName ?? "Home"}
+                  <ImportButton
                     variant="toolbar"
-                    onUnitsAdded={addUnits}
+                    onOpen={() => setImportOpen(true)}
                   />
                 </Show>
               </div>
@@ -141,11 +140,9 @@ export default function FolderPage(): JSX.Element {
                         Import a file, a link or a topic and Leffic will generate
                         flashcards, a note and a test from it.
                       </span>
-                      <ImportMenu
-                        folderId={params.id}
-                        folderName={loaded().parentFolderName}
+                      <ImportButton
                         variant="empty-state"
-                        onUnitsAdded={addUnits}
+                        onOpen={() => setImportOpen(true)}
                       />
                     </div>
                   }
@@ -177,21 +174,19 @@ export default function FolderPage(): JSX.Element {
         </div>
       </div>
 
-      <Show when={openReview() === "flashcards"}>
-        <ReviewOverlay title="Flashcards" onClose={closeReview}>
-          <div class="review">
-            <FlashcardsReview scope="folder" scopeId={params.id} />
-          </div>
-        </ReviewOverlay>
-      </Show>
+      <FolderReviewOverlays
+        folderId={params.id}
+        openReview={openReview()}
+        onClose={closeReview}
+      />
 
-      <Show when={openReview() === "assessment"}>
-        <ReviewOverlay title="Test" onClose={closeReview}>
-          <div class="test-stage">
-            <AssessmentReview scope="folder" scopeId={params.id} />
-          </div>
-        </ReviewOverlay>
-      </Show>
+      <ImportFlow
+        folderId={params.id}
+        folderName={folder()?.parentFolderName ?? "Home"}
+        isOpen={isImportOpen()}
+        onClose={() => setImportOpen(false)}
+        onUnitsAdded={addUnits}
+      />
     </AppShell>
   );
 }

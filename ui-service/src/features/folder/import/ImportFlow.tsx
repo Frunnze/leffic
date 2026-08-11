@@ -1,7 +1,6 @@
-import { Show, createSignal, onCleanup, type JSX } from "solid-js";
+import { Show, onCleanup, type JSX } from "solid-js";
 import { GenerationApi, type GenerationWish } from "./generation-api";
 import { GenerationWatcher } from "./generation-watcher";
-import { Icon } from "../../../shared/ui/icons/Icon";
 import {
   ImportDialog,
   type ExtractedSource,
@@ -22,16 +21,16 @@ const KIND_LABELS = {
   test: "Test",
 } as const;
 
-export type ImportMenuProps = {
+export type ImportFlowProps = {
   readonly folderId: string;
   readonly folderName: string;
-  readonly variant: "toolbar" | "empty-state";
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
   readonly onUnitsAdded: (units: readonly Unit[], folderId: string) => void;
 };
 
-export function ImportMenu(props: ImportMenuProps): JSX.Element {
+export function ImportFlow(props: ImportFlowProps): JSX.Element {
   const toasts = useToasts();
-  const [isDialogOpen, setDialogOpen] = createSignal(false);
 
   const startGeneration = async (
     source: GenerationSource,
@@ -168,7 +167,7 @@ export function ImportMenu(props: ImportMenuProps): JSX.Element {
   };
 
   const generate = (request: ImportRequest, reviewedText: string): void => {
-    setDialogOpen(false);
+    props.onClose();
     void startGeneration(
       { kind: "topic", topic: reviewedText },
       originOf(request),
@@ -187,26 +186,13 @@ export function ImportMenu(props: ImportMenuProps): JSX.Element {
   };
 
   return (
-    <>
-      <div class="folder-action">
-        <button
-          class={props.variant === "toolbar" ? "btn" : "btn btn-primary btn-lg"}
-          type="button"
-          onClick={() => setDialogOpen(true)}
-        >
-          <Icon name="aiImport" size="sm" />
-          Import
-        </button>
-      </div>
-
-      <Show when={isDialogOpen()}>
-        <ImportDialog
-          folderName={props.folderName}
-          onExtract={extractFrom}
-          onGenerate={generate}
-          onCancel={() => setDialogOpen(false)}
-        />
-      </Show>
-    </>
+    <Show when={props.isOpen}>
+      <ImportDialog
+        folderName={props.folderName}
+        onExtract={extractFrom}
+        onGenerate={generate}
+        onCancel={props.onClose}
+      />
+    </Show>
   );
 }
