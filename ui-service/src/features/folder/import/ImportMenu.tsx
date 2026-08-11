@@ -39,7 +39,6 @@ export function ImportMenu(props: ImportMenuProps): JSX.Element {
     const progressToast = toasts.show({
       tone: "progress",
       title: `Generating from ${sourceLabel}`,
-      detail: "About a minute. You can keep working.",
     });
     const tasks = await GenerationApi.start(source, targetFolderId, wanted);
 
@@ -50,15 +49,15 @@ export function ImportMenu(props: ImportMenuProps): JSX.Element {
         props.onUnitsAdded([outcome.unit], targetFolderId);
       }
 
-      toasts.show({
-        tone: outcome.succeeded ? "success" : "failure",
-        title: outcome.succeeded
-          ? `${KIND_LABELS[outcome.kind]} ready`
-          : `Couldn't generate the ${outcome.kind}`,
-        detail: outcome.succeeded
-          ? `Generated from ${sourceLabel}.`
-          : "The source could not be processed. Try again.",
-      });
+      toasts.show(
+        outcome.succeeded
+          ? { tone: "success", title: `${KIND_LABELS[outcome.kind]} ready` }
+          : {
+              tone: "failure",
+              title: `Couldn't generate the ${outcome.kind}`,
+              detail: "The source could not be processed. Try again.",
+            },
+      );
     });
 
     onCleanup(stop);

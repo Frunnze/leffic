@@ -23,11 +23,11 @@ export default function SettingsPage(): JSX.Element {
   const [section, setSection] = createSignal<SectionName>("account");
 
   const announceSuccess = (message: string): void => {
-    toasts.show({ tone: "success", title: message, detail: "" });
+    toasts.show({ tone: "success", title: message });
   };
 
   const announceFailure = (message: string): void => {
-    toasts.show({ tone: "failure", title: message, detail: "" });
+    toasts.show({ tone: "failure", title: message });
   };
 
   return (

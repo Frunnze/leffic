@@ -32,7 +32,9 @@ export function Toasts(props: ToastsProps): JSX.Element {
               </span>
               <div class="toast-text">
                 <span class="toast-title">{toast.title}</span>
-                <span class="toast-detail">{toast.detail}</span>
+                <Show when={toast.detail}>
+                  <span class="toast-detail">{toast.detail}</span>
+                </Show>
               </div>
               <button
                 class="btn btn-quiet btn-icon"

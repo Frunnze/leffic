@@ -1,3 +1,4 @@
+import tempfile
 from pathlib import Path
 from unittest import mock
 
@@ -86,9 +87,6 @@ def test_text_from_files_joins_every_document(tmp_path: Path) -> None:
 
     with (
         mock.patch.object(text_sources, "_FILES_DIRECTORY", str(tmp_path)),
-        mock.patch.object(
-            text_sources, "_TEMPORARY_DIRECTORY", str(tmp_path)
-        ),
         mock.patch.object(textract, "process", _read_the_document),
     ):
         joined = text_from_files([_PDF, other])
@@ -106,17 +104,14 @@ def test_the_document_is_written_where_the_extractor_can_read_it(
     with (
         mock.patch.object(text_sources, "_FILES_DIRECTORY", str(tmp_path)),
         mock.patch.object(
-            text_sources, "_TEMPORARY_DIRECTORY", str(tmp_path)
-        ),
-        mock.patch.object(
             textract, "process", RecordingExtractor(seen, extensions)
         ),
     ):
         _ = text_from_files([_PDF])
 
-    assert seen[0].startswith(str(tmp_path))
+    assert seen[0].startswith(tempfile.gettempdir())
     assert seen[0].endswith(_FILE_ID)
-    assert not list(tmp_path.glob(f"*{_FILE_ID}"))
+    assert not Path(seen[0]).exists()
     assert extensions == ["pdf"]
 
 
@@ -135,9 +130,6 @@ def test_text_from_files_skips_documents_with_no_text(
 
     with (
         mock.patch.object(text_sources, "_FILES_DIRECTORY", str(tmp_path)),
-        mock.patch.object(
-            text_sources, "_TEMPORARY_DIRECTORY", str(tmp_path)
-        ),
         mock.patch.object(textract, "process", return_value=b"   "),
     ):
         assert text_from_files([_PDF]) == ""
@@ -182,3 +174,15 @@ def test_an_unreadable_link_yields_no_text() -> None:
         text_sources, "extract_link_main_content", return_value=None
     ):
         assert text_from_link("https://example.com") == ""
+
+
+def test_extraction_needs_no_pre_created_directory(tmp_path: Path) -> None:
+    _ = (tmp_path / f"{_FILE_ID}.pdf").write_bytes(b"payload")
+
+    with (
+        mock.patch.object(text_sources, "_FILES_DIRECTORY", str(tmp_path)),
+        mock.patch.object(textract, "process", _read_the_document),
+    ):
+        extracted = text_from_files([_PDF])
+
+    assert extracted == "payload\n"

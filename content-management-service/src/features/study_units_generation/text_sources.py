@@ -12,7 +12,6 @@ from features.study_units_generation.text_extractor import (
 )
 
 _FILES_DIRECTORY = "files"
-_TEMPORARY_DIRECTORY = "temp_files"
 _YOUTUBE_HOST = "youtube.com"
 
 
@@ -46,7 +45,7 @@ def _text_from_bytes(file_bytes: bytes, file_meta: FileMetadata) -> str:
         return ""
 
     with tempfile.NamedTemporaryFile(
-        suffix=file_meta.file_id, dir=_TEMPORARY_DIRECTORY
+        suffix=file_meta.file_id
     ) as temp_file:
         _ = temp_file.write(file_bytes)
         temp_file.flush()
