@@ -1,5 +1,6 @@
 import { HttpClient } from "../../shared/api/http";
 import { Json, type JsonObject } from "../../shared/api/json";
+import { Theme, type ThemeChoice } from "../../shared/ui/theme";
 
 const ACCOUNT_ENDPOINT = "/api/user/account";
 const PROVIDER_KEYS_ENDPOINT = "/api/user/account/provider-keys";
@@ -7,6 +8,7 @@ const PROVIDER_KEYS_ENDPOINT = "/api/user/account/provider-keys";
 export type Account = {
   readonly username: string;
   readonly email: string;
+  readonly theme: ThemeChoice;
 };
 
 export type ProviderKey = {
@@ -31,7 +33,18 @@ export class AccountApi {
     return {
       username: Json.string(account.username, "account.username"),
       email: Json.string(account.email, "account.email"),
+      theme: Theme.asChoice(account.theme),
     };
+  }
+
+  static async chooseTheme(theme: ThemeChoice): Promise<ThemeChoice> {
+    const payload = await HttpClient.json({
+      endpoint: `${ACCOUNT_ENDPOINT}/theme`,
+      method: "PATCH",
+      body: { theme },
+    });
+
+    return Theme.asChoice(Json.object(payload, "theme").theme);
   }
 
   static async changeUsername(username: string): Promise<void> {

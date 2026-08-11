@@ -45,7 +45,11 @@ async def read_account(
     user = account(db, user_id)
 
     return JSONResponse(
-        content={"username": user.username, "email": user.email}
+        content={
+            "username": user.username,
+            "email": user.email,
+            "theme": user.theme,
+        }
     )
 
 

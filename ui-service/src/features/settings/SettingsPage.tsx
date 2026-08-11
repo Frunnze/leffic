@@ -1,11 +1,21 @@
-import { For, Match, Switch, createSignal, type JSX } from "solid-js";
+import {
+  For,
+  Match,
+  Switch,
+  createResource,
+  createSignal,
+  type JSX,
+} from "solid-js";
 import { AccountPanel } from "./AccountPanel";
 import { AppShell } from "../../shared/ui/AppShell";
 import { DeleteAccountPanel } from "./DeleteAccountPanel";
+import { AccountApi } from "./account-api";
 import { ProviderKeysPanel } from "./ProviderKeysPanel";
+import { Theme, type ThemeChoice } from "../../shared/ui/theme";
+import { ThemePanel } from "./ThemePanel";
 import { useToasts } from "../notifications/ToastContext";
 
-type SectionName = "account" | "keys" | "deletion";
+type SectionName = "account" | "appearance" | "keys" | "deletion";
 
 type Section = {
   readonly name: SectionName;
@@ -14,6 +24,7 @@ type Section = {
 
 const SECTIONS: readonly Section[] = [
   { name: "account", label: "Account" },
+  { name: "appearance", label: "Appearance" },
   { name: "keys", label: "AI provider keys" },
   { name: "deletion", label: "Delete account" },
 ];
@@ -21,6 +32,16 @@ const SECTIONS: readonly Section[] = [
 export default function SettingsPage(): JSX.Element {
   const toasts = useToasts();
   const [section, setSection] = createSignal<SectionName>("account");
+  const [chosenTheme, setChosenTheme] = createSignal<ThemeChoice>(
+    Theme.lastPainted(),
+  );
+  const [account] = createResource(AccountApi.read);
+
+  const chooseTheme = async (choice: ThemeChoice): Promise<void> => {
+    setChosenTheme(choice);
+    Theme.apply(choice);
+    await AccountApi.chooseTheme(choice);
+  };
 
   const announceSuccess = (message: string): void => {
     toasts.show({ tone: "success", title: message });
@@ -57,6 +78,12 @@ export default function SettingsPage(): JSX.Element {
                 <AccountPanel
                   onSaved={announceSuccess}
                   onFailed={announceFailure}
+                />
+              </Match>
+              <Match when={section() === "appearance"}>
+                <ThemePanel
+                  chosen={account()?.theme ?? chosenTheme()}
+                  onChoose={(choice) => void chooseTheme(choice)}
                 />
               </Match>
               <Match when={section() === "keys"}>

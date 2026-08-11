@@ -1,24 +1,14 @@
-import { Show, createSignal, type JSX } from "solid-js";
+import { Show, type JSX } from "solid-js";
 import { Icon } from "../../shared/ui/icons/Icon";
 
 export type FileBookmarkProps = {
   readonly page: number | null;
+  readonly pageInView: number;
   readonly onRemember: (page: number) => void;
   readonly onForget: () => void;
 };
 
 export function FileBookmark(props: FileBookmarkProps): JSX.Element {
-  const [typedPage, setTypedPage] = createSignal("");
-
-  const remember = (): void => {
-    const page = Number.parseInt(typedPage(), 10);
-
-    if (Number.isNaN(page) || page < 1) return;
-
-    props.onRemember(page);
-    setTypedPage("");
-  };
-
   return (
     <div class="file-bookmark">
       <Show when={props.page !== null}>
@@ -31,23 +21,13 @@ export function FileBookmark(props: FileBookmarkProps): JSX.Element {
         </button>
       </Show>
 
-      <input
-        class="input input-narrow"
-        type="number"
-        min="1"
-        aria-label="Page to bookmark"
-        placeholder="Page"
-        value={typedPage()}
-        onInput={(event) => setTypedPage(event.currentTarget.value)}
-        onKeyDown={(event) => {
-          if (event.key !== "Enter") return;
-
-          event.preventDefault();
-          remember();
-        }}
-      />
-      <button class="btn" type="button" onClick={remember}>
-        Bookmark
+      <button
+        class="btn"
+        type="button"
+        onClick={() => props.onRemember(props.pageInView)}
+      >
+        <Icon name="bookmark" size="sm" />
+        Bookmark page {props.pageInView}
       </button>
     </div>
   );

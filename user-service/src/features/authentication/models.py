@@ -7,6 +7,8 @@ from shared.uuid_primary_key import UuidPrimaryKey
 _USERNAME_LENGTH = 50
 _EMAIL_LENGTH = 100
 _HASHED_PASSWORD_LENGTH = 200
+_THEME_LENGTH = 10
+_SYSTEM_THEME = "system"
 
 
 class User(UuidPrimaryKey, Base):
@@ -20,4 +22,7 @@ class User(UuidPrimaryKey, Base):
     )
     hashed_password: Mapped[str] = mapped_column(
         String(_HASHED_PASSWORD_LENGTH)
+    )
+    theme: Mapped[str] = mapped_column(
+        String(_THEME_LENGTH), default=_SYSTEM_THEME, nullable=False
     )

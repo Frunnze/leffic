@@ -1,10 +1,12 @@
+import type { PDFDocumentProxy } from "pdfjs-dist";
 import { HttpClient } from "../../shared/api/http";
 import { Json } from "../../shared/api/json";
+import { PdfViewer } from "./pdf-viewer";
 
 const BOOKMARK_ENDPOINT = "/api/content/file-bookmark";
 
 export type OpenedFile = {
-  readonly url: string;
+  readonly document: PDFDocumentProxy;
   readonly bookmarkedPage: number | null;
 };
 
@@ -18,7 +20,7 @@ export class FilesApi {
       FilesApi.bookmarkedPage(fileId),
     ]);
 
-    return { url, bookmarkedPage };
+    return { document: await PdfViewer.opened(url), bookmarkedPage };
   }
 
   static async openableUrl(fileId: string, extension: string): Promise<string> {
