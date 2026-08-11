@@ -49,49 +49,6 @@ def _home_folder(session: Session) -> Folder:
     return folder
 
 
-def test_saving_file_names_attaches_them_to_the_folder(
-    client: TestClient, sessions: sessionmaker[Session]
-) -> None:
-    with sessions() as session:
-        folder = _home_folder(session)
-        folder_id = str(folder.id)
-
-    response = client.post(
-        "/save-file-names",
-        json={
-            "folder_id": folder_id,
-            "file_metadata": [
-                {
-                    "file_id": str(uuid.uuid4()),
-                    "name": "notes",
-                    "extension": "pdf",
-                }
-            ],
-        },
-    )
-
-    assert response.json() == {"msg": "File names saved!"}
-
-
-def test_saving_file_names_without_a_folder_makes_one(
-    client: TestClient,
-) -> None:
-    response = client.post(
-        "/save-file-names",
-        json={
-            "file_metadata": [
-                {
-                    "file_id": str(uuid.uuid4()),
-                    "name": "orphan",
-                    "extension": "pdf",
-                }
-            ]
-        },
-    )
-
-    assert response.json() == {"msg": "File names saved!"}
-
-
 def test_deleting_a_deck_removes_its_flashcards(
     client: TestClient, sessions: sessionmaker[Session]
 ) -> None:

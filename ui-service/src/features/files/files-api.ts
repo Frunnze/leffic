@@ -7,7 +7,7 @@ export class FilesApi {
       file_extension: extension,
     }).toString();
     const fileContents = await HttpClient.blob({
-      endpoint: `/api/files/file?${query}`,
+      endpoint: `/api/content/file?${query}`,
       headers: { Accept: "application/pdf" },
     });
 

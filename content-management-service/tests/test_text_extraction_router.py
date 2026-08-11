@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from unittest import mock
 
 import jwt
@@ -8,8 +8,13 @@ from fastapi.testclient import TestClient
 
 from app_factory import create_app
 from features.study_units_generation import (
-    study_units_router as router_module,
+    extraction_router as router_module,
 )
+
+if TYPE_CHECKING:
+    from features.study_units_generation.text_sources import (
+        FileMetadata,
+    )
 
 _USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"
 _PAGE_TEXT = "A neuron at rest sits near -70 mV."
@@ -49,19 +54,20 @@ def test_a_topic_is_not_extracted_but_written_into_a_note(
 def test_a_link_is_read_into_text(client: TestClient) -> None:
     with mock.patch.object(
         router_module, "text_from_link", return_value=_PAGE_TEXT
-    ):
+    ) as from_link:
         code, body = _extract(
             client, {"link_metadata": "https://example.com/neurons"}
         )
 
     assert code == 200
     assert body == {"text": _PAGE_TEXT}
+    assert from_link.call_args.args[0] == "https://example.com/neurons"
 
 
 def test_a_file_is_read_into_text(client: TestClient) -> None:
     with mock.patch.object(
         router_module, "text_from_files", return_value=_PAGE_TEXT
-    ):
+    ) as from_files:
         code, body = _extract(
             client,
             {
@@ -77,6 +83,9 @@ def test_a_file_is_read_into_text(client: TestClient) -> None:
 
     assert code == 200
     assert body == {"text": _PAGE_TEXT}
+    requested = cast("list[FileMetadata]", from_files.call_args.args[0])
+
+    assert requested[0].file_id == "6f1c7d4e-0000-4000-8000-00000000000a"
 
 
 def test_a_source_that_yields_nothing_is_rejected(

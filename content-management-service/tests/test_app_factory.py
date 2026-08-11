@@ -51,5 +51,8 @@ def test_every_router_is_registered() -> None:
         "/note",
         "/notes-stats",
         "/create-folder",
-        "/save-file-names",
+        "/upload-files",
+        "/file",
+        "/extract-text",
+        "/generate-study-units",
     } <= paths

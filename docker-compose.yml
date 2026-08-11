@@ -1,10 +1,3 @@
-x-file-processor: &file-processor
-  build: ./file-processor-service
-  environment:
-    - REDIS_HOST=redis:6379
-    - CONTENT_MANAGEMENT_SERVICE=http://content-management-service:8000
-  restart: unless-stopped
-
 x-content-service: &content-service
   build: ./content-management-service
   environment:
@@ -43,20 +36,20 @@ services:
     depends_on:
       - user-service
       - content-management-service
-      - file-processor-service
+      - content-documents
       - scheduler-service
     restart: unless-stopped
 
-  file-processor-service:
-    <<: *file-processor
-    volumes:
-      - files:/app/files
-    depends_on:
-      - redis
-      - content-management-service
-
   content-management-service:
     <<: *content-service
+    volumes:
+      - files:/app/files
+
+  content-documents:
+    <<: *content-service
+    build:
+      context: ./content-management-service
+      dockerfile: Dockerfile.documents
     volumes:
       - files:/app/files
 

@@ -1,15 +1,19 @@
 import shutil
 import subprocess
 import tempfile
+import uuid
 from pathlib import Path
 from typing import Annotated
 from uuid import uuid4
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse, Response
+from sqlalchemy.orm import Session
 
-from features.file_upload.content_client import register_files
-from shared.dependencies import AuthenticatedUserId
+from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.folder_access import resolved_folder_id
+from shared.models import File as StoredFile
+from shared.models import Folder
 
 file_uploader = APIRouter()
 
@@ -18,6 +22,7 @@ _HOME_FOLDER = "home"
 _PDF_EXTENSION = "pdf"
 _PDF_MEDIA_TYPE = "application/pdf"
 _FILE_NOT_FOUND = "File not found"
+_MISSING_FOLDER = "Folder does not exist!"
 _CONVERSION_TIMEOUT_SECONDS = 120
 
 UploadedFiles = Annotated[list[UploadFile], File(...)]
@@ -44,18 +49,39 @@ def _stored_file(file: UploadFile) -> dict[str, str]:
     }
 
 
+def _recorded_files(
+    db: Session, folder_id: str, uploaded_files: list[dict[str, str]]
+) -> None:
+    folder = db.query(Folder).filter_by(id=folder_id).first()
+
+    if folder is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=_MISSING_FOLDER
+        )
+
+    for uploaded in uploaded_files:
+        folder.files.append(
+            StoredFile(
+                id=uuid.UUID(uploaded["file_id"]),
+                name=uploaded["name"],
+                extension=uploaded["extension"],
+            )
+        )
+
+    db.commit()
+
+
 @file_uploader.post("/upload-files")
 async def upload_files(
     user_id: AuthenticatedUserId,
+    db: DatabaseSession,
     files: UploadedFiles,
     folder_id: FolderId = None,
 ) -> dict[str, object]:
-    resolved_folder_id = (
-        user_id if folder_id == _HOME_FOLDER else folder_id
-    )
     uploaded_files = [_stored_file(file) for file in files]
-
-    register_files(uploaded_files, resolved_folder_id)
+    _recorded_files(
+        db, resolved_folder_id(user_id, folder_id), uploaded_files
+    )
 
     return {"msg": "Files uploaded!", "file_metadata": uploaded_files}
 

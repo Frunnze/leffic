@@ -1,46 +1,11 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 
 from features.file_system.file_storage import delete_file_from_storage
 from shared.dependencies import DatabaseSession
-from shared.models import File, FlashcardDeck, Folder, Note, Test
+from shared.models import File, FlashcardDeck, Note, Test
 
 content_router = APIRouter()
-
-
-class FileMetadata(BaseModel):
-    file_id: str
-    name: str
-    extension: str
-
-
-class SaveFileNamesRequest(BaseModel):
-    file_metadata: list[FileMetadata]
-    folder_id: str | None = None
-
-
-@content_router.post("/save-file-names")
-async def save_file_names(
-    request_data: SaveFileNamesRequest, db: DatabaseSession
-) -> JSONResponse:
-    folder = db.query(Folder).filter_by(id=request_data.folder_id).first()
-
-    if not folder:
-        folder = Folder(name=request_data.file_metadata[0].name)
-
-    for file_meta in request_data.file_metadata:
-        folder.files.append(
-            File(
-                id=file_meta.file_id,
-                name=file_meta.name,
-                extension=file_meta.extension,
-            )
-        )
-
-    db.commit()
-
-    return JSONResponse(content={"msg": "File names saved!"})
 
 
 @content_router.delete("/delete-deck/")

@@ -9,3 +9,8 @@ celery[redis]
 openai
 demjson3==3.0.6
 pika
+textract==1.6.5
+python-multipart
+setuptools==80.8.0
+youtube-transcript-api
+beautifulsoup4

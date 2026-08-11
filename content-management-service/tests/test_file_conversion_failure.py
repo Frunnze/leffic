@@ -1,80 +1,59 @@
 import io
 import subprocess
+import uuid
 from collections.abc import Iterator
 from pathlib import Path
 from typing import cast
 from unittest import mock
 
-import jwt
 import pytest
 from fastapi import UploadFile
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session, sessionmaker
 
 from app_factory import create_app
 from features.file_upload import file_uploader as upload_module
+from shared.database import get_db
+from shared.models import Folder
+from tests.support import (
+    USER_ID,
+    SessionProvider,
+    authorization,
+    in_memory_sessions,
+)
 
-_USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"
+HOME_ID = uuid.UUID(USER_ID)
 _FOLDER_ID = "6f1c7d4e-0000-4000-8000-000000000002"
 
 
-class FakeTaskResult:
-    def __init__(self, task_id: str) -> None:
-        super().__init__()
-        self.id: str = task_id
+@pytest.fixture
+def sessions() -> sessionmaker[Session]:
+    factory = in_memory_sessions()
 
+    with factory() as session:
+        session.add_all(
+            [
+                Folder(id=HOME_ID, name="Home", user_id=HOME_ID),
+                Folder(
+                    id=uuid.UUID(_FOLDER_ID),
+                    parent_id=HOME_ID,
+                    name="Biology",
+                    user_id=HOME_ID,
+                ),
+            ]
+        )
+        session.commit()
 
-class FakeTask:
-    def __init__(self, task_id: str) -> None:
-        super().__init__()
-        self.task_id: str = task_id
-        self.calls: list[dict[str, object]] = []
-
-    def delay(self, **kwargs: object) -> FakeTaskResult:
-        self.calls.append(kwargs)
-
-        return FakeTaskResult(self.task_id)
-
-
-class FakeAsyncResult:
-    def __init__(
-        self, status: str, result: dict[str, object] | None
-    ) -> None:
-        super().__init__()
-        self.status: str = status
-        self.result: dict[str, object] | None = result
-
-    def ready(self) -> bool:
-        return self.result is not None
-
-
-class FakeAi:
-    def get_ai_res_hist(
-        self, system_prompt: str, history: list[object]
-    ) -> str:
-        return f"answered {len(history)} messages for {len(system_prompt)}"
-
-
-class FakeFactory:
-    def __init__(self) -> None:
-        super().__init__()
-        self.models: list[str | None] = []
-
-    def get_ai(self, model: str | None = None) -> FakeAi:
-        self.models.append(model)
-
-        return FakeAi()
+    return factory
 
 
 @pytest.fixture
-def client() -> Iterator[TestClient]:
-    with TestClient(create_app()) as test_client:
+def client(sessions: sessionmaker[Session]) -> Iterator[TestClient]:
+    app = create_app()
+    app.dependency_overrides[get_db] = SessionProvider(sessions)
+
+    with TestClient(app) as test_client:
         yield test_client
-
-
-def _authorization() -> dict[str, str]:
-    token = jwt.encode({"user_id": _USER_ID}, "secret", algorithm="HS256")
-
-    return {"Authorization": f"Bearer {token}"}
 
 
 def test_a_failed_conversion_is_reported(
@@ -102,13 +81,12 @@ def test_a_file_without_an_extension_keeps_an_empty_one(
 ) -> None:
     with (
         mock.patch.object(upload_module, "_FILES_DIRECTORY", str(tmp_path)),
-        mock.patch.object(upload_module, "register_files"),
     ):
         response = client.post(
             "/upload-files",
             files={"files": ("plainname", b"payload", "text/plain")},
             data={"folder_id": _FOLDER_ID},
-            headers=_authorization(),
+            headers=authorization(),
         )
 
     body = cast("dict[str, object]", response.json())
@@ -123,13 +101,12 @@ def test_an_extension_starting_with_a_letter_keeps_it(
 ) -> None:
     with (
         mock.patch.object(upload_module, "_FILES_DIRECTORY", str(tmp_path)),
-        mock.patch.object(upload_module, "register_files"),
     ):
         response = client.post(
             "/upload-files",
             files={"files": ("sheet.Xml", b"payload", "text/xml")},
             data={"folder_id": _FOLDER_ID},
-            headers=_authorization(),
+            headers=authorization(),
         )
 
     body = cast("dict[str, object]", response.json())

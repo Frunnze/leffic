@@ -8,6 +8,17 @@ _HOME_FOLDER = "home"
 _MISSING_FOLDER = "Folder does not exist!"
 
 
+def resolved_folder_id(user_id: str, folder_id: str | None) -> str:
+    resolved = user_id if folder_id == _HOME_FOLDER else folder_id
+
+    if resolved is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=_MISSING_FOLDER
+        )
+
+    return resolved
+
+
 def owned_folder_id(
     db: Session, user_id: str, folder_id: str | None
 ) -> str:

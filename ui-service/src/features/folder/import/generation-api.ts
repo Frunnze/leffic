@@ -10,9 +10,9 @@ import type { Unit } from "../../../shared/models/units";
 import { UnitsApi } from "../units-api";
 
 const STATUS_ENDPOINTS = {
-  flashcards: "/api/files/flashcards-status/",
-  note: "/api/files/note-task-status/",
-  test: "/api/files/test-task-status/",
+  flashcards: "/api/content/flashcards-status/",
+  note: "/api/content/note-task-status/",
+  test: "/api/content/test-task-status/",
 } as const;
 
 export type GeneratedKind = keyof typeof STATUS_ENDPOINTS;
@@ -43,7 +43,7 @@ export class GenerationApi {
     form.append("folder_id", folderId);
 
     const payload = await HttpClient.json({
-      endpoint: "/api/files/upload-files",
+      endpoint: "/api/content/upload-files",
       method: "POST",
       body: form,
     });
@@ -59,7 +59,7 @@ export class GenerationApi {
 
   static async extractText(source: GenerationSource): Promise<string> {
     const payload = await HttpClient.json({
-      endpoint: "/api/files/extract-text",
+      endpoint: "/api/content/extract-text",
       method: "POST",
       body: GenerationApi.sourceBody(source),
     });
@@ -73,7 +73,7 @@ export class GenerationApi {
     wanted: GenerationWish = DEFAULT_WISH,
   ): Promise<GenerationTaskIds> {
     const payload = await HttpClient.json({
-      endpoint: "/api/files/generate-study-units",
+      endpoint: "/api/content/generate-study-units",
       method: "POST",
       body: {
         ...GenerationApi.wishBody(wanted),

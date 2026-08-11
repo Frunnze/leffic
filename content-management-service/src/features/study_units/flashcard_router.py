@@ -12,6 +12,7 @@ from sqlalchemy.orm import Query, Session
 from features.study_units.formatting import date_to_str, flashcard_results
 from shared.clock import utc_today
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.folder_access import resolved_folder_id
 from shared.folder_tree import subfolder_ids
 from shared.models import (
     Flashcard,
@@ -70,16 +71,9 @@ async def get_flashcards(
     if flashcard_deck_id:
         due_flashcards = _deck_flashcards(db, flashcard_deck_id)
     else:
-        resolved_folder_id = (
-            user_id if folder_id == _HOME_FOLDER else folder_id
+        due_flashcards = _folder_flashcards(
+            db, resolved_folder_id(user_id, folder_id), user_id
         )
-
-        if resolved_folder_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=_MISSING_FOLDER
-            )
-
-        due_flashcards = _folder_flashcards(db, resolved_folder_id, user_id)
 
     flashcards = (
         due_flashcards.order_by(Flashcard.next_review.asc().nullsfirst())
