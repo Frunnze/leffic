@@ -1,14 +1,18 @@
 import uuid
 from datetime import datetime
-from typing import TypeGuard, cast
+from typing import cast
 
-import requests
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
+from fsrs.card import CardDict
+from fsrs.review_log import ReviewLogDict
 from pydantic import BaseModel
 from sqlalchemy import ColumnElement, func, or_, select
 from sqlalchemy.orm import Query, Session
 
+from features.scheduling.flashcard_scheduling import (
+    schedule_flashcard_fsrs,
+)
 from features.study_units.formatting import date_to_str, flashcard_results
 from shared.clock import utc_today
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
@@ -19,7 +23,6 @@ from shared.models import (
     FlashcardDeck,
     FlashcardReview,
 )
-from shared.settings import SCHEDULER_SERVICE
 
 flashcard_router = APIRouter()
 
@@ -27,12 +30,6 @@ _HOME_FOLDER = "home"
 _DEFAULT_PER_PAGE = 10
 _MISSING_FOLDER = "Folder does not exist!"
 _MISSING_FLASHCARD = "Flashcard does not exist!"
-_SCHEDULER_TIMEOUT_SECONDS = 30
-_NO_CARD_RETURNED = "Scheduler returned no card"
-
-
-def _is_object_dict(value: object) -> TypeGuard[dict[str, object]]:
-    return isinstance(value, dict)
 
 
 def _due_condition() -> ColumnElement[bool]:
@@ -110,44 +107,30 @@ def review_flashcard(
             status_code=status.HTTP_404_NOT_FOUND, detail=_MISSING_FLASHCARD
         )
 
-    # Call scheduler
-    response = requests.post(
-        url=f"{SCHEDULER_SERVICE}/schedule-flashcard",
-        json={
-            "card": card.fsrs_card,
-            "rating": request_data.rating,
-            "user_id": user_id,
-        },
-        timeout=_SCHEDULER_TIMEOUT_SECONDS,
+    _ = user_id
+    new_card, review_log = schedule_flashcard_fsrs(
+        cast("CardDict | None", card.fsrs_card), None, request_data.rating
     )
-    response.raise_for_status()
 
-    scheduled = cast("dict[str, object]", response.json())
-
-    return JSONResponse(content=_recorded_review(db, card, scheduled))
+    return JSONResponse(
+        content=_recorded_review(db, card, new_card, review_log)
+    )
 
 
 def _recorded_review(
-    db: Session, card: Flashcard, scheduled: dict[str, object]
+    db: Session,
+    card: Flashcard,
+    new_card: CardDict,
+    review_log: ReviewLogDict,
 ) -> dict[str, object]:
-    new_card = scheduled.get("new_card")
-
-    if not _is_object_dict(new_card):
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=_NO_CARD_RETURNED,
-        )
-
-    # Save new card
-    card.fsrs_card = new_card
+    card.fsrs_card = dict(new_card)
     next_review_date = datetime.fromisoformat(
-        str(new_card.get("due"))
+        str(new_card["due"])
     ).replace(tzinfo=None)
     card.next_review = next_review_date
 
-    # Add new card review log
     card.flashcard_reviews.append(
-        FlashcardReview(fsrs_review=scheduled.get("review_log"))
+        FlashcardReview(fsrs_review=dict(review_log))
     )
     db.commit()
 

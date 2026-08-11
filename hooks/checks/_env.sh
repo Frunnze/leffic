@@ -1,7 +1,7 @@
 repository_root=$(git rev-parse --show-toplevel)
 cd "$repository_root"
 
-services="user-service content-management-service scheduler-service"
+services="user-service content-management-service"
 
 ruff_binary="$repository_root/.venv/bin/ruff"
 basedpyright_binary="$repository_root/.venv/bin/basedpyright"

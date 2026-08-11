@@ -40,7 +40,7 @@ export class FlashcardsApi {
     card: FsrsCard | null,
   ): Promise<RatingIntervals | null> {
     const response = await HttpClient.send({
-      endpoint: "/api/scheduler/public/ratings-times",
+      endpoint: "/api/content/rating-intervals",
       method: "POST",
       body: { card },
     });

@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session, sessionmaker
 from app_factory import create_app
 from shared.database import get_db
 from shared.models import Flashcard, FlashcardDeck, Folder, Note
-from shared.settings import SCHEDULER_SERVICE
 from tests.support import (
     USER_ID,
     SessionProvider,
@@ -131,6 +130,3 @@ def test_note_stats_report_nothing_for_an_empty_folder(
     assert response.status_code == 404
     assert cast("dict[str, str]", response.json())["msg"] == "No notes!"
 
-
-def test_the_scheduler_url_comes_from_settings() -> None:
-    assert SCHEDULER_SERVICE == "http://scheduler"

@@ -1,4 +1,3 @@
 import os
 
-SCHEDULER_SERVICE = os.getenv("SCHEDULER_SERVICE")
 REDIS_HOST = os.getenv("REDIS_HOST")
