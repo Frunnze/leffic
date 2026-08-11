@@ -9,7 +9,8 @@ from features.study_units_generation.generation_tasks import (
     generate_note_task,
     generate_test_task,
 )
-from shared.dependencies import AuthenticatedUserId
+from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.folder_access import ensured_home_folder
 
 generation_router = APIRouter()
 
@@ -46,13 +47,14 @@ class GenerationRequest(BaseModel):
 
 @generation_router.post("/generate-study-units", response_model=None)
 async def generate_study_units(
-    request_data: GenerationRequest, user_id: AuthenticatedUserId
+    request_data: GenerationRequest,
+    user_id: AuthenticatedUserId,
+    db: DatabaseSession,
 ) -> dict[str, object] | JSONResponse:
-    folder_id = (
-        user_id
-        if request_data.folder_id == _HOME_FOLDER
-        else request_data.folder_id
-    )
+    folder_id = request_data.folder_id
+
+    if folder_id == _HOME_FOLDER:
+        folder_id = str(ensured_home_folder(db, user_id).id)
 
     if not request_data.text.strip() or folder_id is None:
         return JSONResponse(

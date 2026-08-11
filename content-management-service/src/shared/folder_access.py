@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -36,3 +38,18 @@ def owned_folder_id(
         )
 
     return str(owned)
+
+
+def ensured_home_folder(db: Session, user_id: str) -> Folder:
+    home = db.query(Folder).filter_by(id=user_id).first()
+
+    if home is not None:
+        return home
+
+    created = Folder(
+        id=uuid.UUID(user_id), name="Home", user_id=uuid.UUID(user_id)
+    )
+    db.add(created)
+    db.commit()
+
+    return created

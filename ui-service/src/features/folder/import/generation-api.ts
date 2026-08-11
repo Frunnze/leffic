@@ -72,13 +72,14 @@ export class GenerationApi {
     folderId: string,
     wanted: GenerationWish = DEFAULT_WISH,
   ): Promise<GenerationTaskIds> {
+    const text = await GenerationApi.sourceText(source);
     const payload = await HttpClient.json({
       endpoint: "/api/content/generate-study-units",
       method: "POST",
       body: {
         ...GenerationApi.wishBody(wanted),
         folder_id: folderId,
-        ...GenerationApi.sourceBody(source),
+        text,
       },
     });
     const raw = Json.object(payload, "generation");
@@ -101,6 +102,12 @@ export class GenerationApi {
       status,
       unit: status === "SUCCESS" ? GenerationApi.toGeneratedUnit(kind, raw) : null,
     };
+  }
+
+  private static async sourceText(source: GenerationSource): Promise<string> {
+    if (source.kind === "topic") return source.topic;
+
+    return GenerationApi.extractText(source);
   }
 
   private static wishBody(

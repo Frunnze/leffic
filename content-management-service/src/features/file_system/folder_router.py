@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from features.file_system.file_storage import delete_file_from_storage
 from features.file_system.folder_contents import entries_in
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.folder_access import ensured_home_folder
 from shared.folder_tree import subfolder_ids
 from shared.models import File, Folder
 
@@ -138,21 +139,7 @@ async def access_folder(
 
 
 def _home_folder_response(db: Session, user_id: str) -> JSONResponse:
-    folder = db.query(Folder).filter_by(id=user_id).first()
-
-    if folder is None:
-        db.add(
-            Folder(
-                id=uuid.UUID(user_id),
-                name="Home",
-                user_id=uuid.UUID(user_id),
-            )
-        )
-        db.commit()
-
-        return JSONResponse(
-            content={"content": [], "parent_folder_name": "Home"}
-        )
+    folder = ensured_home_folder(db, user_id)
 
     return JSONResponse(
         content={

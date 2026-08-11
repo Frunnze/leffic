@@ -127,3 +127,21 @@ def test_an_unfinished_result_object_is_rejected(
         pytest.raises(TypeError, match="did not finish with a result"),
     ):
         _ = client.get("/note-task-status/task-1")
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["/flashcards-status", "/test-task-status", "/note-task-status"],
+)
+def test_a_failed_task_reports_its_failure(
+    client: TestClient, path: str
+) -> None:
+    with mock.patch.object(
+        task_status_router,
+        "AsyncResult",
+        return_value=FakeAsyncResult("FAILURE", RuntimeError("no folder")),
+    ):
+        response = client.get(f"{path}/task-1")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "FAILURE"}
