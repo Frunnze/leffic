@@ -1,14 +1,14 @@
 .chatbot {
   position: fixed;
   top: 0;
-  left: var(--rail-inline);
+  left: var(--rail-width);
   bottom: var(--rail-block);
   height: auto;
   z-index: 10;
   display: flex;
   flex-direction: column;
-  width: 380px;
-  max-width: calc(100% - var(--rail-inline));
+  width: var(--chat-width);
+  max-width: calc(100% - var(--rail-width));
   background: var(--surface);
   border-right: 1px solid var(--line);
   box-shadow: var(--shadow-2);

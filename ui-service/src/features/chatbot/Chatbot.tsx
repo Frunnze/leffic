@@ -1,4 +1,11 @@
-import { For, Show, createSignal, type JSX } from "solid-js";
+import {
+  For,
+  Show,
+  createEffect,
+  createSignal,
+  on,
+  type JSX,
+} from "solid-js";
 import { ChatbotApi } from "./chatbot-api";
 import { Icon } from "../../shared/ui/icons/Icon";
 import type { ChatMessage } from "./chat-models";
@@ -18,6 +25,15 @@ export function Chatbot(props: ChatbotProps): JSX.Element {
   ]);
   const [draft, setDraft] = createSignal("");
   const [isWaiting, setWaiting] = createSignal(false);
+  let log: HTMLDivElement | undefined;
+
+  const scrollToNewestMessage = (): void => {
+    if (log === undefined) return;
+
+    log.scrollTop = log.scrollHeight;
+  };
+
+  createEffect(on([messages, isWaiting], scrollToNewestMessage));
 
   const send = async (question: string): Promise<void> => {
     const trimmed = question.trim();
@@ -56,7 +72,7 @@ export function Chatbot(props: ChatbotProps): JSX.Element {
         </button>
       </div>
 
-      <div class="chatbot-log" aria-live="polite">
+      <div class="chatbot-log" aria-live="polite" ref={log}>
         <For each={messages()}>
           {(message) => (
             <div

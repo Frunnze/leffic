@@ -13,7 +13,10 @@ export function AppShell(props: AppShellProps): JSX.Element {
   return (
     <div
       class="screen"
-      classList={{ "screen-fixed": props.fillsViewport === true }}
+      classList={{
+        "screen-fixed": props.fillsViewport === true,
+        "screen-with-chat": isAskOpen(),
+      }}
     >
       <Rail onToggleAsk={() => setAskOpen(!isAskOpen())} />
       <Show when={isAskOpen()}>
