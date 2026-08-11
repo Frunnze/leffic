@@ -76,10 +76,11 @@ trusted: most content endpoints never check that the caller owns the row.
 - [ ] **`JWT_SECRET_KEY` and `OPENAI_API_KEY` come from a gitignored `.env`.**
   Fine locally; for production they need a real secret store, plus a
   documented rotation procedure for the JWT secret.
-- [ ] **No health checks and no ordering.** `docker-compose.yml` has zero
-  `healthcheck` blocks, and `depends_on` without `condition: service_healthy`
-  only orders start, not readiness — so the services race Postgres, Redis and
-  RabbitMQ on every boot. Add `/health` endpoints and gate `depends_on` on them.
+- [~] **No application health checks.** Postgres, Redis and RabbitMQ now
+  carry `healthcheck` blocks and every service waits on
+  `condition: service_healthy`, so the boot race is gone. The services
+  themselves still expose no `/health`, so nothing gates the gateway on
+  their readiness or reports them unhealthy once running.
 - [ ] **`create_database_if_not_exists` runs at import time.**
   `content-management-service/src/shared/database.py` connects to Postgres
   while the module is being imported, so an unavailable database is an import

@@ -1,3 +1,9 @@
+x-healthcheck-timing: &healthcheck-timing
+  interval: 5s
+  timeout: 5s
+  retries: 20
+  start_period: 10s
+
 x-content-service: &content-service
   build: ./content-management-service
   environment:
@@ -9,14 +15,12 @@ x-content-service: &content-service
     - OPENAI_API_KEY=${OPENAI_API_KEY}
     - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
   depends_on:
-    - postgres
-    - redis
-    - rabbitmq
-  restart: unless-stopped
-
-x-postgres-client: &postgres-client
-  depends_on:
-    - postgres
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    rabbitmq:
+      condition: service_healthy
   restart: unless-stopped
 
 services:
@@ -53,22 +57,15 @@ services:
 
   celery-worker:
     <<: *content-service
-    depends_on:
-      - redis
-      - content-management-service
     command: celery -A shared.celery_app worker --loglevel info
 
   user-events-consumer:
     <<: *content-service
-    depends_on:
-      - rabbitmq
-      - content-management-service
     volumes:
       - files:/app/files
     command: python run_consumer.py
 
   user-service:
-    <<: *postgres-client
     build: ./user-service
     environment:
       - DB_USER=postgres
@@ -78,19 +75,28 @@ services:
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
     depends_on:
-      - postgres
-      - rabbitmq
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
 
   rabbitmq:
     image: rabbitmq:3.13-alpine
     volumes:
       - rabbitmq:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      <<: *healthcheck-timing
     restart: unless-stopped
 
   redis:
     image: redis:6.2-alpine
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      <<: *healthcheck-timing
     restart: unless-stopped
 
   postgres:
@@ -100,6 +106,9 @@ services:
       POSTGRES_PASSWORD: postgres
     volumes:
       - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      <<: *healthcheck-timing
     restart: unless-stopped
 
 volumes:
