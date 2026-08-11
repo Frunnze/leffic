@@ -84,7 +84,7 @@ trusted: most content endpoints never check that the caller owns the row.
   `content-management-service/src/shared/database.py` connects to Postgres
   while the module is being imported, so an unavailable database is an import
   crash rather than a retryable startup failure.
-- [ ] **No backups.** Postgres, MongoDB and the `files` volume have no dump,
+- [ ] **No backups.** Postgres and the `files` volume have no dump,
   snapshot or restore procedure, and no restore has ever been rehearsed.
 - [ ] **CORS is `allow_origins=["*"]` in every service** (`app_factory.py`).
   Harmless while only the gateway is reachable, dangerous the moment a port
@@ -112,15 +112,12 @@ trusted: most content endpoints never check that the caller owns the row.
 
 ## P2 — coupling and resilience
 
-- [ ] **A scheduler blip loses a review.** `review_flashcard` POSTs to the
-  scheduler and calls `raise_for_status()` *before* recording anything, so an
-  outage discards the review instead of degrading. Record first, schedule
-  after, and reconcile.
-- [ ] **The browser calls the scheduler directly.** `flashcards-api.ts` hits
-  `/api/scheduler/public/ratings-times`, publishing an internal service
-  through the gateway. Proxy it behind the content service.
-- [ ] **`claims_extractor.py` is byte-identical in all four services**, so
-  the auth contract has four copies that can drift. Either extract a shared
+- [ ] **FSRS parameters are not per learner.** Scheduling now runs
+  in-process (`features/scheduling/flashcard_scheduling.py`) with the
+  library defaults for everyone. When the optimizer lands, store each
+  learner's tuned parameters in Postgres and load them per review.
+- [ ] **`claims_extractor.py` is byte-identical in both services**, so
+  the auth contract has two copies that can drift. Either extract a shared
   internal package or accept the duplication deliberately and document it.
 - [ ] **No dead-letter queue.** The `user.deleted` consumer
   (`features/user_events/consumer.py`) drops unparseable messages and leaves
@@ -137,9 +134,9 @@ trusted: most content endpoints never check that the caller owns the row.
   gateway, the services and the worker; there is no request id.
 - [ ] **No metrics and no error tracking.** Nothing reports queue depth,
   generation failure rate, LLM spend or unhandled exceptions.
-- [ ] **No resource limits.** LibreOffice and OCR run unbounded in the file
-  processor; one large document can starve the host.
-- [ ] **Single instance of everything.** Postgres, MongoDB, Redis and
+- [ ] **No resource limits.** LibreOffice and OCR run unbounded in the
+  documents deployable; one large document can starve the host.
+- [ ] **Single instance of everything.** Postgres, Redis and
   RabbitMQ are all one container with no replication or failover.
 
 ## P2 — repository hygiene
@@ -153,6 +150,7 @@ trusted: most content endpoints never check that the caller owns the row.
   file replaces it; delete the old one.
 - [ ] **No CI.** Every check runs only in the local pre-commit hook
   (`hooks/checks/`), so nothing enforces them on a pull request.
-- [ ] **No C3 component diagram.** The content service now holds five
-  features (`file_system`, `study_units`, `study_units_generation`,
-  `chatbot`, `user_events`) and has outgrown the C2 view.
+- [ ] **No C3 component diagram.** The content service now holds seven
+  features (`file_system`, `file_upload`, `study_units`, `scheduling`,
+  `study_units_generation`, `chatbot`, `user_events`) and has outgrown
+  the C2 view.

@@ -44,9 +44,9 @@ Set `OPENAI_API_KEY`, `JWT_SECRET_KEY` and the Postgres credentials from
 
 ## Architecture
 
-Eight deployables and five datastores. No service calls another over
-HTTP: the only cross-service traffic is the `user.deleted` event on RabbitMQ
-(the scheduler is the remaining exception, and is next to be folded in). Every backend service is FastAPI on
+Seven deployables and four datastores. No service calls another over
+HTTP: the only cross-service traffic is the `user.deleted` event on
+RabbitMQ. Every backend service is FastAPI on
 Python 3.12 with the same layout — `run.py` → `app_factory.py` →
 `features/` and `shared/`. Two of the deployables are background workers
 built from the content service image: the Celery generation worker and the
@@ -69,11 +69,10 @@ user-events consumer.
 | `ui-service` | SolidJS SPA, built by Vite, served by nginx | the gateway |
 | `api-gateway` | nginx with njs; verifies the JWT and applies CORS | every service |
 | `user-service` | Accounts, sealed AI provider keys, and the only JWT issuer | Postgres `users`, RabbitMQ |
-| `content-management-service` | Folders, decks, cards, tests, notes, files, reviews, generation and the chatbot | Postgres `content`, scheduler, OpenAI |
+| `content-management-service` | Folders, decks, cards, tests, notes, files, reviews, scheduling, generation and the chatbot | Postgres `content`, OpenAI |
 | `content-documents` | Upload, extract-text and file, on an image with LibreOffice and OCR | Postgres `content`, the file volume |
 | `celery-worker` | The three generation tasks, same image as the content service | OpenAI, Postgres `content` |
 | `user-events-consumer` | Removes a deleted account's content, same image as the content service | RabbitMQ, Postgres `content` |
-| `scheduler-service` | FSRS next-review dates and interval labels | MongoDB |
 
 ### How an import flows
 
@@ -95,7 +94,6 @@ learner's folders, study units and uploaded documents.
 |---|---|---|
 | `users` | PostgreSQL | accounts, password hashes |
 | `content` | PostgreSQL | folders, decks, flashcards, tests, sessions, notes, files, reviews |
-| `fsrs_db` | MongoDB | per-user FSRS scheduler parameters |
 | `files` | Docker volume | the uploaded documents themselves |
 | Redis | — | Celery broker and result backend |
 
@@ -106,9 +104,9 @@ migrations. A user's root folder is the folder whose id equals their user id.
 
 - SolidJS, TypeScript, Vite
 - FastAPI, SQLAlchemy, Pydantic
-- Kong
+- nginx with njs
 - Celery, Redis
-- PostgreSQL, MongoDB
+- PostgreSQL
 - OpenAI
 - py-fsrs
 - Docker Compose

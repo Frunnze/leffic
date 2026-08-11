@@ -16,7 +16,7 @@ flowchart LR
         userService["«container»<br/><b>User service</b><br/>FastAPI / Python<br/>The only identity authority: sign-up, login,<br/>refresh, account settings and sealed AI keys"]
 
         subgraph contentCodebase["Content service — one codebase, four deployables"]
-            contentService["«container»<br/><b>Content API</b><br/>FastAPI / SQLAlchemy, slim image<br/>System of record for folders, decks, cards,<br/>tests, notes and files; starts generation,<br/>serves due counts and the chatbot"]
+            contentService["«container»<br/><b>Content API</b><br/>FastAPI / SQLAlchemy, slim image<br/>System of record for folders, decks, cards,<br/>tests, notes and files; starts generation, schedules<br/>the next review with py-fsrs, serves the chatbot"]
 
             documents["«container»<br/><b>Documents</b><br/>Same code, image with LibreOffice and OCR<br/>Serves upload, extract-text and file: the three<br/>paths that need the document toolchain"]
 
@@ -25,13 +25,9 @@ flowchart LR
             userEvents["«container»<br/><b>User events consumer</b><br/>pika / Python, same image<br/>On user.deleted, removes that learner's folders<br/>and their uploaded documents"]
         end
 
-        scheduler["«container»<br/><b>Scheduler service</b><br/>FastAPI / py-fsrs<br/>Computes the next review date and the<br/>per-rating interval labels"]
-
         userDb[("«container»<br/><b>User database</b><br/>PostgreSQL<br/>Accounts, password hashes and sealed keys")]
 
         contentDb[("«container»<br/><b>Content database</b><br/>PostgreSQL<br/>Folders, study units, review history<br/>and test sessions")]
-
-        schedulerDb[("«container»<br/><b>Scheduler store</b><br/>MongoDB<br/>Per-user FSRS parameters")]
 
         queue[("«container»<br/><b>Task queue</b><br/>Redis<br/>Celery broker and result backend")]
 
@@ -49,17 +45,13 @@ flowchart LR
     gateway -->|"Signs up, logs in, refreshes the token, changes the account [HTTP/JSON]"| userService
     gateway -->|"Reads folders and units, records reviews, starts generation, asks the chatbot [HTTP/JSON]"| contentService
     gateway -->|"Uploads a file, extracts its text, reads it back as PDF [HTTP/JSON]"| documents
-    gateway -->|"Asks for the per-rating interval labels [HTTP/JSON]"| scheduler
 
     userService -->|"Stores accounts in [SQLAlchemy]"| userDb
     userService -->|"Publishes user.deleted, confirmed before the account goes [AMQP]"| events
 
     contentService -->|"Stores folders, units and reviews in [SQLAlchemy]"| contentDb
-    contentService -->|"Asks for the next review date on each rating [HTTP/JSON]"| scheduler
     contentService -->|"Reads and deletes uploaded documents on [Filesystem]"| fileVolume
     contentService -->|"Answers the chatbot with [HTTPS/JSON]"| openai
-
-    scheduler -->|"Loads the user's tuned scheduler from [PyMongo]"| schedulerDb
 
     documents -->|"Writes uploads, converts them to PDF on [Filesystem]"| fileVolume
     documents -->|"Records the uploaded file itself in [SQLAlchemy]"| contentDb
@@ -84,10 +76,8 @@ flowchart LR
     style documents fill:#1168bd,stroke:#0b4884,color:#ffffff
     style worker fill:#1168bd,stroke:#0b4884,color:#ffffff
     style userEvents fill:#1168bd,stroke:#0b4884,color:#ffffff
-    style scheduler fill:#1168bd,stroke:#0b4884,color:#ffffff
     style userDb fill:#438dd5,stroke:#2e6295,color:#ffffff
     style contentDb fill:#438dd5,stroke:#2e6295,color:#ffffff
-    style schedulerDb fill:#438dd5,stroke:#2e6295,color:#ffffff
     style queue fill:#438dd5,stroke:#2e6295,color:#ffffff
     style events fill:#438dd5,stroke:#2e6295,color:#ffffff
     style fileVolume fill:#438dd5,stroke:#2e6295,color:#ffffff
