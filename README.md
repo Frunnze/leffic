@@ -44,7 +44,9 @@ Set `OPENAI_API_KEY`, `JWT_SECRET_KEY` and the Postgres credentials from
 
 ## Architecture
 
-Eight deployables and five datastores. Every backend service is FastAPI on
+Eight deployables and five datastores. No service calls another over
+HTTP: the only cross-service traffic is the `user.deleted` event on RabbitMQ
+(the scheduler is the remaining exception, and is next to be folded in). Every backend service is FastAPI on
 Python 3.12 with the same layout — `run.py` → `app_factory.py` →
 `features/` and `shared/`. Two of the deployables are background workers
 built from the content service image: the Celery generation worker and the
@@ -67,18 +69,21 @@ user-events consumer.
 | `ui-service` | SolidJS SPA, built by Vite, served by nginx | the gateway |
 | `api-gateway` | nginx with njs; verifies the JWT and applies CORS | every service |
 | `user-service` | Accounts, sealed AI provider keys, and the only JWT issuer | Postgres `users`, RabbitMQ |
-| `content-management-service` | Folders, decks, cards, tests, notes, file rows, reviews, and the chatbot | Postgres `content`, scheduler, OpenAI |
-| `file-processor-service` | Uploads, text extraction, PDF conversion | Redis, content service |
+| `content-management-service` | Folders, decks, cards, tests, notes, files, reviews, generation and the chatbot | Postgres `content`, scheduler, OpenAI |
+| `content-documents` | Upload, extract-text and file, on an image with LibreOffice and OCR | Postgres `content`, the file volume |
 | `celery-worker` | The three generation tasks, same image as the content service | OpenAI, Postgres `content` |
 | `user-events-consumer` | Removes a deleted account's content, same image as the content service | RabbitMQ, Postgres `content` |
 | `scheduler-service` | FSRS next-review dates and interval labels | MongoDB |
 
 ### How an import flows
 
-The file processor extracts the text, then enqueues one Celery task per
-study-unit type by name. The browser polls each task id until it succeeds,
-and the worker — which runs the content service image — writes each finished
-study unit straight to the content database.
+The browser uploads a file to the documents deployable, which stores the
+bytes and the row itself, then asks it to extract the text. You review that
+text, and the content API enqueues one Celery task per study-unit type. The
+browser polls each task id until it succeeds, and the worker writes each
+finished study unit straight to the content database. All four deployables
+are built from `content-management-service`; only the documents image
+carries LibreOffice and OCR.
 
 Deleting an account publishes a durable `user.deleted` event to RabbitMQ
 before the account row goes, and a consumer on the content side removes that
