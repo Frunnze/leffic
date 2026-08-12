@@ -18,6 +18,7 @@ from shared.models import (
 from tests.support import (
     USER_ID,
     SessionProvider,
+    authorization,
     in_memory_sessions,
 )
 
@@ -50,17 +51,24 @@ def test_deleting_a_folder_removes_its_files(
     client: TestClient, sessions: sessionmaker[Session], tmp_path: Path
 ) -> None:
     with sessions() as session:
-        folder = _home_folder(session)
+        home = _home_folder(session)
+        folder = Folder(parent_id=home.id, name="Sub", user_id=_HOME_ID)
+        session.add(folder)
+        session.commit()
         stored = File(folder_id=folder.id, name="doc", extension="pdf")
         session.add(stored)
         session.commit()
         stored_name = f"{stored.id}.pdf"
+        folder_id = str(folder.id)
 
     _ = (tmp_path / stored_name).write_bytes(b"payload")
 
     with mock.patch.object(file_storage, "_FILES_DIRECTORY", str(tmp_path)):
         response = client.request(
-            "DELETE", "/delete-folder/", params={"folder_id": str(_HOME_ID)}
+            "DELETE",
+            "/delete-folder/",
+            params={"folder_id": folder_id},
+            headers=authorization(),
         )
 
     assert response.json() == {"msg": "Folder deleted!"}

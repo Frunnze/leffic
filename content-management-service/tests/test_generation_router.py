@@ -49,6 +49,14 @@ def sessions() -> sessionmaker[Session]:
 
     with factory() as session:
         session.add(Folder(id=HOME_ID, name="Home", user_id=HOME_ID))
+        session.add(
+            Folder(
+                id=uuid.UUID(_FOLDER_ID),
+                parent_id=HOME_ID,
+                name="Biology",
+                user_id=HOME_ID,
+            )
+        )
         session.commit()
 
     return factory

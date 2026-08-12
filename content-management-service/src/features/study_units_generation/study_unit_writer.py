@@ -23,7 +23,7 @@ class MissingFolderError(Exception):
         super().__init__(_MISSING_FOLDER)
 
 
-def _owned_folder(db: Session, folder_id: str) -> Folder:
+def _existing_folder(db: Session, folder_id: str) -> Folder:
     folder = db.query(Folder).filter_by(id=folder_id).first()
 
     if folder is None:
@@ -46,7 +46,7 @@ def save_flashcard_deck(
     flashcards: Mapping[str, object],
     source: StudyUnitSource,
 ) -> str:
-    folder = _owned_folder(db, folder_id)
+    folder = _existing_folder(db, folder_id)
     deck = FlashcardDeck(
         folder_id=folder.id,
         name=deck_name,
@@ -75,7 +75,7 @@ def save_note(
     note_content: str,
     source: StudyUnitSource,
 ) -> str:
-    folder = _owned_folder(db, folder_id)
+    folder = _existing_folder(db, folder_id)
     note = Note(
         folder_id=folder.id,
         name=note_name,
@@ -97,7 +97,7 @@ def save_test(
     test_items: list[dict[str, object]],
     source: StudyUnitSource,
 ) -> str:
-    folder = _owned_folder(db, folder_id)
+    folder = _existing_folder(db, folder_id)
     test = Test(
         folder_id=folder.id,
         name=test_name,

@@ -10,7 +10,7 @@ from features.study_units_generation.generation_tasks import (
     generate_test_task,
 )
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
-from shared.folder_access import ensured_home_folder
+from shared.folder_access import ensured_home_folder, owned_folder_id
 
 generation_router = APIRouter()
 
@@ -64,7 +64,9 @@ async def generate_study_units(
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-    return _queued_tasks(request_data, folder_id)
+    return _queued_tasks(
+        request_data, owned_folder_id(db, user_id, folder_id)
+    )
 
 
 def _queued_tasks(

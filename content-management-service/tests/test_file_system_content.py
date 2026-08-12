@@ -21,6 +21,7 @@ from shared.models import (
 from tests.support import (
     USER_ID,
     SessionProvider,
+    authorization,
     in_memory_sessions,
 )
 
@@ -61,7 +62,10 @@ def test_deleting_a_deck_removes_its_flashcards(
         deck_id = str(deck.id)
 
     response = client.request(
-        "DELETE", "/delete-deck/", params={"deck_id": deck_id}
+        "DELETE",
+        "/delete-deck/",
+        params={"deck_id": deck_id},
+        headers=authorization(),
     )
 
     assert response.json() == {"msg": "Deck deleted!"}
@@ -78,7 +82,10 @@ def test_deleting_a_test(
         test_id = str(quiz.id)
 
     response = client.request(
-        "DELETE", "/delete-test/", params={"test_id": test_id}
+        "DELETE",
+        "/delete-test/",
+        params={"test_id": test_id},
+        headers=authorization(),
     )
 
     assert response.json() == {"msg": "Test deleted!"}
@@ -97,7 +104,10 @@ def test_deleting_a_note(
         note_id = str(note.id)
 
     response = client.request(
-        "DELETE", "/delete-note/", params={"note_id": note_id}
+        "DELETE",
+        "/delete-note/",
+        params={"note_id": note_id},
+        headers=authorization(),
     )
 
     assert response.json() == {"msg": "Note deleted!"}
@@ -117,7 +127,10 @@ def test_deleting_a_file_removes_it_from_storage(
 
     with mock.patch.object(file_storage, "_FILES_DIRECTORY", str(tmp_path)):
         response = client.request(
-            "DELETE", "/delete-file/", params={"file_id": file_id}
+            "DELETE",
+            "/delete-file/",
+            params={"file_id": file_id},
+            headers=authorization(),
         )
 
     assert response.json() == {"msg": "File deleted!"}
@@ -126,7 +139,10 @@ def test_deleting_a_file_removes_it_from_storage(
 
 def test_deleting_an_unknown_file_is_not_found(client: TestClient) -> None:
     response = client.request(
-        "DELETE", "/delete-file/", params={"file_id": str(uuid.uuid4())}
+        "DELETE",
+        "/delete-file/",
+        params={"file_id": str(uuid.uuid4())},
+        headers=authorization(),
     )
 
     assert response.status_code == 404

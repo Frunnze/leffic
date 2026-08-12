@@ -51,7 +51,9 @@ def test_reading_a_note_leaves_it_unread(
 ) -> None:
     note_id = _stored_note(sessions)
 
-    first = client.get("/note", params={"note_id": note_id})
+    first = client.get(
+        "/note", params={"note_id": note_id}, headers=authorization()
+    )
 
     with sessions() as session:
         assert not session.query(Note).one().read
@@ -129,7 +131,9 @@ def test_reading_a_note_reports_its_read_state(
 ) -> None:
     note_id = _stored_note(sessions)
 
-    before = client.get("/note", params={"note_id": note_id})
+    before = client.get(
+        "/note", params={"note_id": note_id}, headers=authorization()
+    )
 
     assert cast("dict[str, object]", before.json())["read"] is False
 
@@ -138,6 +142,8 @@ def test_reading_a_note_reports_its_read_state(
         json={"note_id": note_id},
         headers=authorization(str(_HOME_ID)),
     )
-    after = client.get("/note", params={"note_id": note_id})
+    after = client.get(
+        "/note", params={"note_id": note_id}, headers=authorization()
+    )
 
     assert cast("dict[str, object]", after.json())["read"] is True

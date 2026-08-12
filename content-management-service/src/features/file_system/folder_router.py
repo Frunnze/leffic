@@ -2,7 +2,7 @@ import re
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -10,14 +10,21 @@ from sqlalchemy.orm import Session
 from features.file_system.file_storage import delete_file_from_storage
 from features.file_system.folder_contents import entries_in
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
-from shared.folder_access import ensured_home_folder
+from shared.folder_access import (
+    MISSING_FOLDER,
+    ensured_home_folder,
+    owned_folder,
+    owned_folder_id,
+)
 from shared.folder_tree import subfolder_ids
+from shared.identifiers import parsed_identifier
 from shared.models import File, Folder
 
 folder_router = APIRouter()
 
 _HOME_FOLDER = "home"
 _CREATED_AT_FORMAT = "%Y-%m-%dT%H:%M:%S"
+_PROTECTED_HOME = "Home folder cannot be deleted!"
 
 
 class CreateFolderRequest(BaseModel):
@@ -49,22 +56,29 @@ def _available_folder_name(
     return folder_name
 
 
+def _owned_parent_id(
+    db: Session, user_id: str, parent_folder_id: str
+) -> str:
+    if parent_folder_id == _HOME_FOLDER:
+        return str(ensured_home_folder(db, user_id).id)
+
+    return owned_folder_id(db, user_id, parent_folder_id)
+
+
 @folder_router.post("/create-folder")
 async def create_folder(
     request_data: CreateFolderRequest,
     user_id: AuthenticatedUserId,
     db: DatabaseSession,
 ) -> JSONResponse:
-    parent_folder_id = (
-        request_data.parent_folder_id
-        if request_data.parent_folder_id != _HOME_FOLDER
-        else user_id
-    )
-
-    if parent_folder_id is None:
+    if request_data.parent_folder_id is None:
         return JSONResponse(
             status_code=422, content={"detail": "Missing parent folder"}
         )
+
+    parent_folder_id = _owned_parent_id(
+        db, user_id, request_data.parent_folder_id
+    )
 
     folder_name = _available_folder_name(
         db, parent_folder_id, request_data.folder_name
@@ -90,18 +104,29 @@ async def create_folder(
     )
 
 
-@folder_router.delete("/delete-folder/")
-async def delete_folder(folder_id: str, db: DatabaseSession) -> JSONResponse:
-    folder = db.query(Folder).filter_by(id=folder_id).first()
-
+def _files_storage_ids(db: Session, folder_id: str) -> list[str]:
     files = (
         db.query(File)
         .where(File.folder_id.in_(subfolder_ids(folder_id)))
         .all()
     )
-    files_storage_ids = [
-        f"{file.id}.{file.extension}" for file in files
-    ]
+
+    return [f"{file.id}.{file.extension}" for file in files]
+
+
+@folder_router.delete("/delete-folder/")
+async def delete_folder(
+    folder_id: str, user_id: AuthenticatedUserId, db: DatabaseSession
+) -> JSONResponse:
+    folder = owned_folder(db, user_id, folder_id, MISSING_FOLDER)
+
+    if folder.id == folder.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=_PROTECTED_HOME,
+        )
+
+    files_storage_ids = _files_storage_ids(db, str(folder.id))
 
     # Delete the main folder
     db.delete(folder)
@@ -128,7 +153,12 @@ async def access_folder(
             status_code=422, content={"detail": "Missing folder id"}
         )
 
-    folder = db.query(Folder).filter_by(id=folder_id).first()
+    identifier = parsed_identifier(folder_id, MISSING_FOLDER)
+    folder = (
+        db.query(Folder)
+        .filter(Folder.id == identifier, Folder.user_id == user_id)
+        .first()
+    )
 
     return JSONResponse(
         content={

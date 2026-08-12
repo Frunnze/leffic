@@ -64,7 +64,11 @@ def deck_id(sessions: sessionmaker[Session]) -> str:
 
 
 def test_reading_an_unknown_note_is_not_found(client: TestClient) -> None:
-    response = client.get("/note", params={"note_id": str(uuid.uuid4())})
+    response = client.get(
+        "/note",
+        params={"note_id": str(uuid.uuid4())},
+        headers=authorization(),
+    )
 
     assert response.status_code == 404
 
