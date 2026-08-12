@@ -69,3 +69,20 @@ def test_rejects_non_string_user_id() -> None:
 
     assert raised.value.status_code == 401
     assert raised.value.detail == "Token carries no user_id"
+
+
+@pytest.mark.parametrize(
+    "claim", ["hello", "", "home", "6f1c7d4e-0000-4000-8000", "' OR 1=1 --"]
+)
+def test_rejects_user_id_that_is_not_a_uuid(claim: str) -> None:
+    with pytest.raises(HTTPException) as raised:
+        _ = get_user_id_from_jwt(_bearer({"user_id": claim}))
+
+    assert raised.value.status_code == 401
+    assert raised.value.detail == "Token carries an invalid user_id"
+
+
+def test_accepts_an_uppercase_user_id() -> None:
+    header = _bearer({"user_id": _USER_ID.upper()})
+
+    assert get_user_id_from_jwt(header) == _USER_ID.upper()

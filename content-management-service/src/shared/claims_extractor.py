@@ -1,3 +1,4 @@
+import uuid
 from typing import Annotated
 
 import jwt
@@ -6,6 +7,7 @@ from fastapi import Header, HTTPException, status
 _BEARER_SCHEME = "bearer"
 _BEARER_HEADER_PARTS = 2
 _MISSING_USER_ID = "Token carries no user_id"
+_INVALID_USER_ID = "Token carries an invalid user_id"
 _MISSING_SCHEME = "Invalid token: expected a bearer scheme"
 
 
@@ -20,6 +22,18 @@ def get_user_id_from_jwt(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=_MISSING_USER_ID,
         )
+
+    return _validated_user_id(user_id)
+
+
+def _validated_user_id(user_id: str) -> str:
+    try:
+        _ = uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=_INVALID_USER_ID,
+        ) from None
 
     return user_id
 
