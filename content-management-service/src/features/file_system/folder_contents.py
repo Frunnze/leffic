@@ -33,7 +33,7 @@ def entries_in(
     entries.extend(_flashcard_decks(db, folder_id, owner_id))
     entries.extend(_tests(db, folder_id, owner_id))
     entries.extend(_files(db, folder_id, owner_id))
-    entries.extend(_notes(db, folder_id))
+    entries.extend(_notes(db, folder_id, owner_id))
 
     return entries
 
@@ -124,10 +124,13 @@ def _files(
     ]
 
 
-def _notes(db: Session, folder_id: str) -> list[ContentEntry]:
+def _notes(
+    db: Session, folder_id: str, owner_id: uuid.UUID
+) -> list[ContentEntry]:
     rows = (
         db.query(Note)
-        .filter(Note.folder_id == folder_id)
+        .join(Folder)
+        .filter(Folder.id == folder_id, Folder.user_id == owner_id)
         .all()
     )
 

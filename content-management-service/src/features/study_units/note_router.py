@@ -1,11 +1,12 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from shared.content_access import owned_content
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
 from shared.folder_access import owned_folder_id
 from shared.folder_tree import subfolder_ids
-from shared.models import Folder, Note
+from shared.models import Note
 
 note_router = APIRouter()
 
@@ -14,13 +15,10 @@ _MISSING_NOTE = "Note does not exist!"
 
 
 @note_router.get("/note")
-async def get_note(note_id: str, db: DatabaseSession) -> JSONResponse:
-    note = db.query(Note).filter(Note.id == note_id).first()
-
-    if note is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=_MISSING_NOTE
-        )
+async def get_note(
+    note_id: str, user_id: AuthenticatedUserId, db: DatabaseSession
+) -> JSONResponse:
+    note = owned_content(db, user_id, Note, note_id, _MISSING_NOTE)
 
     return JSONResponse(
         content={
@@ -41,17 +39,9 @@ async def review_note(
     user_id: AuthenticatedUserId,
     db: DatabaseSession,
 ) -> JSONResponse:
-    note = (
-        db.query(Note)
-        .join(Folder, Folder.id == Note.folder_id)
-        .filter(Note.id == request_data.note_id, Folder.user_id == user_id)
-        .first()
+    note = owned_content(
+        db, user_id, Note, request_data.note_id, _MISSING_NOTE
     )
-
-    if note is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=_MISSING_NOTE
-        )
 
     note.read = True
     db.commit()

@@ -5,15 +5,13 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from shared.content_access import ContentModel, ContentUnit, owned_content
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
-from shared.folder_access import owned_folder_id
+from shared.folder_access import owned_folder, owned_folder_id
 from shared.folder_tree import subfolder_ids
 from shared.models import File, FlashcardDeck, Folder, Note, Test
 
 unit_router = APIRouter()
-
-type ContentUnit = FlashcardDeck | Test | Note | File
-type ContentModel = type[ContentUnit]
 
 _FOLDER_TYPE = "folder"
 _CONTENT_MODELS: dict[str, ContentModel] = {
@@ -40,15 +38,6 @@ class MoveUnitRequest(BaseModel):
     folder_id: str
 
 
-def _identifier(unit_id: str) -> uuid.UUID:
-    try:
-        return uuid.UUID(unit_id)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=_MISSING_UNIT
-        ) from None
-
-
 def _content_model(unit_type: str) -> ContentModel:
     model = _CONTENT_MODELS.get(unit_type)
 
@@ -61,40 +50,12 @@ def _content_model(unit_type: str) -> ContentModel:
     return model
 
 
-def _owned_folder(db: Session, user_id: str, unit_id: str) -> Folder:
-    folder = (
-        db.query(Folder)
-        .filter(
-            Folder.id == _identifier(unit_id), Folder.user_id == user_id
-        )
-        .first()
-    )
-
-    if folder is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=_MISSING_UNIT
-        )
-
-    return folder
-
-
-def _owned_content(
+def _owned_unit(
     db: Session, user_id: str, unit_id: str, unit_type: str
 ) -> ContentUnit:
-    model = _content_model(unit_type)
-    unit = (
-        db.query(model)
-        .join(Folder)
-        .filter(model.id == _identifier(unit_id), Folder.user_id == user_id)
-        .first()
+    return owned_content(
+        db, user_id, _content_model(unit_type), unit_id, _MISSING_UNIT
     )
-
-    if unit is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=_MISSING_UNIT
-        )
-
-    return unit
 
 
 def _validated_name(name: str) -> str:
@@ -118,11 +79,11 @@ async def rename_unit(
     name = _validated_name(request_data.name)
 
     if request_data.unit_type == _FOLDER_TYPE:
-        unit: Folder | ContentUnit = _owned_folder(
-            db, user_id, request_data.unit_id
+        unit: Folder | ContentUnit = owned_folder(
+            db, user_id, request_data.unit_id, _MISSING_UNIT
         )
     else:
-        unit = _owned_content(
+        unit = _owned_unit(
             db, user_id, request_data.unit_id, request_data.unit_type
         )
 
@@ -143,7 +104,7 @@ async def move_unit(
     if request_data.unit_type == _FOLDER_TYPE:
         _move_folder(db, user_id, request_data.unit_id, destination_id)
     else:
-        unit = _owned_content(
+        unit = _owned_unit(
             db, user_id, request_data.unit_id, request_data.unit_type
         )
         unit.folder_id = uuid.UUID(destination_id)
@@ -156,7 +117,7 @@ async def move_unit(
 def _move_folder(
     db: Session, user_id: str, unit_id: str, destination_id: str
 ) -> None:
-    folder = _owned_folder(db, user_id, unit_id)
+    folder = owned_folder(db, user_id, unit_id, _MISSING_UNIT)
     subtree = db.execute(subfolder_ids(unit_id)).scalars().all()
 
     if uuid.UUID(destination_id) in subtree:

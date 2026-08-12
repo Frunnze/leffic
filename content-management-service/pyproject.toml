@@ -48,6 +48,7 @@ max-public-methods = 15
     "S101",
     "SLF001",
     "S108",
+    "S311",
     "TRY003",
     "TRY004",
 ]

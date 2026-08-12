@@ -12,6 +12,7 @@ from features.study_units.formatting import (
     evaluate_accuracy,
     prepare_content,
 )
+from shared.content_access import owned_content
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
 from shared.folder_tree import subfolder_ids
 from shared.models import (
@@ -28,6 +29,7 @@ _DEFAULT_PER_PAGE = 10
 _FIRST_PAGE = 1
 _ONGOING = "ongoing"
 _MISSING_ORIGIN = "Test or folder is required!"
+_MISSING_TEST = "Test does not exist!"
 
 
 def _session_answers(
@@ -91,6 +93,9 @@ async def get_test_items(
     page: int = _FIRST_PAGE,
     test_session: str | None = None,
 ) -> JSONResponse:
+    if test_id:
+        _ = owned_content(db, user_id, Test, test_id, _MISSING_TEST)
+
     resolved_folder_id = user_id if folder_id == _HOME_FOLDER else folder_id
     origin_id = test_id or resolved_folder_id
 

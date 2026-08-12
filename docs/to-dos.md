@@ -5,7 +5,7 @@ should be done. Every item names the file that carries the problem, so it
 can be checked rather than believed.
 
 **Verdict:** not deployable today. Two frontend defects break the app the
-moment it is built for production, and a whole family of content endpoints
+moment it is built for production, and the two review endpoints still
 accept an id and act on it without asking who is calling.
 
 Grouped by tier. P0 blocks any exposure at all; P1 blocks a public launch;
@@ -38,21 +38,49 @@ Each service decodes the JWT with `verify_signature=False`
 (`shared/claims_extractor.py`) and trusts the gateway to have verified it.
 That model only holds if no service port is reachable directly — which is
 true today, since `docker-compose.yml` publishes only the frontend and the
-gateway. Keep it that way. The problem is what happens *after* the token is
-trusted: most content endpoints never check that the caller owns the row.
+gateway. Keep it that way. A `user_id` claim that is not a UUID is now
+refused with 401 `Token carries an invalid user_id` instead of reaching the
+database and failing as a 500. The problem is what happens *after* the
+token is trusted: the review endpoints still never check that the caller
+owns the row.
 
-- [ ] **Anyone can delete anyone's content by id.** In
-  `features/file_system/content_router.py`, `delete_deck`, `delete_test`,
-  `delete_note` and `delete_file` take an id, look it up unscoped and delete
-  it — no `AuthenticatedUserId` parameter at all. `delete_folder` in
-  `folder_router.py` is the same. Route them through the ownership lookup
-  already written for `unit_router.py` (`_owned_content` / `_owned_folder`).
-- [ ] **Anyone can read anyone's study material by id.**
-  `get_note` (`note_router.py`) filters on `Note.id` alone;
-  `get_flashcards?flashcard_deck_id=` (`flashcard_router.py`) filters on the
-  deck id alone; `get_test_items?test_id=` (`assessment_router.py`) filters
-  on the test id alone. All three leak another learner's content to any
-  logged-in caller. Same fix: join to `Folder` and filter on `user_id`.
+- [x] **Deleting content now proves ownership.** `delete_deck`,
+  `delete_test`, `delete_note` and `delete_file`
+  (`features/file_system/content_router.py`) and `delete_folder`
+  (`folder_router.py`) take `AuthenticatedUserId` and resolve the row
+  through `shared/content_access.py`, `shared/file_access.py` or
+  `shared/folder_access.py`, which join `Folder` and filter `Folder.user_id`.
+  A foreign id, an unknown id and a non-UUID id all answer 404 with the same
+  body, so none of them confirms a row exists. Deleting your own home folder
+  is 422 `Home folder cannot be deleted!`, checked after ownership so a
+  foreign home folder still answers 404. `create-folder` checks its parent
+  too — a folder planted in another learner's tree used to be destroyed,
+  with its notes and files, by that learner's next delete cascade.
+- [x] **Reading study material now proves ownership.** `get_note`
+  (`note_router.py`), `get_flashcards?flashcard_deck_id=`
+  (`flashcard_router.py`) and `get_test_items?test_id=`
+  (`assessment_router.py`) resolve the note, deck or test through the same
+  owner-scoped lookup before any child row is read, so a container owned by
+  someone else is 404 rather than an empty list. `get_test_items` checks
+  before it opens a `TestSession`, so a refused read leaves no session row
+  behind.
+- [x] **Listing a folder now proves ownership.** `access_folder`
+  (`folder_router.py`) scoped its name lookup to the caller, and `_notes`
+  in `folder_contents.py` gained the `Folder.user_id` filter its four
+  sibling queries already had — without it, `access-folder` handed a
+  foreign folder's name *and* every note inside it to any logged-in caller.
+  A folder owned by someone else now reads exactly like an unknown one.
+- [x] **Generating into a folder now proves ownership.**
+  `generate_study_units` (`generation_router.py`) resolves the target
+  through `owned_folder_id`, so study units can no longer be written into
+  another learner's folder. `study_unit_writer._owned_folder` was renamed
+  `_existing_folder`, since it never checked an owner and its name claimed
+  a guarantee the code did not provide.
+- [x] **A malformed folder id is 404, not 500.** `resolved_folder_id` and
+  `owned_folder_id` (`shared/folder_access.py`) parse the id before it
+  reaches the `FlexibleUuid` bind, so `create-folder`, `move-unit`,
+  `notes-stats`, `flashcards-stats` and the folder read paths answer 404
+  instead of raising out of the database layer.
 - [ ] **`review_flashcard` and `review_test_item` trust the id.** Both
   record a review against a card/item without checking the owner, so one
   learner can corrupt another's schedule.

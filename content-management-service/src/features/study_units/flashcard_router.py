@@ -15,6 +15,7 @@ from features.scheduling.flashcard_scheduling import (
 )
 from features.study_units.formatting import date_to_str, flashcard_results
 from shared.clock import utc_today
+from shared.content_access import owned_content
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
 from shared.folder_access import resolved_folder_id
 from shared.folder_tree import subfolder_ids
@@ -26,10 +27,9 @@ from shared.models import (
 
 flashcard_router = APIRouter()
 
-_HOME_FOLDER = "home"
 _DEFAULT_PER_PAGE = 10
-_MISSING_FOLDER = "Folder does not exist!"
 _MISSING_FLASHCARD = "Flashcard does not exist!"
+_MISSING_DECK = "Deck does not exist!"
 
 
 def _due_condition() -> ColumnElement[bool]:
@@ -39,9 +39,9 @@ def _due_condition() -> ColumnElement[bool]:
     )
 
 
-def _deck_flashcards(db: Session, deck_id: str) -> Query[Flashcard]:
+def _deck_flashcards(db: Session, deck_id: uuid.UUID) -> Query[Flashcard]:
     return db.query(Flashcard).filter(
-        Flashcard.deck_id == uuid.UUID(deck_id), _due_condition()
+        Flashcard.deck_id == deck_id, _due_condition()
     )
 
 
@@ -57,6 +57,24 @@ def _folder_flashcards(
     )
 
 
+def _due_flashcards(
+    db: Session,
+    user_id: str,
+    flashcard_deck_id: str | None,
+    folder_id: str | None,
+) -> Query[Flashcard]:
+    if flashcard_deck_id:
+        deck = owned_content(
+            db, user_id, FlashcardDeck, flashcard_deck_id, _MISSING_DECK
+        )
+
+        return _deck_flashcards(db, deck.id)
+
+    return _folder_flashcards(
+        db, resolved_folder_id(user_id, folder_id), user_id
+    )
+
+
 @flashcard_router.get("/flashcards")
 async def get_flashcards(
     user_id: AuthenticatedUserId,
@@ -65,12 +83,9 @@ async def get_flashcards(
     folder_id: str | None = None,
     per_page: int = _DEFAULT_PER_PAGE,
 ) -> JSONResponse:
-    if flashcard_deck_id:
-        due_flashcards = _deck_flashcards(db, flashcard_deck_id)
-    else:
-        due_flashcards = _folder_flashcards(
-            db, resolved_folder_id(user_id, folder_id), user_id
-        )
+    due_flashcards = _due_flashcards(
+        db, user_id, flashcard_deck_id, folder_id
+    )
 
     flashcards = (
         due_flashcards.order_by(Flashcard.next_review.asc().nullsfirst())
