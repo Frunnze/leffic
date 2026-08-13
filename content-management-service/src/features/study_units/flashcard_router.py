@@ -10,13 +10,13 @@ from pydantic import BaseModel
 from sqlalchemy import ColumnElement, func, or_, select
 from sqlalchemy.orm import Query, Session
 
-from features.scheduling.flashcard_scheduling import (
-    schedule_flashcard_fsrs,
-)
 from features.study_units.formatting import date_to_str, flashcard_results
 from shared.clock import utc_today
 from shared.content_access import owned_content
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.flashcard_scheduling import (
+    schedule_flashcard_fsrs,
+)
 from shared.folder_access import resolved_folder_id
 from shared.folder_tree import subfolder_ids
 from shared.models import (

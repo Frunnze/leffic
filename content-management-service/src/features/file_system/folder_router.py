@@ -7,9 +7,9 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from features.file_system.file_storage import delete_file_from_storage
 from features.file_system.folder_contents import entries_in
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.file_storage import delete_file_from_storage
 from shared.folder_access import (
     MISSING_FOLDER,
     ensured_home_folder,

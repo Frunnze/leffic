@@ -4,7 +4,7 @@ from fsrs import Card, Scheduler
 from fsrs.card import CardDict
 from fsrs.scheduler import SchedulerDict
 
-from features.scheduling.flashcard_scheduling import (
+from shared.flashcard_scheduling import (
     RATING_MAP,
     get_ratings_times,
     schedule_flashcard_fsrs,

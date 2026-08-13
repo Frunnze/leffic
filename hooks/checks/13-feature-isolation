@@ -1,0 +1,18 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/_env.sh"
+
+require_binary "$python_binary" python
+
+finder="$(dirname "$0")/feature_imports.py"
+
+echo "pre-commit: feature isolation (siblings meet only in shared)"
+
+crossings=$(git ls-files '*/src/features/*.py' | "$python_binary" "$finder")
+
+if [ -n "$crossings" ]; then
+    echo "pre-commit: these features reach into a sibling - move what" >&2
+    echo "pre-commit: they share into shared/ and depend on that:" >&2
+    echo "$crossings" >&2
+    exit 1
+fi

@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
 from app_factory import create_app
-from features.file_system import file_storage
+from shared import file_storage
 from shared.database import get_db
 from shared.models import (
     File,

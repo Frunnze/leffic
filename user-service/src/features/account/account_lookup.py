@@ -3,8 +3,8 @@ import uuid
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from features.authentication.access import verify_password
-from features.authentication.models import User
+from shared.models import User
+from shared.password_hashing import verify_password
 
 _MISSING_ACCOUNT = "Account does not exist!"
 _WRONG_CREDENTIALS = "That password is not right."

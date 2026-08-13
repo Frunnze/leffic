@@ -3,8 +3,8 @@ from fastapi.responses import JSONResponse
 from fsrs.card import CardDict
 from pydantic import BaseModel
 
-from features.scheduling.flashcard_scheduling import get_ratings_times
 from shared.dependencies import AuthenticatedUserId
+from shared.flashcard_scheduling import get_ratings_times
 
 rating_intervals_router = APIRouter()
 

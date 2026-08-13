@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from features.file_system.file_storage import delete_file_from_storage
+from shared.file_storage import delete_file_from_storage
 from shared.models import File, Folder
 
 

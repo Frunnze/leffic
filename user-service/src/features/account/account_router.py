@@ -7,11 +7,11 @@ from sqlalchemy.orm import Session
 
 from features.account.account_lookup import account, confirmed_account
 from features.account.models import ProviderKey
-from features.authentication.access import hash_password
-from features.authentication.models import User
 from shared.claims_extractor import get_user_id_from_jwt
 from shared.database import get_db
 from shared.events import USER_DELETED, BrokerUnavailableError, publish
+from shared.models import User
+from shared.password_hashing import hash_password
 
 account_router = APIRouter(prefix="/account")
 

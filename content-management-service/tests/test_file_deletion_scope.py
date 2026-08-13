@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
-from features.file_system import file_storage
+from shared import file_storage
 from shared.models import File
 from tests.access_support import (
     HOME_ID,
