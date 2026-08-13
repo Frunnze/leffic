@@ -37,7 +37,7 @@ export function Toasts(props: ToastsProps): JSX.Element {
                 </Show>
               </div>
               <button
-                class="btn btn-quiet btn-icon"
+                class="toast-dismiss"
                 type="button"
                 aria-label={`Dismiss "${toast.title}"`}
                 onClick={() => props.onDismiss(toast.id)}

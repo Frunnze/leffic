@@ -1,0 +1,138 @@
+.toast-stack {
+  position: fixed;
+  inset-inline: var(--space-3);
+  bottom: calc(var(--rail-block) + var(--space-3));
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+@media (min-width: 768px) {
+  .toast-stack {
+    inset-inline: auto var(--space-4);
+    bottom: var(--space-4);
+    width: 360px;
+  }
+}
+
+.toast {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: var(--space-3);
+  overflow: hidden;
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
+  animation: toast-in var(--ease);
+}
+
+.toast::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 4px;
+  background: var(--toast-tone);
+}
+
+.toast-progress {
+  --toast-tone: var(--brand);
+}
+
+.toast-success {
+  --toast-tone: var(--success);
+}
+
+.toast-failure {
+  --toast-tone: var(--danger);
+}
+
+.toast-progress::before {
+  background: linear-gradient(
+    var(--brand-surface-strong) 0%,
+    var(--brand) 45%,
+    var(--brand) 55%,
+    var(--brand-surface-strong) 100%
+  );
+  background-size: 100% 260%;
+  animation: toast-working 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite
+    alternate;
+}
+
+.toast-icon {
+  display: flex;
+  color: var(--toast-tone);
+}
+
+.toast-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.toast-title {
+  overflow-wrap: anywhere;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.toast-detail {
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.toast-dismiss {
+  display: flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: background-color var(--ease), color var(--ease);
+}
+
+.toast-dismiss:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes toast-working {
+  from {
+    background-position: 0 0;
+  }
+
+  to {
+    background-position: 0 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+
+  .toast-progress::before {
+    animation: none;
+    background: var(--brand);
+  }
+}
