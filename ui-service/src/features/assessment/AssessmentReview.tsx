@@ -3,7 +3,11 @@ import { AssessmentApi, type AssessmentScope } from "./assessment-api";
 import { AssessmentProgress } from "./assessment-progress";
 import { AssessmentQuestion } from "./AssessmentQuestion";
 import { AssessmentResult } from "./AssessmentResult";
-import type { AssessmentItem, AssessmentPage } from "./assessment-models";
+import type {
+  AssessmentAnswer,
+  AssessmentItem,
+  AssessmentPage,
+} from "./assessment-models";
 import type { EditedTestItem } from "./TestItemEditor";
 
 const FIRST_PAGE = 1;
@@ -19,14 +23,14 @@ export function AssessmentReview(props: AssessmentReviewProps): JSX.Element {
     AssessmentProgress.storedIndex(props.scopeId),
   );
   const [chosenAnswers, setChosenAnswers] = createSignal<
-    Readonly<Record<string, readonly number[]>>
+    Readonly<Record<string, readonly AssessmentAnswer[]>>
   >({});
   const [correctCount, setCorrectCount] = createSignal<number | null>(null);
 
   const currentItem = (): AssessmentItem | undefined =>
     currentPage()?.items[itemIndex()];
 
-  const answersFor = (item: AssessmentItem): readonly number[] =>
+  const answersFor = (item: AssessmentItem): readonly AssessmentAnswer[] =>
     chosenAnswers()[item.id] ?? item.lastAnswers;
 
   const totalItems = (): number => currentPage()?.totalItems ?? 0;
@@ -115,8 +119,11 @@ export function AssessmentReview(props: AssessmentReviewProps): JSX.Element {
     await loadPage(FIRST_PAGE);
   };
 
-  const chooseAnswer = (item: AssessmentItem, optionId: number): void => {
-    setChosenAnswers({ ...chosenAnswers(), [item.id]: [optionId] });
+  const chooseAnswer = (
+    item: AssessmentItem,
+    answer: AssessmentAnswer,
+  ): void => {
+    setChosenAnswers({ ...chosenAnswers(), [item.id]: [answer] });
   };
 
   return (
@@ -147,7 +154,7 @@ export function AssessmentReview(props: AssessmentReviewProps): JSX.Element {
               chosenAnswers={answersFor(item())}
               position={position()}
               totalItems={totalItems()}
-              onChoose={(optionId) => chooseAnswer(item(), optionId)}
+              onChoose={(answer) => chooseAnswer(item(), answer)}
               onEdit={(edited) => void saveQuestion(item(), edited)}
               onBack={() => void goToPrevious()}
               onNext={() => void goToNext()}

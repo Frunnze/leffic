@@ -29,6 +29,7 @@ _DEFAULT_PER_PAGE = 10
 _FIRST_PAGE = 1
 _ONGOING = "ongoing"
 _MISSING_ORIGIN = "Test or folder is required!"
+_UNKNOWN_ITEM_ACCURACY = 0
 _MISSING_TEST = "Test does not exist!"
 
 
@@ -121,7 +122,9 @@ async def get_test_items(
                 {
                     "id": test_item.id,
                     "type": test_item.type,
-                    "content": prepare_content(test_item.content),
+                    "content": prepare_content(
+                        test_item.content, test_item.type
+                    ),
                     "created_at": date_to_str(test_item.created_at),
                     "last_answers": _session_answers(
                         test_item, db, test_session
@@ -135,6 +138,17 @@ async def get_test_items(
             "per_page": per_page,
         }
     )
+
+
+class AssessmentGrading:
+    @staticmethod
+    def graded(test_item: TestItem | None, answers: list[object]) -> int:
+        if test_item is None:
+            return _UNKNOWN_ITEM_ACCURACY
+
+        return evaluate_accuracy(
+            answers, test_item.type, test_item.content
+        )
 
 
 class ReviewTestItemRequest(BaseModel):
@@ -161,7 +175,10 @@ async def review_test_item(
             TestItemReview(
                 test_session=uuid.UUID(req_data.test_session),
                 test_item_id=req_data.test_item_id,
-                accuracy=evaluate_accuracy(req_data.answers),
+                accuracy=AssessmentGrading.graded(
+                    db.get(TestItem, req_data.test_item_id),
+                    req_data.answers,
+                ),
                 answers=req_data.answers,
                 reviewed_at=datetime.now(UTC),
             )
@@ -169,7 +186,10 @@ async def review_test_item(
     else:
         review.answers = req_data.answers
         review.reviewed_at = datetime.now(UTC)
-        review.accuracy = evaluate_accuracy(req_data.answers)
+        review.accuracy = AssessmentGrading.graded(
+            db.get(TestItem, req_data.test_item_id),
+            req_data.answers,
+        )
 
     db.commit()
 
