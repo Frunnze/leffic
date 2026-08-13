@@ -9,6 +9,7 @@ export type FlashcardActionsProps = {
   readonly card: Flashcard;
   readonly onSave: (front: string, back: string) => void;
   readonly onDelete: () => void;
+  readonly onMnemonic: () => void;
 };
 
 export function FlashcardActions(props: FlashcardActionsProps): JSX.Element {
@@ -19,6 +20,15 @@ export function FlashcardActions(props: FlashcardActionsProps): JSX.Element {
   return (
     <>
       <div class="card-menu">
+        <button
+          class="btn btn-quiet btn-icon"
+          type="button"
+          aria-label="Ask for a way to memorise this card"
+          title="Mnemonic"
+          onClick={() => props.onMnemonic()}
+        >
+          <Icon name="mnemonic" size="sm" />
+        </button>
         <button
           class="btn btn-quiet btn-icon"
           type="button"

@@ -5,6 +5,8 @@ import { FlashcardActions } from "./FlashcardActions";
 import { FlashcardRatings } from "./FlashcardRatings";
 import { FlashcardQueue } from "./flashcard-queue";
 import { FlashcardShortcuts } from "./flashcard-shortcuts";
+import { MnemonicPrompt } from "./mnemonic-prompt";
+import { useAsk } from "../chatbot/AskContext";
 import { Meter } from "../../shared/ui/Meter";
 import { Icon } from "../../shared/ui/icons/Icon";
 import type {
@@ -21,6 +23,7 @@ export type FlashcardsReviewProps = {
 };
 
 export function FlashcardsReview(props: FlashcardsReviewProps): JSX.Element {
+  const ask = useAsk();
   const [cards, setCards] = createSignal<readonly Flashcard[]>([]);
   const [totalToReview, setTotalToReview] = createSignal(0);
   const [reviewedCount, setReviewedCount] = createSignal(0);
@@ -82,6 +85,13 @@ export function FlashcardsReview(props: FlashcardsReviewProps): JSX.Element {
     onReveal: revealAnswer,
     onRate: (rating) => void rate(rating),
   });
+
+  const askForMnemonic = (card: Flashcard): void => {
+    ask.askAbout({
+      question: MnemonicPrompt.forCard(card.front, card.back),
+      shownAs: MnemonicPrompt.shownFor(card.front),
+    });
+  };
 
   const saveCard = async (front: string, back: string): Promise<void> => {
     const editing = currentCard();
@@ -148,6 +158,7 @@ export function FlashcardsReview(props: FlashcardsReviewProps): JSX.Element {
                   card={card()}
                   onSave={(front, back) => void saveCard(front, back)}
                   onDelete={() => void deleteCard()}
+                  onMnemonic={() => askForMnemonic(card())}
                 />
                 <div class="flashcard-face">
                   <p class="flashcard-prompt">{card().front}</p>

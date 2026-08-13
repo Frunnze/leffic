@@ -1,6 +1,7 @@
-import { Show, createSignal, type JSX } from "solid-js";
+import { Show, type JSX } from "solid-js";
 import { AccountApi } from "../../features/settings/account-api";
 import { Chatbot } from "../../features/chatbot/Chatbot";
+import { useAsk } from "../../features/chatbot/AskContext";
 import { Rail } from "./Rail";
 import { Theme } from "./theme";
 
@@ -10,7 +11,7 @@ export type AppShellProps = {
 };
 
 export function AppShell(props: AppShellProps): JSX.Element {
-  const [isAskOpen, setAskOpen] = createSignal(false);
+  const ask = useAsk();
 
   Theme.followAccount(async () => (await AccountApi.read()).theme);
 
@@ -19,12 +20,12 @@ export function AppShell(props: AppShellProps): JSX.Element {
       class="screen"
       classList={{
         "screen-fixed": props.fillsViewport === true,
-        "screen-with-chat": isAskOpen(),
+        "screen-with-chat": ask.isOpen(),
       }}
     >
-      <Rail onToggleAsk={() => setAskOpen(!isAskOpen())} />
-      <Show when={isAskOpen()}>
-        <Chatbot onClose={() => setAskOpen(false)} />
+      <Rail onToggleAsk={ask.toggle} />
+      <Show when={ask.isOpen()}>
+        <Chatbot onClose={ask.close} />
       </Show>
       {props.children}
     </div>

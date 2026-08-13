@@ -28,6 +28,7 @@ export type IconName =
   | "chevronRight"
   | "send"
   | "bookmark"
+  | "mnemonic"
   | "start";
 
 type IconShape = {
@@ -175,6 +176,11 @@ export const ICONS: Readonly<Record<IconName, IconShape>> = {
     viewBox: "0 0 24 24",
     body:
       "<path d=\"M11.29 4.29a1 1 0 0 1 1.42 0l5.58 5.58a1 1 0 1 1-1.42 1.42L13 7.41V19a1 1 0 1 1-2 0V7.41l-3.87 3.88a1 1 0 0 1-1.42-1.42Z\"/>",
+  },
+  mnemonic: {
+    viewBox: "0 0 24 24",
+    body:
+      "<path d=\"M12 2a7 7 0 0 0-4.2 12.6c.44.33.7.85.7 1.4V17a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1v-1a1.75 1.75 0 0 1 .7-1.4A7 7 0 0 0 12 2Zm0 2a5 5 0 0 1 3 9 3.74 3.74 0 0 0-1.4 2h-3.2A3.74 3.74 0 0 0 9 13a5 5 0 0 1 3-9Z\"/><path d=\"M9.5 20a1 1 0 0 1 1-1h3a1 1 0 0 1 0 2h-3a1 1 0 0 1-1-1Z\"/>",
   },
   bookmark: {
     viewBox: "0 0 24 24",

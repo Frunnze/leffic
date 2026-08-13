@@ -7,22 +7,24 @@ import {
   type JSX,
 } from "solid-js";
 import { ChatbotApi } from "./chatbot-api";
+import { useAsk } from "./AskContext";
 import { Icon } from "../../shared/ui/icons/Icon";
 import type { ChatMessage } from "./chat-models";
+import type { PendingAsk } from "./ask-store";
 
-const OPENING_MESSAGE: ChatMessage = {
-  role: "assistant",
-  content: "Ask me anything about the material in this folder.",
+type LoggedMessage = ChatMessage & {
+  readonly shownAs: string;
 };
+
+const EMPTY_HINT = "Ask me anything about the material in this folder.";
 
 export type ChatbotProps = {
   readonly onClose: () => void;
 };
 
 export function Chatbot(props: ChatbotProps): JSX.Element {
-  const [messages, setMessages] = createSignal<readonly ChatMessage[]>([
-    OPENING_MESSAGE,
-  ]);
+  const ask = useAsk();
+  const [messages, setMessages] = createSignal<readonly LoggedMessage[]>([]);
   const [draft, setDraft] = createSignal("");
   const [isWaiting, setWaiting] = createSignal(false);
   let log: HTMLDivElement | undefined;
@@ -35,23 +37,39 @@ export function Chatbot(props: ChatbotProps): JSX.Element {
 
   createEffect(on([messages, isWaiting], scrollToNewestMessage));
 
-  const send = async (question: string): Promise<void> => {
+  createEffect(
+    on(ask.pendingAsk, (pending: PendingAsk | null) => {
+      if (pending === null) return;
+
+      ask.questionSent();
+      void send(pending.question, pending.shownAs);
+    }),
+  );
+
+  const send = async (question: string, shownAs?: string): Promise<void> => {
     const trimmed = question.trim();
     if (trimmed.length === 0 || isWaiting()) return;
 
-    const conversation: readonly ChatMessage[] = [
+    const conversation: readonly LoggedMessage[] = [
       ...messages(),
-      { role: "user", content: trimmed },
+      { role: "user", content: trimmed, shownAs: shownAs ?? trimmed },
     ];
     setMessages(conversation);
     setDraft("");
     setWaiting(true);
 
-    const answer = await ChatbotApi.ask(conversation).catch(
+    const asked: readonly ChatMessage[] = conversation.map((message) => ({
+      role: message.role,
+      content: message.content,
+    }));
+    const answer = await ChatbotApi.ask(asked).catch(
       () => "Something went wrong. Try again.",
     );
 
-    setMessages([...conversation, { role: "assistant", content: answer }]);
+    setMessages([
+      ...conversation,
+      { role: "assistant", content: answer, shownAs: answer },
+    ]);
     setWaiting(false);
   };
 
@@ -73,6 +91,13 @@ export function Chatbot(props: ChatbotProps): JSX.Element {
       </div>
 
       <div class="chatbot-log" aria-live="polite" ref={log}>
+        <Show when={messages().length === 0 && !isWaiting()}>
+          <div class="chat-empty">
+            <span class="chat-empty-title">No messages yet</span>
+            <span class="chat-empty-hint">{EMPTY_HINT}</span>
+          </div>
+        </Show>
+
         <For each={messages()}>
           {(message) => (
             <div
@@ -82,7 +107,7 @@ export function Chatbot(props: ChatbotProps): JSX.Element {
                 "chat-bubble-user": message.role === "user",
               }}
             >
-              {message.content}
+              {message.shownAs}
             </div>
           )}
         </For>
