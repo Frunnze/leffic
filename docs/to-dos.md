@@ -15,16 +15,20 @@ P2 is what makes it survivable in the long run.
 
 ## P0 — the app does not work when built
 
-- [ ] **The production bundle points at `localhost:8888`.**
-  `ui-service/Dockerfile` never passes `VITE_GATEWAY_URL`, and Vite inlines
-  env vars at build time, so `shared/api/session.ts` falls back to
-  `http://localhost:8888` and every API call fails from any other machine.
-  Add `ARG VITE_GATEWAY_URL` / `ENV VITE_GATEWAY_URL` to the builder stage
-  and pass the real gateway origin at build.
-- [ ] **Deep links and refresh return 404.** `ui-service` ships stock
-  `nginx:alpine` with no config, so only `/` resolves. `/login`,
-  `/folder/home`, `/settings`, `/note/:id` all 404 on reload. Add an nginx
-  config with `try_files $uri $uri/ /index.html;` and COPY it in.
+- [x] **The production bundle now points at the real gateway.**
+  `ui-service/Dockerfile` takes `ARG VITE_GATEWAY_URL` / `ENV
+  VITE_GATEWAY_URL` before `npm run build`, and `docker-compose.yml` passes
+  it as a build arg defaulting to `http://localhost:8888` for local runs, so
+  `shared/api/session.ts` no longer falls back to a localhost origin that
+  every other machine resolves to itself. Verified: a build with
+  `VITE_GATEWAY_URL=https://api.example.test` carries that origin in
+  `dist/assets/` and no `localhost:8888` anywhere. The value ships in the
+  bundle, so it must be the externally reachable origin, not a service name.
+- [x] **Deep links and refresh now resolve.** `ui-service/nginx.conf` serves
+  `/usr/share/nginx/html` with `try_files $uri $uri/ /index.html;` and the
+  Dockerfile copies it to `/etc/nginx/conf.d/default.conf`, so `/login`,
+  `/folder/home`, `/settings` and `/note/:id` survive a reload instead of
+  404ing against the stock `nginx:alpine` config.
 - [ ] **No database migrations anywhere.** Every service calls
   `Base.metadata.create_all` at startup (`shared/database.py`), which
   creates missing tables but never alters existing ones. The `provider_keys`
@@ -81,6 +85,17 @@ owns the row.
   reaches the `FlexibleUuid` bind, so `create-folder`, `move-unit`,
   `notes-stats`, `flashcards-stats` and the folder read paths answer 404
   instead of raising out of the database layer.
+- [ ] **`GET /file` has no identity at all.** `get_file` in
+  `features/file_upload/file_uploader.py` takes `file_id` and
+  `file_extension` and no `AuthenticatedUserId`, so any logged-in caller
+  downloads any learner's uploaded file by its id. `owned_file` in
+  `shared/file_access.py` is the lookup it should route through — the
+  bookmark endpoints in the same feature already do.
+- [ ] **The task-status endpoints have no identity.**
+  `/flashcards-status/{task_id}`, `/test-task-status/{task_id}` and
+  `/note-task-status/{task_id}` (`task_status_router.py`) take a task id
+  and return its result to anyone, so a generated deck, note or test leaks
+  to whoever guesses the Celery task id.
 - [ ] **`review_flashcard` and `review_test_item` trust the id.** Both
   record a review against a card/item without checking the owner, so one
   learner can corrupt another's schedule.
@@ -139,6 +154,44 @@ owns the row.
 - [ ] **No global quota for users without a key**, so the shared
   `OPENAI_API_KEY` is an open budget.
 
+## P1 — correctness defects
+
+Carried over from the pre-restructure `to-dos.md` at the repo root and
+re-verified against the current source; everything here still reproduces.
+
+- [ ] **Every `created_at` is frozen at import time.** `shared/models/`
+  passes `default=datetime.now(UTC)` — a value computed once when the
+  module loads, not a callable — in `mixins.py`, `flashcard.py` and
+  `assessment.py`. Every row written by one worker process therefore
+  carries the same timestamp, which breaks `UnitsApi.sortByNewest` in the
+  client and any "recently created" ordering. Confirmed: two notes written
+  1.2s apart come back with identical timestamps. Use
+  `default=lambda: datetime.now(UTC)`.
+- [ ] **`/refresh-token` accepts an access token.** `create_access_token`
+  and `create_refresh_token` (`user-service/.../access.py`) put the same
+  claims in both tokens and differ only in `exp`, so a stolen access token
+  mints fresh ones and the 30-minute lifetime buys nothing. Add a `type`
+  claim and verify it in `refresh_token`.
+- [ ] **Login answers 404, and says which half was wrong.**
+  `login_user` returns 404 `Incorrect email` when the address is unknown
+  and 404 `Incorrect password` when it is not. The status should be 401,
+  and the two messages should be one — as written they confirm whether an
+  address has an account.
+- [ ] **Sign-up does not validate the email.** `UserCreate.email` is a bare
+  `str` while `UserLogin.email` is `EmailStr` (`schemas.py`), so a garbage
+  address registers successfully and can then never log in.
+- [ ] **Stored HTML from the model is injected unsanitized.**
+  `ui-service/src/features/notes/NotePage.tsx` renders
+  `innerHTML={loaded().content}`. Note bodies are model-generated from
+  user-supplied source documents, so a poisoned source can plant markup
+  that executes when the note is opened. Sanitize before rendering.
+- [ ] **Link ingestion will fetch anything.** `extract_link_main_content`
+  (`features/study_units_generation/link_extractor.py`) issues
+  `requests.get` against a user-supplied URL with a timeout but no
+  destination check, so it will happily fetch `169.254.169.254` or any
+  service reachable from the container. Block private and link-local
+  ranges and refuse redirects into them.
+
 ## P2 — coupling and resilience
 
 - [ ] **FSRS parameters are not per learner.** Scheduling now runs
@@ -153,6 +206,19 @@ owns the row.
   failed ones unacknowledged forever. Add a DLQ and a redelivery limit.
 - [ ] **Celery tasks have no retry policy.** A transient OpenAI error fails
   the import with no backoff and no dead-letter.
+- [ ] **`/flashcards` can only ever serve its first page.**
+  `get_flashcards` applies `.limit(per_page)` with no `.offset`
+  (`flashcard_router.py`), while still reporting `total_flashcards`, so
+  every page after the first is unreachable.
+- [ ] **Two first loads open two test sessions.** `_ongoing_session`
+  (`assessment_router.py`) checks for an ongoing row and then inserts one,
+  with no unique constraint on `(origin_id, status)` to make the pair
+  atomic, so concurrent opens of the same test each get their own session.
+- [ ] **`TestSession` rows are never cleaned up.** `origin_id`
+  (`shared/models/assessment.py`) is a plain column with no foreign key
+  and no cascade, and no delete endpoint touches `test_sessions`, so
+  sessions and their `TestItemReview` rows outlive the test or folder they
+  belong to.
 - [ ] **The `files` volume is shared read-write by two services**, which is
   a filesystem-level coupling that will not survive moving either service to
   another host. Object storage would decouple it.
@@ -174,11 +240,28 @@ owns the row.
   `create_folder_tests.py` import module paths that no longer exist and would
   hit a real database; only `test_extract_link_main_content.py` runs. Delete
   or rewrite them.
-- [ ] **`to-dos.md` at the root is gitignored** and predates the current
-  architecture (it still describes Kong and the pre-restructure layout). This
-  file replaces it; delete the old one.
+- [x] **The root `to-dos.md` is gone.** It was gitignored and described the
+  pre-restructure layout — Kong, `file-processor`, `scheduler-service`,
+  MongoDB and the SolidJS-import crashes. Every item still true of the
+  current code was carried into this file first; the rest died with the
+  architecture it described.
 - [ ] **No CI.** Every check runs only in the local pre-commit hook
   (`hooks/checks/`), so nothing enforces them on a pull request.
+- [ ] **The favicon points at a source path.** `ui-service/index.html`
+  references `/src/assets/favicon.png`, which does not exist in `dist/`, so
+  the built site 404s on its own icon.
+- [ ] **Dependencies are largely unpinned.** `uvicorn`, `PyJWT`,
+  `pydantic`, `celery[redis]`, `openai`, `pika`, `python-multipart`,
+  `youtube-transcript-api`, `beautifulsoup4` and `fsrs` float in
+  `content-management-service/requirements.txt`, as do five in
+  `user-service`. A rebuild is not reproducible.
+- [ ] **`ui-service/pnpm-lock.yaml` is tracked but unused** — the
+  Dockerfile runs `npm ci`, so the committed pnpm lockfile is a second
+  source of truth nothing reads. Delete it.
+- [ ] **`UserResponse.id` is typed `int`** (`user-service/.../schemas.py`)
+  while the `User` primary key is a UUID. Harmless today because nothing
+  uses it as a `response_model`, and a serialization error the moment
+  something does.
 - [ ] **No C3 component diagram.** The content service now holds seven
   features (`file_system`, `file_upload`, `study_units`, `scheduling`,
   `study_units_generation`, `chatbot`, `user_events`) and has outgrown
