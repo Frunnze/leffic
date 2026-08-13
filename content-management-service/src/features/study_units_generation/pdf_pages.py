@@ -9,7 +9,9 @@ class PageSelectionError(Exception):
 
 class PdfPageSelection:
     @staticmethod
-    def sliced(document: bytes, first_page: int, last_page: int) -> bytes:
+    def sliced(
+        document: bytes, first_page: int, last_page: int | None
+    ) -> bytes:
         reader = PdfReader(io.BytesIO(document))
         page_count = len(reader.pages)
 

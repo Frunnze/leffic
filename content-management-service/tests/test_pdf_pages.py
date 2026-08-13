@@ -54,3 +54,9 @@ def test_the_final_page_can_be_selected() -> None:
     selected = PdfPageSelection.sliced(_document(4), 4, 4)
 
     assert _page_count(selected) == 1
+
+
+def test_no_end_reads_on_to_the_last_page() -> None:
+    selected = PdfPageSelection.sliced(_document(10), 8, None)
+
+    assert _page_count(selected) == 3

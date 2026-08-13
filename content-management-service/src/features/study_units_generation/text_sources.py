@@ -14,21 +14,25 @@ from features.study_units_generation.pdf_pages import (
 from features.study_units_generation.text_extractor import (
     text_extractor_factory,
 )
+from shared.pdf_conversion import PdfConversion
 
 _FILES_DIRECTORY = "files"
 _YOUTUBE_HOST = "youtube.com"
 _PDF_EXTENSION = "pdf"
-_NOT_A_PDF = "Only a PDF can be read by page"
+_PAGED_EXTENSIONS = (
+    "pdf", "doc", "docx", "odt", "rtf", "ppt", "pptx", "odp",
+)
+_NOT_PAGED = "Only a document with pages can be read"
 _BACKWARDS_RANGE = "The last page comes before the first"
 
 
 class PageRange(BaseModel):
-    first: int = Field(ge=1)
-    last: int = Field(ge=1)
+    first: int = Field(default=1, ge=1)
+    last: int | None = Field(default=None, ge=1)
 
     @model_validator(mode="after")
     def validated_order(self) -> "PageRange":
-        if self.last < self.first:
+        if self.last is not None and self.last < self.first:
             raise ValueError(_BACKWARDS_RANGE)
 
         return self
@@ -56,22 +60,31 @@ def text_from_files(file_metadata: list[FileMetadata]) -> str:
     return extracted_text
 
 
-def _asked_pages(file_bytes: bytes, file_meta: FileMetadata) -> bytes:
+def _readable_document(
+    file_bytes: bytes, file_meta: FileMetadata
+) -> tuple[bytes, str]:
     asked = file_meta.pages
+    extension = file_meta.extension.lower()
 
     if asked is None:
-        return file_bytes
+        return file_bytes, file_meta.extension
 
-    if file_meta.extension.lower() != _PDF_EXTENSION:
-        raise PageSelectionError(_NOT_A_PDF)
+    if extension not in _PAGED_EXTENSIONS:
+        raise PageSelectionError(_NOT_PAGED)
 
-    return PdfPageSelection.sliced(file_bytes, asked.first, asked.last)
+    if extension == _PDF_EXTENSION:
+        paginated = file_bytes
+    else:
+        paginated = PdfConversion.converted(file_bytes, extension)
+
+    sliced = PdfPageSelection.sliced(paginated, asked.first, asked.last)
+
+    return sliced, _PDF_EXTENSION
 
 
 def _text_from_bytes(file_bytes: bytes, file_meta: FileMetadata) -> str:
-    text_extractor = text_extractor_factory.get_text_extractor(
-        file_meta.extension
-    )
+    document, extension = _readable_document(file_bytes, file_meta)
+    text_extractor = text_extractor_factory.get_text_extractor(extension)
 
     if text_extractor is None:
         return ""
@@ -79,11 +92,9 @@ def _text_from_bytes(file_bytes: bytes, file_meta: FileMetadata) -> str:
     with tempfile.NamedTemporaryFile(
         suffix=file_meta.file_id
     ) as temp_file:
-        _ = temp_file.write(_asked_pages(file_bytes, file_meta))
+        _ = temp_file.write(document)
         temp_file.flush()
-        extracted = text_extractor.extract_text(
-            temp_file.name, file_meta.extension
-        )
+        extracted = text_extractor.extract_text(temp_file.name, extension)
 
     return f"{extracted}\n" if extracted else ""
 

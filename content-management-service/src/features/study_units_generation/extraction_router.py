@@ -9,6 +9,7 @@ from features.study_units_generation.text_sources import (
     text_from_link,
 )
 from shared.dependencies import AuthenticatedUserId
+from shared.pdf_conversion import ConversionError
 
 extraction_router = APIRouter()
 
@@ -46,7 +47,7 @@ async def extract_text(
 
     try:
         extracted_text = _extracted_text(request_data)
-    except PageSelectionError as refusal:
+    except (PageSelectionError, ConversionError) as refusal:
         return JSONResponse(
             content={"msg": str(refusal)},
             status_code=status.HTTP_400_BAD_REQUEST,

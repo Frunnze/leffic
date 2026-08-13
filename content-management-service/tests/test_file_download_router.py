@@ -1,7 +1,6 @@
 import subprocess
 from collections.abc import Iterator
 from pathlib import Path
-from typing import cast
 from unittest import mock
 
 import pytest
@@ -12,6 +11,26 @@ from features.file_upload import file_uploader as upload_module
 
 _USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"
 _FOLDER_ID = "6f1c7d4e-0000-4000-8000-000000000002"
+
+
+class WritingLibreOffice:
+    def __init__(self, produced: bytes) -> None:
+        self.produced: bytes = produced
+        self.commands: list[list[str]] = []
+        self.arguments: list[dict[str, object]] = []
+
+    def __call__(
+        self, command: list[str], **keyword_arguments: object
+    ) -> subprocess.CompletedProcess[bytes]:
+        self.commands.append(command)
+        self.arguments.append(keyword_arguments)
+        output_directory = Path(command[command.index("--outdir") + 1])
+        written = output_directory / f"{Path(command[-1]).stem}.pdf"
+        _ = written.write_bytes(self.produced)
+
+        return subprocess.CompletedProcess(
+            args=command, returncode=0, stderr=b""
+        )
 
 
 class FakeTaskResult:
@@ -94,20 +113,17 @@ def test_downloading_another_format_converts_it(
     client: TestClient, tmp_path: Path
 ) -> None:
     _ = (tmp_path / "doc.docx").write_bytes(b"docx bytes")
-    converted = subprocess.CompletedProcess(args=[], returncode=0, stderr=b"")
+    libreoffice = WritingLibreOffice(b"%PDF-converted")
 
     with (
         mock.patch.object(upload_module, "_FILES_DIRECTORY", str(tmp_path)),
-        mock.patch.object(
-            subprocess, "run", return_value=converted
-        ) as convert,
-        mock.patch.object(Path, "read_bytes", return_value=b"%PDF-converted"),
+        mock.patch.object(subprocess, "run", libreoffice),
     ):
         response = client.get(
             "/file", params={"file_id": "doc", "file_extension": "docx"}
         )
 
-    command = cast("list[str]", convert.call_args.args[0])
+    command = libreoffice.commands[0]
 
     assert response.status_code == 200
     assert response.content == b"%PDF-converted"
@@ -118,8 +134,8 @@ def test_downloading_another_format_converts_it(
         "pdf",
     ]
     assert command[4] == "--outdir"
-    assert command[6] == str(tmp_path / "doc.docx")
-    assert convert.call_args.kwargs == {
+    assert Path(command[6]).suffix == ".docx"
+    assert libreoffice.arguments[0] == {
         "capture_output": True,
         "check": False,
         "timeout": 120,

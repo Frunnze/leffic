@@ -1,6 +1,4 @@
 import shutil
-import subprocess
-import tempfile
 import uuid
 from pathlib import Path
 from typing import Annotated
@@ -14,6 +12,7 @@ from shared.dependencies import AuthenticatedUserId, DatabaseSession
 from shared.folder_access import resolved_folder_id
 from shared.models import File as StoredFile
 from shared.models import Folder
+from shared.pdf_conversion import ConversionError, PdfConversion
 
 file_uploader = APIRouter()
 
@@ -23,7 +22,6 @@ _PDF_EXTENSION = "pdf"
 _PDF_MEDIA_TYPE = "application/pdf"
 _FILE_NOT_FOUND = "File not found"
 _MISSING_FOLDER = "Folder does not exist!"
-_CONVERSION_TIMEOUT_SECONDS = 120
 
 UploadedFiles = Annotated[list[UploadFile], File(...)]
 FolderId = Annotated[str | None, Form(...)]
@@ -103,7 +101,7 @@ async def get_file(file_id: str, file_extension: str) -> Response:
         )
 
     return Response(
-        content=_converted_to_pdf(input_path, file_id),
+        content=_converted_to_pdf(input_path, file_extension),
         media_type=_PDF_MEDIA_TYPE,
         headers={
             "Content-Disposition": (
@@ -113,29 +111,13 @@ async def get_file(file_id: str, file_extension: str) -> Response:
     )
 
 
-def _converted_to_pdf(input_path: Path, file_id: str) -> bytes:
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        result = subprocess.run(
-            [
-                "libreoffice",
-                "--headless",
-                "--convert-to",
-                _PDF_EXTENSION,
-                "--outdir",
-                tmp_dir,
-                str(input_path),
-            ],
-            capture_output=True,
-            check=False,
-            timeout=_CONVERSION_TIMEOUT_SECONDS,
+def _converted_to_pdf(input_path: Path, file_extension: str) -> bytes:
+    try:
+        return PdfConversion.converted(
+            input_path.read_bytes(), file_extension
         )
-
-        if result.returncode != 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Conversion failed: {result.stderr.decode()}",
-            )
-
-        pdf_path = Path(tmp_dir) / f"{file_id}.{_PDF_EXTENSION}"
-
-        return pdf_path.read_bytes()
+    except ConversionError as failure:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Conversion failed: {failure}",
+        ) from failure

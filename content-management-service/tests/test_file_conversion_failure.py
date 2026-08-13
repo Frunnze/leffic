@@ -73,7 +73,10 @@ def test_a_failed_conversion_is_reported(
         )
 
     assert response.status_code == 400
-    assert "libreoffice exploded" in response.json()["detail"]
+    assert (
+        response.json()["detail"]
+        == "Conversion failed: libreoffice exploded"
+    )
 
 
 def test_a_file_without_an_extension_keeps_an_empty_one(

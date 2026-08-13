@@ -132,24 +132,6 @@ def test_a_page_range_that_the_document_cannot_serve_is_refused(
     assert cast("dict[str, str]", response.json())["msg"] == _TOO_FEW_PAGES
 
 
-def test_half_a_page_range_is_rejected(client: TestClient) -> None:
-    response = client.post(
-        "/extract-text",
-        json={
-            "file_metadata": [
-                {
-                    "file_id": "f1",
-                    "extension": "pdf",
-                    "pages": {"first": 2},
-                }
-            ]
-        },
-        headers=_authorization(),
-    )
-
-    assert response.status_code == 422
-
-
 def test_a_backwards_page_range_is_rejected(client: TestClient) -> None:
     response = client.post(
         "/extract-text",
