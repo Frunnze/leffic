@@ -196,3 +196,4 @@ def test_generation_needs_a_token(client: TestClient) -> None:
     )
 
     assert response.status_code == 401
+

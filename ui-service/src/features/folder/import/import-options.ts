@@ -39,8 +39,8 @@ export const FLASHCARD_TYPES: readonly CardTypeOption[] = [
 
 export const TEST_TYPES: readonly CardTypeOption[] = [
   { id: "multiple_choice", label: "Multiple choice", isSupported: true },
-  { id: "true_or_false", label: "True or false", isSupported: false },
-  { id: "short_answer", label: "Short answer", isSupported: false },
+  { id: "true_or_false", label: "True or false", isSupported: true },
+  { id: "short_answer", label: "Short answer", isSupported: true },
 ];
 
 export class ImportOptions {

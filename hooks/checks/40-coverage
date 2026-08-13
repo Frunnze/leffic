@@ -6,10 +6,11 @@ require_binary "$python_binary" python
 
 minimum_coverage=100
 
-echo "pre-commit: branch coverage (min $minimum_coverage%)"
+echo "pre-commit: branch coverage (min $minimum_coverage%), shuffled"
 
 for service in $services; do
     (cd "$service" && "$python_binary" -m pytest tests -q \
+        -p randomly \
         --cov=src \
         --cov-branch \
         --cov-report=term-missing:skip-covered \

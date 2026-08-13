@@ -96,6 +96,9 @@ def _generate_note_task(
     return {"note_id": note_id, "note_name": note_name}
 
 
+_TEST_ITEMS_SUFFIX = "_test_items"
+
+
 def _test_items(generated: object) -> list[dict[str, object]]:
     if not isinstance(generated, Sequence) or isinstance(generated, str):
         return []
@@ -110,14 +113,19 @@ def _generate_test_task(
     folder_id: str,
     source_kind: str | None,
     source_reference: str | None,
+    test_item_types: tuple[str, ...] = (),
 ) -> dict[str, object]:
     ai = ai_factory.get_ai(ai_model)
     test, _unused = ai.get_ai_res(
-        system_prompt=get_test_system_prompt(),
+        system_prompt=get_test_system_prompt(test_item_types),
         user_prompt=extracted_text,
     )
     test_name = str(test.get("test_name"))
-    items = _test_items(test.get("multiple_choice_test_items"))
+    items = {
+        key: _test_items(value)
+        for key, value in test.items()
+        if key.endswith(_TEST_ITEMS_SUFFIX)
+    }
 
     with SessionLocal() as db:
         test_id = save_test(

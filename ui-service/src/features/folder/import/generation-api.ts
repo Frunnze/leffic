@@ -21,6 +21,7 @@ export type GeneratedKind = keyof typeof STATUS_ENDPOINTS;
 export type GenerationWish = {
   readonly flashcardTypes: readonly string[];
   readonly flashcardAmount: number | null;
+  readonly testTypes: readonly string[];
   readonly testAmount: number | null | undefined;
   readonly note: boolean;
 };
@@ -28,6 +29,7 @@ export type GenerationWish = {
 const DEFAULT_WISH: GenerationWish = {
   flashcardTypes: ["basic"],
   flashcardAmount: null,
+  testTypes: ["multiple_choice"],
   testAmount: null,
   note: true,
 };
@@ -129,7 +131,11 @@ export class GenerationApi {
     }
 
     if (wanted.testAmount !== undefined) {
-      body.test = wanted.testAmount === null ? {} : { amount: wanted.testAmount };
+      const test: Record<string, unknown> = { types: wanted.testTypes };
+
+      if (wanted.testAmount !== null) test.amount = wanted.testAmount;
+
+      body.test = test;
     }
 
     return body;

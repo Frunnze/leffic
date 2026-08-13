@@ -93,7 +93,7 @@ def test_a_generated_test_lands_with_its_items(
         assert test.source_kind == "file"
         assert test.source_reference == "biology.pdf"
         assert item.content == {"question": "q"}
-        assert item.type == "mult_choice"
+        assert item.type == "multiple_choice"
 
 
 def test_a_test_without_a_list_of_items_saves_none(

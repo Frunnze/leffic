@@ -123,7 +123,11 @@ def test_a_test_is_saved_with_its_items(
         _home_folder(session)
 
         test_id = save_test(
-            session, USER_ID, "Neurons", [{"question": "q"}], _SOURCE
+            session,
+            USER_ID,
+            "Neurons",
+            {"multiple_choice_test_items": [{"question": "q"}]},
+            _SOURCE,
         )
 
     with sessions() as session:
@@ -134,7 +138,7 @@ def test_a_test_is_saved_with_its_items(
         assert saved.source_kind == "file"
         assert saved.source_reference == "biology.pdf"
         assert len(saved.test_items) == 1
-        assert saved.test_items[0].type == "mult_choice"
+        assert saved.test_items[0].type == "multiple_choice"
         assert saved.test_items[0].content == {"question": "q"}
 
 
@@ -158,7 +162,7 @@ def test_a_deck_needs_a_folder(sessions: sessionmaker[Session]) -> None:
 
 def test_a_test_needs_a_folder(sessions: sessionmaker[Session]) -> None:
     with sessions() as session, pytest.raises(MissingFolderError):
-        _ = save_test(session, str(uuid.uuid4()), "Ghost", [], _SOURCE)
+        _ = save_test(session, str(uuid.uuid4()), "Ghost", {}, _SOURCE)
 
 
 def test_only_dictionary_cards_are_saved(

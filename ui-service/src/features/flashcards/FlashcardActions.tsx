@@ -3,11 +3,11 @@ import { ConfirmDialog } from "../../shared/ui/ConfirmDialog";
 import { Dropdown } from "../../shared/ui/Dropdown";
 import { FlashcardEditor } from "./FlashcardEditor";
 import { Icon } from "../../shared/ui/icons/Icon";
-import type { Flashcard } from "./flashcard-models";
+import type { Flashcard, FlashcardFace } from "./flashcard-models";
 
 export type FlashcardActionsProps = {
   readonly card: Flashcard;
-  readonly onSave: (front: string, back: string) => void;
+  readonly onSave: (face: FlashcardFace) => void;
   readonly onDelete: () => void;
   readonly onMnemonic: () => void;
 };
@@ -66,9 +66,9 @@ export function FlashcardActions(props: FlashcardActionsProps): JSX.Element {
       <Show when={isEditing()}>
         <FlashcardEditor
           card={props.card}
-          onSave={(front, back) => {
+          onSave={(face) => {
             setEditing(false);
-            props.onSave(front, back);
+            props.onSave(face);
           }}
           onCancel={() => setEditing(false)}
         />

@@ -152,7 +152,13 @@ export function ImportFlow(props: ImportFlowProps): JSX.Element {
       { kind: "topic", topic },
       { kind: "topic", reference: topic },
       props.folderId,
-      { flashcardTypes: [], flashcardAmount: null, testAmount: undefined, note: true },
+      {
+        flashcardTypes: [],
+        flashcardAmount: null,
+        testTypes: [],
+        testAmount: undefined,
+        note: true,
+      },
     );
     const outcome = await GenerationWatcher.awaitOne("note", tasks.noteTaskId);
 
@@ -219,6 +225,7 @@ export function ImportFlow(props: ImportFlowProps): JSX.Element {
           ? request.flashcards.chosenTypes
           : [],
         flashcardAmount: ImportOptions.totalCount(request.flashcards),
+        testTypes: request.test.isChosen ? request.test.chosenTypes : [],
         testAmount: request.test.isChosen
           ? ImportOptions.totalCount(request.test)
           : undefined,

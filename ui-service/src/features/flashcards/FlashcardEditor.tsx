@@ -1,27 +1,33 @@
 import { createSignal, onCleanup, onMount, type JSX } from "solid-js";
 import { Icon } from "../../shared/ui/icons/Icon";
-import type { Flashcard } from "./flashcard-models";
+import { FlashcardFields } from "./FlashcardFields";
+import { FlashcardWording } from "./flashcard-wording";
+import type { Flashcard, FlashcardFace } from "./flashcard-models";
 
 const ESCAPE_KEY = "Escape";
 
 export type FlashcardEditorProps = {
   readonly card: Flashcard;
-  readonly onSave: (front: string, back: string) => void;
+  readonly onSave: (face: FlashcardFace) => void;
   readonly onCancel: () => void;
 };
 
 export function FlashcardEditor(props: FlashcardEditorProps): JSX.Element {
-  const [front, setFront] = createSignal(props.card.front);
-  const [back, setBack] = createSignal(props.card.back);
+  const [face, setFace] = createSignal<FlashcardFace>(props.card.face);
 
-  const isEmpty = (): boolean =>
-    front().trim().length === 0 || back().trim().length === 0;
+  const isEmpty = (): boolean => {
+    const words = FlashcardWording.of(face());
+
+    return (
+      words.question.trim().length === 0 || words.answer.trim().length === 0
+    );
+  };
 
   const save = (event: Event): void => {
     event.preventDefault();
     if (isEmpty()) return;
 
-    props.onSave(front().trim(), back().trim());
+    props.onSave(face());
   };
 
   onMount(() => {
@@ -68,26 +74,7 @@ export function FlashcardEditor(props: FlashcardEditorProps): JSX.Element {
 
         <div class="modal-body">
           <div class="edit-fields">
-            <div class="field">
-              <label for="card-front">Front</label>
-              <textarea
-                class="input"
-                id="card-front"
-                rows="3"
-                value={front()}
-                onInput={(event) => setFront(event.currentTarget.value)}
-              />
-            </div>
-            <div class="field">
-              <label for="card-back">Back</label>
-              <textarea
-                class="input"
-                id="card-back"
-                rows="3"
-                value={back()}
-                onInput={(event) => setBack(event.currentTarget.value)}
-              />
-            </div>
+            <FlashcardFields face={face()} onChange={setFace} />
           </div>
         </div>
 

@@ -3,14 +3,17 @@ import { A } from "@solidjs/router";
 import { FlashcardsApi, type DeckScope } from "./flashcards-api";
 import { FlashcardActions } from "./FlashcardActions";
 import { FlashcardRatings } from "./FlashcardRatings";
+import { FlashcardAnswer, FlashcardPrompt } from "./FlashcardPrompt";
 import { FlashcardQueue } from "./flashcard-queue";
 import { FlashcardShortcuts } from "./flashcard-shortcuts";
 import { MnemonicPrompt } from "./mnemonic-prompt";
 import { useAsk } from "../chatbot/AskContext";
 import { Meter } from "../../shared/ui/Meter";
 import { Icon } from "../../shared/ui/icons/Icon";
+import { FlashcardWording } from "./flashcard-wording";
 import type {
   Flashcard,
+  FlashcardFace,
   FlashcardRating,
   RatingIntervals,
 } from "./flashcard-models";
@@ -87,19 +90,21 @@ export function FlashcardsReview(props: FlashcardsReviewProps): JSX.Element {
   });
 
   const askForMnemonic = (card: Flashcard): void => {
+    const asked = FlashcardWording.of(card.face);
+
     ask.askAbout({
-      question: MnemonicPrompt.forCard(card.front, card.back),
-      shownAs: MnemonicPrompt.shownFor(card.front),
+      question: MnemonicPrompt.forCard(asked.question, asked.answer),
+      shownAs: MnemonicPrompt.shownFor(asked.question),
     });
   };
 
-  const saveCard = async (front: string, back: string): Promise<void> => {
+  const saveCard = async (face: FlashcardFace): Promise<void> => {
     const editing = currentCard();
 
     if (editing === undefined) return;
 
-    await FlashcardsApi.update(editing.id, front, back);
-    setCards([{ ...editing, front, back }, ...cards().slice(1)]);
+    await FlashcardsApi.update(editing.id, face);
+    setCards([{ ...editing, face }, ...cards().slice(1)]);
   };
 
   const deleteCard = async (): Promise<void> => {
@@ -156,16 +161,16 @@ export function FlashcardsReview(props: FlashcardsReviewProps): JSX.Element {
               <div class="flashcard">
                 <FlashcardActions
                   card={card()}
-                  onSave={(front, back) => void saveCard(front, back)}
+                  onSave={(face) => void saveCard(face)}
                   onDelete={() => void deleteCard()}
                   onMnemonic={() => askForMnemonic(card())}
                 />
                 <div class="flashcard-face">
-                  <p class="flashcard-prompt">{card().front}</p>
+                  <FlashcardPrompt face={card().face} />
                 </div>
                 <Show when={isAnswerShown()}>
                   <div class="flashcard-face flashcard-answer">
-                    <p class="flashcard-prompt">{card().back}</p>
+                    <FlashcardAnswer face={card().face} />
                   </div>
                 </Show>
               </div>

@@ -1,8 +1,10 @@
 import { HttpClient } from "../../shared/api/http";
 import { Json, type JsonObject } from "../../shared/api/json";
+import { FlashcardContent } from "./flashcard-content";
 import type {
   Flashcard,
   FlashcardDeck,
+  FlashcardFace,
   FlashcardRating,
   FlashcardReviewResult,
   FsrsCard,
@@ -77,13 +79,15 @@ export class FlashcardsApi {
 
   static async update(
     flashcardId: string,
-    front: string,
-    back: string,
+    face: FlashcardFace,
   ): Promise<void> {
     await HttpClient.json({
       endpoint: "/api/content/update-flashcard",
       method: "PATCH",
-      body: { flashcard_id: Number(flashcardId), content: { front, back } },
+      body: {
+        flashcard_id: Number(flashcardId),
+        content: FlashcardContent.toContent(face),
+      },
     });
   }
 
@@ -99,8 +103,7 @@ export class FlashcardsApi {
 
     return {
       id: Json.identifier(raw.id, "flashcard.id"),
-      front: Json.stringOr(content.front, ""),
-      back: Json.stringOr(content.back, ""),
+      face: FlashcardContent.toFace(Json.stringOr(raw.type, "basic"), content),
       nextReview: Json.stringOrNull(raw.next_review),
       fsrsCard: Json.objectOrNull(raw.fsrs_card),
     };

@@ -15,6 +15,7 @@ from shared.models import (
 )
 
 _FLASHCARDS_SUFFIX = "_flashcards"
+_TEST_ITEMS_SUFFIX = "_test_items"
 _MISSING_FOLDER = "Folder does not exist!"
 
 
@@ -94,7 +95,7 @@ def save_test(
     db: Session,
     folder_id: str,
     test_name: str,
-    test_items: list[dict[str, object]],
+    test_items: Mapping[str, object],
     source: StudyUnitSource,
 ) -> str:
     folder = _existing_folder(db, folder_id)
@@ -106,10 +107,13 @@ def save_test(
     )
     db.add(test)
 
-    for test_item in test_items:
-        test.test_items.append(
-            TestItem(content=test_item, type="mult_choice")
-        )
+    for item_type, items in test_items.items():
+        cleaned_type = item_type.replace(_TEST_ITEMS_SUFFIX, "")
+
+        for test_item in _cards_of(items):
+            test.test_items.append(
+                TestItem(content=test_item, type=cleaned_type)
+            )
 
     db.commit()
 

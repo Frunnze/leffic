@@ -34,6 +34,10 @@ class NoteMetadata(BaseModel):
 
 class TestMetadata(BaseModel):
     amount: int = _DEFAULT_TEST_AMOUNT
+    types: (
+        list[Literal["multiple_choice", "true_or_false", "short_answer"]]
+        | None
+    ) = None
 
 
 class GenerationRequest(BaseModel):
@@ -94,7 +98,8 @@ def _queued_tasks(
 
     if request_data.test:
         queued["test_task_id"] = generate_test_task.delay(
-            **shared_arguments
+            **shared_arguments,
+            test_item_types=tuple(request_data.test.types or ()),
         ).id
 
     return queued
