@@ -25,7 +25,10 @@ x-content-service: &content-service
 
 services:
   frontend:
-    build: ./ui-service
+    build:
+      context: ./ui-service
+      args:
+        - VITE_GATEWAY_URL=${VITE_GATEWAY_URL:-http://localhost:8888}
     ports:
       - "3009:80"
     restart: unless-stopped
