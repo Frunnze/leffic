@@ -139,10 +139,12 @@ export class GenerationApi {
     if (source.kind === "link") return { link_metadata: source.url };
     if (source.kind === "topic") return { topic_metadata: source.topic };
 
-    const asked =
-      source.firstPage === null || source.lastPage === null
-        ? {}
-        : { pages: { first: source.firstPage, last: source.lastPage } };
+    const pages: Record<string, number> = {};
+
+    if (source.firstPage !== null) pages.first = source.firstPage;
+    if (source.lastPage !== null) pages.last = source.lastPage;
+
+    const asked = Object.keys(pages).length === 0 ? {} : { pages };
 
     return {
       file_metadata: [

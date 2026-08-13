@@ -1,7 +1,11 @@
 import { For, Match, Show, Switch, type JSX } from "solid-js";
 import { Icon } from "../../../shared/ui/icons/Icon";
 import { PdfPageRange } from "./PdfPageRange";
-import { SOURCE_KINDS, type SourceKind } from "./import-options";
+import {
+  PAGED_EXTENSIONS,
+  SOURCE_KINDS,
+  type SourceKind,
+} from "./import-options";
 
 export type ImportSourceProps = {
   readonly kind: SourceKind;
@@ -23,8 +27,13 @@ export type ImportSourceProps = {
 export function ImportSource(props: ImportSourceProps): JSX.Element {
   let fileInput: HTMLInputElement | undefined;
 
-  const isPdfChosen = (): boolean =>
-    props.chosenFile?.name.toLowerCase().endsWith(".pdf") === true;
+  const isPagedFileChosen = (): boolean => {
+    const chosenName = props.chosenFile?.name.toLowerCase() ?? "";
+
+    return PAGED_EXTENSIONS.some((extension) =>
+      chosenName.endsWith(`.${extension}`),
+    );
+  };
 
   return (
     <>
@@ -76,7 +85,7 @@ export function ImportSource(props: ImportSourceProps): JSX.Element {
               </button>
             </div>
 
-            <Show when={isPdfChosen()}>
+            <Show when={isPagedFileChosen()}>
               <PdfPageRange
                 firstPage={props.firstPage}
                 lastPage={props.lastPage}

@@ -30,7 +30,10 @@ export function PdfPageRange(props: PdfPageRangeProps): JSX.Element {
         value={props.lastPage}
         onInput={(event) => props.onLastPageChange(event.currentTarget.value)}
       />
-      <span class="field-hint">Leave empty to read the whole document.</span>
+      <span class="field-hint">
+        Leave the first empty to start at page 1, the last to read to the
+        end, both to read the whole document.
+      </span>
     </div>
   );
 }

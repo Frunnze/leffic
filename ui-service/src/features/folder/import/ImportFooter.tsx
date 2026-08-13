@@ -5,7 +5,9 @@ export type ImportFooterProps = {
   readonly nothingChosen: boolean;
   readonly isReviewing: boolean;
   readonly isExtracting: boolean;
+  readonly canUploadOnly: boolean;
   readonly onCancel: () => void;
+  readonly onUploadOnly: () => void;
   readonly onContinue: () => void;
   readonly onGenerate: () => void;
 };
@@ -20,6 +22,17 @@ export function ImportFooter(props: ImportFooterProps): JSX.Element {
       <button class="btn" type="button" onClick={() => props.onCancel()}>
         Cancel
       </button>
+
+      <Show when={props.canUploadOnly}>
+        <button
+          class="btn"
+          type="button"
+          disabled={props.isExtracting}
+          onClick={() => props.onUploadOnly()}
+        >
+          Upload only
+        </button>
+      </Show>
 
       <Show
         when={props.isReviewing}

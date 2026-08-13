@@ -12,6 +12,17 @@ export type UnitChoice = {
   readonly chosenTypes: readonly string[];
 };
 
+export const PAGED_EXTENSIONS: readonly string[] = [
+  "pdf",
+  "doc",
+  "docx",
+  "odt",
+  "rtf",
+  "ppt",
+  "pptx",
+  "odp",
+];
+
 export const SOURCE_KINDS: readonly { kind: SourceKind; label: string }[] = [
   { kind: "file", label: "File" },
   { kind: "link", label: "Link" },

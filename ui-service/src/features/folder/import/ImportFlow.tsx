@@ -12,6 +12,7 @@ import { useToasts } from "../../notifications/ToastContext";
 import type {
   GenerationOrigin,
   GenerationSource,
+  UploadedFile,
 } from "./generation-models";
 import type { Unit } from "../../../shared/models/units";
 
@@ -71,6 +72,53 @@ export function ImportFlow(props: ImportFlowProps): JSX.Element {
     onCleanup(stop);
   };
 
+  const uploadIntoFolder = async (
+    chosen: File,
+  ): Promise<readonly UploadedFile[]> => {
+    const uploaded = await GenerationApi.uploadFile(chosen, props.folderId);
+
+    props.onUnitsAdded(
+      uploaded.map((file) => ({
+        id: file.fileId,
+        name: file.name,
+        type: "file" as const,
+        createdAt: file.createdAt,
+        extension: file.extension,
+        dueCount: null,
+        meta: null,
+      })),
+      props.folderId,
+    );
+
+    return uploaded;
+  };
+
+  const uploadOnly = async (request: ImportRequest): Promise<void> => {
+    const chosen = request.file;
+
+    if (chosen === null) return;
+
+    props.onClose();
+
+    const progressToast = toasts.show({
+      tone: "progress",
+      title: `Uploading ${chosen.name}`,
+    });
+
+    try {
+      await uploadIntoFolder(chosen);
+      toasts.dismiss(progressToast);
+      toasts.show({ tone: "success", title: `${chosen.name} uploaded` });
+    } catch {
+      toasts.dismiss(progressToast);
+      toasts.show({
+        tone: "failure",
+        title: `Couldn't upload ${chosen.name}`,
+        detail: "The file could not be saved. Try again.",
+      });
+    }
+  };
+
   const uploadedSource = async (
     request: ImportRequest,
   ): Promise<GenerationSource | null> => {
@@ -85,21 +133,9 @@ export function ImportFlow(props: ImportFlowProps): JSX.Element {
     const chosen = request.file;
     if (chosen === null) return null;
 
-    const uploaded = await GenerationApi.uploadFile(chosen, props.folderId);
-    props.onUnitsAdded(
-      uploaded.map((file) => ({
-        id: file.fileId,
-        name: file.name,
-        type: "file" as const,
-        createdAt: file.createdAt,
-        extension: file.extension,
-        dueCount: null,
-        meta: null,
-      })),
-      props.folderId,
-    );
-
+    const uploaded = await uploadIntoFolder(chosen);
     const first = uploaded[0];
+
     if (first === undefined) return null;
 
     return {
@@ -197,6 +233,7 @@ export function ImportFlow(props: ImportFlowProps): JSX.Element {
         folderName={props.folderName}
         onExtract={extractFrom}
         onGenerate={generate}
+        onUploadOnly={(request) => void uploadOnly(request)}
         onCancel={props.onClose}
       />
     </Show>

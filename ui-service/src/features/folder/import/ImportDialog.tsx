@@ -30,6 +30,7 @@ export type ImportDialogProps = {
   readonly folderName: string;
   readonly onExtract: (request: ImportRequest) => Promise<ExtractedSource>;
   readonly onGenerate: (request: ImportRequest, text: string) => void;
+  readonly onUploadOnly: (request: ImportRequest) => void;
   readonly onCancel: () => void;
 };
 
@@ -78,6 +79,9 @@ export function ImportDialog(props: ImportDialogProps): JSX.Element {
 
   const isShowingOptions = (): boolean =>
     kind() === "text" || extractedText() !== null;
+
+  const canUploadOnly = (): boolean =>
+    kind() === "file" && chosenFile() !== null && !isShowingOptions();
 
   const continueToReview = async (): Promise<void> => {
     setExtracting(true);
@@ -177,7 +181,9 @@ export function ImportDialog(props: ImportDialogProps): JSX.Element {
           nothingChosen={nothingChosen()}
           isReviewing={isShowingOptions()}
           isExtracting={isExtracting()}
+          canUploadOnly={canUploadOnly()}
           onCancel={props.onCancel}
+          onUploadOnly={() => props.onUploadOnly(request())}
           onContinue={() => void continueToReview()}
           onGenerate={() =>
             props.onGenerate(request(), extractedText() ?? text())
