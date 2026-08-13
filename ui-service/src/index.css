@@ -9,10 +9,12 @@
 @import "./styles/units.css";
 @import "./styles/meter.css";
 @import "./styles/overlays.css";
+@import "./styles/toast.css";
 @import "./styles/flashcards.css";
 @import "./styles/test.css";
 @import "./styles/note.css";
 @import "./styles/file.css";
+@import "./styles/pdf-text-layer.css";
 @import "./styles/landing.css";
 @import "./styles/method.css";
 @import "./styles/chat.css";

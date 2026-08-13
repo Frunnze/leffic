@@ -1,4 +1,4 @@
-import { Show, type JSX } from "solid-js";
+import { type JSX } from "solid-js";
 import { Icon } from "../../shared/ui/icons/Icon";
 
 export type FileBookmarkProps = {
@@ -9,26 +9,33 @@ export type FileBookmarkProps = {
 };
 
 export function FileBookmark(props: FileBookmarkProps): JSX.Element {
-  return (
-    <div class="file-bookmark">
-      <Show when={props.page !== null}>
-        <span class="file-bookmark-current">
-          <Icon name="bookmark" size="sm" />
-          Page {props.page}
-        </span>
-        <button class="btn btn-quiet" type="button" onClick={props.onForget}>
-          Remove
-        </button>
-      </Show>
+  const isPageInViewBookmarked = (): boolean => props.page === props.pageInView;
 
-      <button
-        class="btn"
-        type="button"
-        onClick={() => props.onRemember(props.pageInView)}
-      >
-        <Icon name="bookmark" size="sm" />
-        Bookmark page {props.pageInView}
-      </button>
-    </div>
+  const label = (): string =>
+    isPageInViewBookmarked()
+      ? `Remove the bookmark on page ${props.pageInView}`
+      : `Bookmark page ${props.pageInView}`;
+
+  const toggleBookmark = (): void => {
+    if (isPageInViewBookmarked()) {
+      props.onForget();
+      return;
+    }
+
+    props.onRemember(props.pageInView);
+  };
+
+  return (
+    <button
+      class="btn btn-quiet btn-icon file-bookmark"
+      classList={{ "is-bookmarked": isPageInViewBookmarked() }}
+      type="button"
+      aria-pressed={isPageInViewBookmarked()}
+      aria-label={label()}
+      title={label()}
+      onClick={toggleBookmark}
+    >
+      <Icon name="bookmark" size="sm" />
+    </button>
   );
 }

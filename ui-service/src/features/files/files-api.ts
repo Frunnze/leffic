@@ -1,5 +1,6 @@
 import type { PDFDocumentProxy } from "pdfjs-dist";
-import { HttpClient } from "../../shared/api/http";
+import { HttpClient, UnauthorizedError } from "../../shared/api/http";
+import { Session } from "../../shared/api/session";
 import { Json } from "../../shared/api/json";
 import { PdfViewer } from "./pdf-viewer";
 
@@ -15,25 +16,31 @@ export class FilesApi {
     fileId: string,
     extension: string,
   ): Promise<OpenedFile> {
-    const [url, bookmarkedPage] = await Promise.all([
-      FilesApi.openableUrl(fileId, extension),
+    const [document, bookmarkedPage] = await Promise.all([
+      FilesApi.openedDocument(fileId, extension),
       FilesApi.bookmarkedPage(fileId),
     ]);
 
-    return { document: await PdfViewer.opened(url), bookmarkedPage };
+    return { document, bookmarkedPage };
   }
 
-  static async openableUrl(fileId: string, extension: string): Promise<string> {
+  static async openedDocument(
+    fileId: string,
+    extension: string,
+  ): Promise<PDFDocumentProxy> {
+    const token = Session.currentToken() ?? (await Session.refresh());
+
+    if (token === null) throw new UnauthorizedError();
+
     const query = new URLSearchParams({
       file_id: fileId,
       file_extension: extension,
     }).toString();
-    const fileContents = await HttpClient.blob({
-      endpoint: `/api/content/file?${query}`,
-      headers: { Accept: "application/pdf" },
-    });
 
-    return URL.createObjectURL(fileContents);
+    return PdfViewer.opened(
+      `${Session.baseUrl}/api/content/file?${query}`,
+      { Authorization: `Bearer ${token}` },
+    );
   }
 
   static async bookmarkedPage(fileId: string): Promise<number | null> {
