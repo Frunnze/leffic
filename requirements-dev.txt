@@ -1,5 +1,6 @@
 basedpyright==1.39.9
 deptry==0.25.1
+hypothesis==6.165.9
 mutmut==3.7.0
 pylint==4.0.6
 pytest==8.4.1

@@ -1,0 +1,26 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/_env.sh"
+
+require_binary "$python_binary" python
+
+finder="$(dirname "$0")/property_test_coverage.py"
+
+echo "pre-commit: property tests (one per definition)"
+
+python_files=$(
+    git ls-files '*/src/*.py' '*/tests/*.py'
+    git ls-files --others --exclude-standard '*/src/*.py' '*/tests/*.py'
+)
+untested=$(echo "$python_files" | "$python_binary" "$finder")
+
+if [ -n "$untested" ]; then
+    echo "pre-commit: nothing states a property about these - give" >&2
+    echo "pre-commit: each a Hypothesis @given test named" >&2
+    echo "pre-commit: test_<function>_property_<what it guarantees>," >&2
+    echo "pre-commit: asserting a contract guarantee over generated" >&2
+    echo "pre-commit: input (a round-trip, an invariant, a bound, an" >&2
+    echo "pre-commit: ordering), never the current behaviour:" >&2
+    echo "$untested" >&2
+    exit 1
+fi
