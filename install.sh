@@ -16,6 +16,14 @@ fi
     -r content-management-service/requirements.txt
 "$virtual_environment/bin/pip" install -r user-service/requirements.txt
 
+for node_package in ui-service api-gateway; do
+    (cd "$node_package" && npm install)
+done
+
+if ! command -v gitleaks > /dev/null 2>&1; then
+    echo "install: gitleaks is missing - brew install gitleaks"
+fi
+
 git config core.hooksPath hooks
 
 echo "install: ready - hooks run from $repository_root/hooks"

@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.identifiers import RowId
 from shared.models import Flashcard, FlashcardDeck, Folder
 
 flashcard_editing_router = APIRouter()
@@ -31,7 +32,7 @@ def _owned_flashcard(
 
 
 class UpdateFlashcardRequest(BaseModel):
-    flashcard_id: int
+    flashcard_id: RowId
     content: dict[str, object]
 
 
@@ -50,7 +51,7 @@ async def update_flashcard(
 
 @flashcard_editing_router.delete("/delete-flashcard/")
 async def delete_flashcard(
-    flashcard_id: int,
+    flashcard_id: RowId,
     user_id: AuthenticatedUserId,
     db: DatabaseSession,
 ) -> JSONResponse:

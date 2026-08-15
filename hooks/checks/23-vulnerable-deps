@@ -1,0 +1,35 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/_env.sh"
+
+require_binary "$pip_audit_binary" pip-audit
+
+# Starlette 1.x fixes these, but it needs FastAPI >= 0.140, which drops the
+# APIRoute class our wiring tests read. Lift them with that upgrade.
+accepted_advisories="PYSEC-2026-161 PYSEC-2026-248 PYSEC-2026-249
+PYSEC-2026-2280 PYSEC-2026-2281"
+
+ignore_flags=""
+
+for advisory in $accepted_advisories; do
+    ignore_flags="$ignore_flags --ignore-vuln $advisory"
+done
+
+echo "pre-commit: dependencies (no known vulnerability)"
+echo "pre-commit: still carrying $(echo $accepted_advisories | wc -w |
+    tr -d ' ') accepted starlette advisories"
+
+if ! audit_output=$("$pip_audit_binary" --progress-spinner off \
+    $ignore_flags 2>&1); then
+    if echo "$audit_output" | grep -qiE "connection|resolve|timed out"; then
+        echo "pre-commit: advisory database unreachable - skipping the" >&2
+        echo "pre-commit: vulnerability scan" >&2
+        exit 0
+    fi
+
+    echo "pre-commit: an installed package has a known vulnerability -" >&2
+    echo "pre-commit: upgrade it, or add the advisory id to" >&2
+    echo "pre-commit: accepted_advisories with the reason it cannot move:" >&2
+    echo "$audit_output" >&2
+    exit 1
+fi

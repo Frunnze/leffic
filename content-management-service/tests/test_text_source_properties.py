@@ -69,11 +69,10 @@ def test_text_from_files_property_joins_one_chunk_per_file(
 
     with mock.patch.object(
         text_sources, "get_file_from_storage", return_value=b""
+    ), mock.patch.object(
+        text_sources, "_text_from_bytes", _chunk_for
     ):
-        with mock.patch.object(
-            text_sources, "_text_from_bytes", _chunk_for
-        ):
-            joined = text_from_files(metadata)
+        joined = text_from_files(metadata)
 
     assert joined == "".join(f"{name}|" for name in names)
 
@@ -114,12 +113,11 @@ def test_text_from_link_property_never_answers_with_none(
 
     with mock.patch.object(
         text_sources, "get_youtube_transcript_auto", return_value=None
+    ), mock.patch.object(
+        text_sources,
+        "extract_link_main_content",
+        return_value=body or None,
     ):
-        with mock.patch.object(
-            text_sources,
-            "extract_link_main_content",
-            return_value=body or None,
-        ):
-            extracted = text_from_link(link)
+        extracted = text_from_link(link)
 
     assert extracted == (body or "")

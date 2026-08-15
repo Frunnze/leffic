@@ -1,7 +1,7 @@
-fastapi==0.115.12
+fastapi==0.135.4
 uvicorn
 SQLAlchemy==2.0.34
-python-dotenv==1.0.1
+python-dotenv==1.2.2
 psycopg2-binary==2.9.9
 passlib==1.7.4
 bcrypt==4.0.1

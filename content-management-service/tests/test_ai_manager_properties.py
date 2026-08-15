@@ -5,12 +5,11 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from openai import OpenAI, OpenAIError
-
 from openai.types.responses import Response
 
 from shared.ai_manager import (
-    AiMessage,
     AIFactory,
+    AiMessage,
     OpenAIManager,
     RequestCost,
 )

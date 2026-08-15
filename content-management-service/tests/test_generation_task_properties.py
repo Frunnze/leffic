@@ -68,19 +68,17 @@ def test__generate_flashcards_task_property_reports_the_deck_it_saved(
 
     with mock.patch.object(
         generation_tasks, "ai_factory", _answering(payload)
+    ), mock.patch.object(generation_tasks, "SessionLocal"), mock.patch.object(
+        generation_tasks, "save_flashcard_deck", saving
     ):
-        with mock.patch.object(generation_tasks, "SessionLocal"):
-            with mock.patch.object(
-                generation_tasks, "save_flashcard_deck", saving
-            ):
-                reported = _generate_flashcards_task(
-                    ai_model=None,
-                    extracted_text="text",
-                    flashcards_metadata=_METADATA,
-                    folder_id=str(uuid.uuid4()),
-                    source_kind=None,
-                    source_reference=None,
-                )
+        reported = _generate_flashcards_task(
+            ai_model=None,
+            extracted_text="text",
+            flashcards_metadata=_METADATA,
+            folder_id=str(uuid.uuid4()),
+            source_kind=None,
+            source_reference=None,
+        )
 
     assert reported == {
         "flashcard_deck_id": str(deck_id),
@@ -101,16 +99,15 @@ def test__generate_note_task_property_reports_the_note_it_saved(
 
     with mock.patch.object(
         generation_tasks, "ai_factory", _answering(payload)
-    ):
-        with mock.patch.object(generation_tasks, "SessionLocal"):
-            with mock.patch.object(generation_tasks, "save_note", saving):
-                reported = _generate_note_task(
-                    ai_model=None,
-                    extracted_text="text",
-                    folder_id=str(uuid.uuid4()),
-                    source_kind=None,
-                    source_reference=None,
-                )
+    ), mock.patch.object(generation_tasks, "SessionLocal"):
+        with mock.patch.object(generation_tasks, "save_note", saving):
+            reported = _generate_note_task(
+                ai_model=None,
+                extracted_text="text",
+                folder_id=str(uuid.uuid4()),
+                source_kind=None,
+                source_reference=None,
+            )
 
     assert reported == {"note_id": str(note_id), "note_name": note_name}
 
@@ -129,16 +126,15 @@ def test__generate_test_task_property_reports_the_test_it_saved(
 
     with mock.patch.object(
         generation_tasks, "ai_factory", _answering(payload)
-    ):
-        with mock.patch.object(generation_tasks, "SessionLocal"):
-            with mock.patch.object(generation_tasks, "save_test", saving):
-                reported = _generate_test_task(
-                    ai_model=None,
-                    extracted_text="text",
-                    folder_id=str(uuid.uuid4()),
-                    source_kind=None,
-                    source_reference=None,
-                )
+    ), mock.patch.object(generation_tasks, "SessionLocal"):
+        with mock.patch.object(generation_tasks, "save_test", saving):
+            reported = _generate_test_task(
+                ai_model=None,
+                extracted_text="text",
+                folder_id=str(uuid.uuid4()),
+                source_kind=None,
+                source_reference=None,
+            )
 
     assert reported == {"test_id": str(test_id), "test_name": test_name}
     assert saving.arguments[3] == {"multiple_choice_test_items": items}

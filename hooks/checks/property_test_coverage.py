@@ -3,14 +3,14 @@ import sys
 from pathlib import Path
 from typing import NamedTuple
 
+from stateless_definitions import FunctionNode, StatelessDefinition
+
 FUNCTION_NODES = (ast.FunctionDef, ast.AsyncFunctionDef)
 GIVEN_DECORATOR = "given"
 SOURCE_DIRECTORY = "src"
 TESTS_DIRECTORY = "tests"
 TEST_PREFIX = "test_"
 PROPERTY_MARKER = "_property"
-
-FunctionNode = ast.FunctionDef | ast.AsyncFunctionDef
 
 
 class UntestedDefinition(NamedTuple):
@@ -102,10 +102,14 @@ class UntestedDefinitions:
         self, path: Path, property_tests: set[str]
     ) -> list[UntestedDefinition]:
         tree = ast.parse(path.read_text(encoding="utf-8"))
+        stateless = StatelessDefinition()
         found: list[UntestedDefinition] = []
 
         for node in ast.walk(tree):
             if not isinstance(node, FUNCTION_NODES):
+                continue
+
+            if stateless.describes_no_behaviour(node):
                 continue
 
             if self._is_covered(node.name, property_tests):

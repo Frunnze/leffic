@@ -5,7 +5,9 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import case, func
 
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.folder_access import resolved_folder_id as resolved_scope
 from shared.folder_tree import subfolder_ids
+from shared.identifiers import parsed_identifier
 from shared.models import Test, TestItem, TestItemReview, TestSession
 
 assessment_stats_router = APIRouter()
@@ -21,7 +23,7 @@ _FULLY_CORRECT = 1.0
 async def test_items_stats(
     folder_id: str, db: DatabaseSession, user_id: AuthenticatedUserId
 ) -> JSONResponse:
-    resolved_folder_id = user_id if folder_id == _HOME_FOLDER else folder_id
+    resolved_folder_id = resolved_scope(user_id, folder_id)
 
     # Recursive CTE to get all subfolder IDs
     folder_ids = subfolder_ids(resolved_folder_id, user_id)
@@ -74,14 +76,20 @@ async def test_session_results(
         )
         .filter(
             TestItemReview.accuracy.is_not(None),
-            TestItemReview.test_session == test_session,
+            TestItemReview.test_session
+            == parsed_identifier(test_session, _NO_TEST_STATS),
         )
         .scalar(),
     )
 
     # End the test session
     session_row = (
-        db.query(TestSession).filter_by(id=test_session).first()
+        db.query(TestSession)
+        .filter(
+            TestSession.id
+            == parsed_identifier(test_session, _NO_TEST_STATS)
+        )
+        .first()
     )
 
     if session_row is None:

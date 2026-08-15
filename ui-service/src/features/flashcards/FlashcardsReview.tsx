@@ -6,11 +6,10 @@ import { FlashcardRatings } from "./FlashcardRatings";
 import { FlashcardAnswer, FlashcardPrompt } from "./FlashcardPrompt";
 import { FlashcardQueue } from "./flashcard-queue";
 import { FlashcardShortcuts } from "./flashcard-shortcuts";
-import { MnemonicPrompt } from "./mnemonic-prompt";
+import { MnemonicRequest } from "./mnemonic-request";
 import { useAsk } from "../chatbot/AskContext";
 import { Meter } from "../../shared/ui/Meter";
 import { Icon } from "../../shared/ui/icons/Icon";
-import { FlashcardWording } from "./flashcard-wording";
 import type {
   Flashcard,
   FlashcardFace,
@@ -90,12 +89,7 @@ export function FlashcardsReview(props: FlashcardsReviewProps): JSX.Element {
   });
 
   const askForMnemonic = (card: Flashcard): void => {
-    const asked = FlashcardWording.of(card.face);
-
-    ask.askAbout({
-      question: MnemonicPrompt.forCard(asked.question, asked.answer),
-      shownAs: MnemonicPrompt.shownFor(asked.question),
-    });
+    ask.askAbout(MnemonicRequest.forCard(card));
   };
 
   const saveCard = async (face: FlashcardFace): Promise<void> => {

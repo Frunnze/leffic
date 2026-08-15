@@ -1,10 +1,13 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from fsrs.card import CardDict
 from pydantic import BaseModel
 
 from shared.dependencies import AuthenticatedUserId
-from shared.flashcard_scheduling import get_ratings_times
+from shared.flashcard_scheduling import (
+    UnreadableCardError,
+    get_ratings_times,
+)
 
 rating_intervals_router = APIRouter()
 
@@ -19,4 +22,12 @@ async def rating_intervals(
 ) -> JSONResponse:
     _ = user_id
 
-    return JSONResponse(content=get_ratings_times(request_data.card, None))
+    try:
+        intervals = get_ratings_times(request_data.card, None)
+    except UnreadableCardError as unreadable:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(unreadable),
+        ) from unreadable
+
+    return JSONResponse(content=intervals)

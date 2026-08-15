@@ -1,6 +1,12 @@
 import uuid
+from typing import Annotated
 
 from fastapi import HTTPException, status
+from pydantic import Field
+
+_LARGEST_ROW_ID = 2**31 - 1
+
+RowId = Annotated[int, Field(ge=1, le=_LARGEST_ROW_ID)]
 
 
 def parsed_identifier(

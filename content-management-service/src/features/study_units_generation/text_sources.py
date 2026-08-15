@@ -24,6 +24,7 @@ _PAGED_EXTENSIONS = (
 )
 _NOT_PAGED = "Only a document with pages can be read"
 _BACKWARDS_RANGE = "The last page comes before the first"
+_MISSING_DOCUMENT = "That document is no longer stored"
 
 
 class PageRange(BaseModel):
@@ -44,8 +45,18 @@ class FileMetadata(BaseModel):
     pages: PageRange | None = None
 
 
+class MissingDocumentError(Exception):
+    def __init__(self) -> None:
+        super().__init__(_MISSING_DOCUMENT)
+
+
 def get_file_from_storage(storage_name: str) -> bytes:
-    return (Path(_FILES_DIRECTORY) / storage_name).read_bytes()
+    stored = Path(_FILES_DIRECTORY) / storage_name
+
+    try:
+        return stored.read_bytes()
+    except OSError as unreadable:
+        raise MissingDocumentError from unreadable
 
 
 def text_from_files(file_metadata: list[FileMetadata]) -> str:

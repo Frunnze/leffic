@@ -1,19 +1,18 @@
 import subprocess
 import uuid
-from typing import cast
 from pathlib import Path
+from typing import cast
 from unittest import mock
 
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
+from sqlalchemy import Dialect
 
 from features.study_units_generation.pdf_pages import (
     PageSelectionError,
     PdfPageSelection,
 )
-from sqlalchemy import Dialect
-
 from shared.models.columns import FlexibleUuid
 from shared.pdf_conversion import ConversionError, PdfConversion
 from tests.pdf_support import LibreOfficeStub, PdfDocuments

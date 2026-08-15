@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from features.study_units_generation.pdf_pages import PageSelectionError
 from features.study_units_generation.text_sources import (
     FileMetadata,
+    MissingDocumentError,
     text_from_files,
     text_from_link,
 )
@@ -47,7 +48,11 @@ async def extract_text(
 
     try:
         extracted_text = _extracted_text(request_data)
-    except (PageSelectionError, ConversionError) as refusal:
+    except (
+        PageSelectionError,
+        ConversionError,
+        MissingDocumentError,
+    ) as refusal:
         return JSONResponse(
             content={"msg": str(refusal)},
             status_code=status.HTTP_400_BAD_REQUEST,

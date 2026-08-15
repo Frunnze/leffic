@@ -1,0 +1,18 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/_env.sh"
+
+echo "pre-commit: typescript (strict, no emit)"
+
+for package in $node_packages; do
+    if [ ! -d "$repository_root/$package/node_modules" ]; then
+        echo "pre-commit: $package has no node_modules -" >&2
+        echo "pre-commit: run ./install.sh" >&2
+        exit 1
+    fi
+
+    if ! (cd "$repository_root/$package" && npm run --silent typecheck); then
+        echo "pre-commit: $package does not type-check" >&2
+        exit 1
+    fi
+done

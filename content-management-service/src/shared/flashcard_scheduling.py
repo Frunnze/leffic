@@ -13,6 +13,7 @@ RATING_MAP: dict[int, Rating] = {
 }
 
 _NO_TIME_LEFT = 0
+_UNREADABLE_CARD = "That card cannot be read."
 
 
 def schedule_flashcard_fsrs(
@@ -48,11 +49,19 @@ def get_ratings_times(
     return ratings_times
 
 
+class UnreadableCardError(ValueError):
+    def __init__(self) -> None:
+        super().__init__(_UNREADABLE_CARD)
+
+
 def _restored_card(card: CardDict | None) -> Card:
     if not card:
         return Card()
 
-    return Card.from_dict(card)
+    try:
+        return Card.from_dict(card)
+    except (ValueError, KeyError, TypeError) as unreadable:
+        raise UnreadableCardError from unreadable
 
 
 def _restored_scheduler(scheduler: SchedulerDict | None) -> Scheduler:

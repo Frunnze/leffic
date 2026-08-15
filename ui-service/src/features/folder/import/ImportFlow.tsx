@@ -6,7 +6,7 @@ import {
   type ExtractedSource,
   type ImportRequest,
 } from "./ImportDialog";
-import { ImportOptions } from "./import-options";
+import { ImportSources } from "./import-sources";
 import { NotesApi } from "../../notes/notes-api";
 import { useToasts } from "../../notifications/ToastContext";
 import type {
@@ -119,34 +119,6 @@ export function ImportFlow(props: ImportFlowProps): JSX.Element {
     }
   };
 
-  const uploadedSource = async (
-    request: ImportRequest,
-  ): Promise<GenerationSource | null> => {
-    if (request.kind === "link") return { kind: "link", url: request.link };
-    if (request.kind === "topic") {
-      return { kind: "topic", topic: request.topic };
-    }
-    if (request.kind === "text") {
-      return { kind: "topic", topic: request.text };
-    }
-
-    const chosen = request.file;
-    if (chosen === null) return null;
-
-    const uploaded = await uploadIntoFolder(chosen);
-    const first = uploaded[0];
-
-    if (first === undefined) return null;
-
-    return {
-      kind: "file",
-      fileId: first.fileId,
-      extension: first.extension,
-      firstPage: request.firstPage,
-      lastPage: request.lastPage,
-    };
-  };
-
   const writtenNote = async (topic: string): Promise<ExtractedSource> => {
     const tasks = await GenerationApi.start(
       { kind: "topic", topic },
@@ -183,7 +155,10 @@ export function ImportFlow(props: ImportFlowProps): JSX.Element {
   ): Promise<ExtractedSource> => {
     if (request.kind === "topic") return writtenNote(request.topic);
 
-    const source = await uploadedSource(request);
+    const source = await ImportSources.sourceFrom(
+      request,
+      uploadIntoFolder,
+    );
     if (source === null) return { text: "", isNoteAlreadyMade: false };
 
     return {
@@ -192,45 +167,13 @@ export function ImportFlow(props: ImportFlowProps): JSX.Element {
     };
   };
 
-  const originOf = (request: ImportRequest): GenerationOrigin => {
-    if (request.kind === "file") {
-      return { kind: "file", reference: request.file?.name ?? "" };
-    }
-    if (request.kind === "link") {
-      return { kind: "link", reference: request.link };
-    }
-    if (request.kind === "topic") {
-      return { kind: "topic", reference: request.topic };
-    }
-
-    return { kind: "text", reference: "" };
-  };
-
-  const sourceLabel = (request: ImportRequest): string => {
-    if (request.kind === "file") return request.file?.name ?? "your file";
-    if (request.kind === "link") return request.link;
-    if (request.kind === "topic") return request.topic;
-
-    return "your text";
-  };
-
   const generate = (request: ImportRequest, reviewedText: string): void => {
     props.onClose();
     void startGeneration(
       { kind: "topic", topic: reviewedText },
-      originOf(request),
-      sourceLabel(request),
-      {
-        flashcardTypes: request.flashcards.isChosen
-          ? request.flashcards.chosenTypes
-          : [],
-        flashcardAmount: ImportOptions.totalCount(request.flashcards),
-        testTypes: request.test.isChosen ? request.test.chosenTypes : [],
-        testAmount: request.test.isChosen
-          ? ImportOptions.totalCount(request.test)
-          : undefined,
-        note: request.note.isChosen,
-      },
+      ImportSources.originOf(request),
+      ImportSources.labelFor(request),
+      ImportSources.wishFrom(request),
     );
   };
 

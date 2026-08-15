@@ -1,5 +1,14 @@
 from types import TracebackType
-from typing import final
+from typing import Protocol, final
+
+from httpx import Request
+from openai import APIConnectionError
+
+
+class AnsweringAi(Protocol):
+    def get_ai_res_hist(
+        self, system_prompt: str, history: list[object]
+    ) -> str: ...
 
 
 @final
@@ -26,11 +35,22 @@ class FakeAiManager:
 
 
 @final
-class FakeAiFactory:
-    def __init__(self, manager: FakeAiManager) -> None:
-        self.manager: FakeAiManager = manager
+class UnavailableAiManager:
+    def get_ai_res_hist(
+        self, system_prompt: str, history: list[object]
+    ) -> str:
+        _ = system_prompt
+        _ = history
 
-    def get_ai(self, model: str | None = None) -> FakeAiManager:
+        raise APIConnectionError(request=Request("POST", "https://ai"))
+
+
+@final
+class FakeAiFactory:
+    def __init__(self, manager: AnsweringAi) -> None:
+        self.manager: AnsweringAi = manager
+
+    def get_ai(self, model: str | None = None) -> AnsweringAi:
         _ = model
 
         return self.manager

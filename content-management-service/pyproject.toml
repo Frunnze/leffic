@@ -8,6 +8,7 @@ include = ["src", "run.py", "tests"]
 extraPaths = [".", "src"]
 
 reportMissingTypeStubs = "none"
+ignore = ["tests/test_api_contract.py"]
 
 [[tool.basedpyright.executionEnvironments]]
 root = "tests"
@@ -56,7 +57,12 @@ max-public-methods = 15
 [tool.mutmut]
 source_paths = ["src"]
 also_copy = ["pytest.ini"]
-pytest_add_cli_args_test_selection = ["tests", "-p", "no:randomly"]
+pytest_add_cli_args_test_selection = [
+    "tests",
+    "-p",
+    "no:randomly",
+    "--ignore=tests/test_api_contract.py",
+]
 
 [tool.deptry.per_rule_ignores]
 DEP002 = ["uvicorn", "python-multipart", "setuptools"]

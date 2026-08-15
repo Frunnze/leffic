@@ -19,6 +19,7 @@ from shared.flashcard_scheduling import (
 )
 from shared.folder_access import resolved_folder_id
 from shared.folder_tree import subfolder_ids
+from shared.identifiers import RowId
 from shared.models import (
     Flashcard,
     FlashcardDeck,
@@ -102,7 +103,7 @@ async def get_flashcards(
 
 
 class ReviewFlashcardRequest(BaseModel):
-    flashcard_id: int
+    flashcard_id: RowId
     rating: int
 
 

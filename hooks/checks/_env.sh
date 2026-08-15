@@ -2,6 +2,7 @@ repository_root=$(git rev-parse --show-toplevel)
 cd "$repository_root"
 
 services="user-service content-management-service"
+node_packages="ui-service api-gateway"
 
 ruff_binary="$repository_root/.venv/bin/ruff"
 basedpyright_binary="$repository_root/.venv/bin/basedpyright"
@@ -10,6 +11,7 @@ pylint_binary="$repository_root/.venv/bin/pylint"
 vulture_binary="$repository_root/.venv/bin/vulture"
 deptry_binary="$repository_root/.venv/bin/deptry"
 python_binary="$repository_root/.venv/bin/python"
+pip_audit_binary="$repository_root/.venv/bin/pip-audit"
 
 require_binary() {
     if [ ! -x "$1" ]; then

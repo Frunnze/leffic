@@ -6,9 +6,14 @@ maximum_file_lines=200
 
 echo "pre-commit: file length (max $maximum_file_lines lines)"
 
-overlong_files=$(git ls-files '*.py' | while read -r python_file; do
-    [ -f "$python_file" ] || continue
-    wc -l "$python_file"
+source_files=$(
+    git ls-files '*.py' '*.ts' '*.tsx'
+    git ls-files --others --exclude-standard '*.py' '*.ts' '*.tsx'
+)
+
+overlong_files=$(echo "$source_files" | while read -r source_file; do
+    [ -f "$source_file" ] || continue
+    wc -l "$source_file"
 done | awk -v limit="$maximum_file_lines" \
     '$1 > limit {print $2 " (" $1 " lines)"}')
 

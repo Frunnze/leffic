@@ -3,9 +3,9 @@ from unittest import mock
 
 import requests
 from bs4 import BeautifulSoup, Tag
-from youtube_transcript_api import Transcript, TranscriptList
 from hypothesis import given, settings
 from hypothesis import strategies as st
+from youtube_transcript_api import Transcript, TranscriptList
 
 from features.study_units_generation.link_extractor import (
     _any_transcript,

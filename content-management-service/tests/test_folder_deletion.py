@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app_factory import create_app
 from shared import file_storage
-from shared.file_storage import delete_file_from_storage
 from shared.database import get_db
+from shared.file_storage import delete_file_from_storage
 from shared.models import (
     File,
     Folder,

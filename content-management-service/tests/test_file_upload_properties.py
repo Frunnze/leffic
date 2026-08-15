@@ -7,9 +7,9 @@ from unittest import mock
 
 import pytest
 from fastapi import HTTPException, UploadFile
-from sqlalchemy.orm import Session
 from hypothesis import given, settings
 from hypothesis import strategies as st
+from sqlalchemy.orm import Session
 
 from features.file_upload import file_uploader as uploader_module
 from features.file_upload.file_uploader import (
@@ -18,9 +18,9 @@ from features.file_upload.file_uploader import (
     _stored_file,
     save_file_to_storage,
 )
+from shared.models import File as StoredFile
 from shared.pdf_conversion import ConversionError
 from tests.folder_seeding import seeded_folder
-from shared.models import File as StoredFile
 from tests.property_support import property_world
 from tests.support import authorization
 
@@ -114,9 +114,8 @@ def test__recorded_files_property_files_every_upload_under_the_folder(
 def test__recorded_files_property_refuses_a_folder_that_is_not_there(
     absent: uuid.UUID,
 ) -> None:
-    with _SESSIONS() as session:
-        with pytest.raises(HTTPException) as raised:
-            _recorded_files(session, str(absent), [])
+    with _SESSIONS() as session, pytest.raises(HTTPException) as raised:
+        _recorded_files(session, str(absent), [])
 
     assert raised.value.status_code == _NOT_FOUND
 
@@ -172,8 +171,7 @@ def test__converted_to_pdf_property_translates_a_refusal_into_a_bad_request(
 ) -> None:
     with mock.patch(
         _PDF_CONVERTED, side_effect=ConversionError("no good")
-    ):
-        with pytest.raises(HTTPException) as raised:
-            _ = _converted_to_pdf(_written_document(), extension)
+    ), pytest.raises(HTTPException) as raised:
+        _ = _converted_to_pdf(_written_document(), extension)
 
     assert raised.value.status_code == _BAD_REQUEST

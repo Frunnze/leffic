@@ -18,6 +18,7 @@ from tests.property_fakes import (
     FakeAiFactory,
     FakeAiManager,
     FakeQueuedTask,
+    UnavailableAiManager,
 )
 from tests.property_support import property_world
 from tests.support import authorization
@@ -25,6 +26,7 @@ from tests.support import authorization
 _OK = 200
 _BAD_REQUEST = 400
 _NOT_FOUND = 404
+_UNAVAILABLE = 503
 _CLIENT, _SESSIONS = property_world()
 _TEXT = st.text(alphabet="abcdefg", min_size=1, max_size=12)
 _EXTRACTION = "features.study_units_generation.extraction_router"
@@ -100,20 +102,19 @@ def test__queued_tasks_property_queues_only_what_was_asked_for(
 
     with mock.patch.object(
         generation_router, "generate_note_task", queued
+    ), mock.patch.object(
+        generation_router, "generate_flashcards_task", queued
     ):
-        with mock.patch.object(
-            generation_router, "generate_flashcards_task", queued
-        ):
-            response = _CLIENT.post(
-                "/generate-study-units",
-                json={
-                    "text": body,
-                    "folder_id": "home",
-                    "note": {},
-                    "flashcards": None,
-                },
-                headers=authorization(str(owner)),
-            )
+        response = _CLIENT.post(
+            "/generate-study-units",
+            json={
+                "text": body,
+                "folder_id": "home",
+                "note": {},
+                "flashcards": None,
+            },
+            headers=authorization(str(owner)),
+        )
 
     reported = cast("dict[str, object]", response.json())
 
@@ -163,3 +164,19 @@ def test_chat_property_answers_with_whatever_the_model_said(
         )
 
     assert response.json() == {"answer": answer}
+
+
+@settings(max_examples=25, deadline=None)
+@given(st.text(min_size=1, max_size=10))
+def test_chat_property_reports_a_model_it_cannot_reach(
+    said: str,
+) -> None:
+    factory = FakeAiFactory(UnavailableAiManager())
+
+    with mock.patch(_CHATBOT_FACTORY, factory):
+        response = _CLIENT.post(
+            "/chat",
+            json={"conversation": [{"role": "user", "content": said}]},
+        )
+
+    assert response.status_code == _UNAVAILABLE

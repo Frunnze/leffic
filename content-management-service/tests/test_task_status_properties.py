@@ -60,9 +60,8 @@ def test__finished_result_property_refuses_a_result_that_is_not_a_mapping(
         task_status_router,
         "AsyncResult",
         _reporting(_SUCCEEDED, finished, ready=True),
-    ):
-        with pytest.raises(TypeError):
-            _ = _finished_result(task_id)
+    ), pytest.raises(TypeError):
+        _ = _finished_result(task_id)
 
 
 @settings(max_examples=25)

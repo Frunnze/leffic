@@ -1,7 +1,7 @@
-fastapi==0.115.12
+fastapi==0.135.4
 uvicorn
 SQLAlchemy==2.0.34
-requests==2.32.3
+requests==2.33.0
 psycopg2-binary==2.9.9
 PyJWT
 pydantic
@@ -11,8 +11,8 @@ demjson3==3.0.6
 pika
 textract==1.6.5
 python-multipart
-setuptools==80.8.0
+setuptools==83.0.0
 youtube-transcript-api
 beautifulsoup4
 fsrs
-pypdf==5.1.0
+pypdf==6.15.0

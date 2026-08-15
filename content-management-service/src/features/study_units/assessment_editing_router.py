@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.identifiers import RowId
 from shared.models import Folder, Test, TestItem
 
 assessment_editing_router = APIRouter()
@@ -11,7 +12,7 @@ _MISSING_TEST_ITEM = "Test item does not exist!"
 
 
 class UpdateTestItemRequest(BaseModel):
-    test_item_id: int
+    test_item_id: RowId
     content: dict[str, object]
 
 
