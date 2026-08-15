@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 
 from features.account import key_sealing
 from features.account.account_lookup import confirmed_account
+from features.account.claims_extractor import get_user_id_from_jwt
 from features.account.models import ProviderKey
-from shared.claims_extractor import get_user_id_from_jwt
 from shared.database import get_db
 from shared.password_hashing import Password
 

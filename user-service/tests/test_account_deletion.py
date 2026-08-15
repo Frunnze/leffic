@@ -11,7 +11,7 @@ from sqlalchemy.pool import StaticPool
 from app_factory import create_app
 from features.account import account_router as account_module
 from shared.database import Base, get_db
-from shared.events import BrokerUnavailableError
+from features.account.events import BrokerUnavailableError
 from tests.support import Accounts, SessionProvider
 
 

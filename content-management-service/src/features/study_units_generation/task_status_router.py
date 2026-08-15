@@ -4,7 +4,7 @@ from typing import TypeGuard
 from celery.result import AsyncResult
 from fastapi import APIRouter
 
-from shared.celery_app import celery_app
+from features.study_units_generation.celery_app import celery_app
 
 task_status_router = APIRouter()
 

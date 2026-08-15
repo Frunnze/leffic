@@ -2,7 +2,7 @@ import jwt
 import pytest
 from fastapi import HTTPException
 
-from shared.claims_extractor import get_user_id_from_jwt
+from features.account.claims_extractor import get_user_id_from_jwt
 
 _USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"
 

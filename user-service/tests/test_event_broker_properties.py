@@ -7,9 +7,9 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 from pika.exceptions import AMQPError
 
-from shared.events import EXCHANGE, BrokerUnavailableError, publish
+from features.account.events import EXCHANGE, BrokerUnavailableError, publish
 
-_BLOCKING_CONNECTION = "shared.events.pika.BlockingConnection"
+_BLOCKING_CONNECTION = "features.account.events.pika.BlockingConnection"
 _UNREACHABLE_BROKER = "The event broker is unreachable."
 _ROUTING_KEYS = st.sampled_from(["user.deleted", "user.created"])
 _EVENTS = st.dictionaries(

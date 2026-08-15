@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from features.account.account_lookup import account
-from shared.claims_extractor import get_user_id_from_jwt
+from features.account.claims_extractor import get_user_id_from_jwt
 from shared.database import get_db
 
 theme_router = APIRouter(prefix="/account")

@@ -6,7 +6,7 @@ import pika
 import pytest
 from pika.exceptions import AMQPError
 
-from shared import events
+from features.account import events
 
 
 class FakeChannel:

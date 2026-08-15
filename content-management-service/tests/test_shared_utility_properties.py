@@ -8,7 +8,7 @@ from fastapi import HTTPException
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from shared import clock
+from features.study_units import clock
 from shared.folder_tree import subfolder_ids
 from shared.identifiers import parsed_identifier
 from shared.json_extraction import _is_object_dict, get_dict_from_text

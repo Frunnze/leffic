@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from typing import TypedDict
 
+from features.study_units_generation.celery_app import celery_app
 from features.study_units_generation.prompts.flashcards_prompt import (
     get_flashcards_system_prompt,
 )
@@ -19,7 +20,6 @@ from features.study_units_generation.study_unit_writer import (
     save_test,
 )
 from shared.ai_manager import ai_factory
-from shared.celery_app import celery_app
 from shared.database import SessionLocal
 
 _DECK_NAME = "deck_name"

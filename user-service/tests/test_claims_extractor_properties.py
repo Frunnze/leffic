@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from shared.claims_extractor import (
+from features.account.claims_extractor import (
     _bearer_token,
     _decode_claims,
     _validated_user_id,

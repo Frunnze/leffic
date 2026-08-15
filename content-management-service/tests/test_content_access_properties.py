@@ -18,7 +18,7 @@ from features.scheduling.rating_intervals_router import (
 from features.study_units.flashcard_stats_router import _due_condition
 from shared import file_storage
 from shared.content_access import owned_content
-from shared.file_access import owned_file
+from features.file_system.file_access import owned_file
 from shared.file_storage import delete_file_from_storage
 from shared.models import File
 from tests.property_support import property_world, seeded_file

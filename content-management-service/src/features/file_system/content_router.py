@@ -1,9 +1,9 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
+from features.file_system.file_access import owned_file
 from shared.content_access import owned_content
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
-from shared.file_access import owned_file
 from shared.file_storage import delete_file_from_storage
 from shared.models import FlashcardDeck, Note, Test
 

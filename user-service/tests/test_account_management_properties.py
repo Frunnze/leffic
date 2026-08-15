@@ -9,7 +9,7 @@ from hypothesis import strategies as st
 
 from features.account import account_router as account_module
 from features.account.account_router import _announce_deletion
-from shared.events import BrokerUnavailableError
+from features.account.events import BrokerUnavailableError
 from tests.property_support import (
     PHRASE,
     fresh_credentials,

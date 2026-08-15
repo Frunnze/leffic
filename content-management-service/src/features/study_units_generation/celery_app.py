@@ -1,6 +1,8 @@
+import os
+
 from celery import Celery
 
-from shared.settings import REDIS_HOST
+REDIS_HOST = os.getenv("REDIS_HOST")
 
 celery_app = Celery(
     "content",

@@ -6,10 +6,14 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from features.account.account_lookup import account, confirmed_account
+from features.account.claims_extractor import get_user_id_from_jwt
+from features.account.events import (
+    USER_DELETED,
+    BrokerUnavailableError,
+    publish,
+)
 from features.account.models import ProviderKey
-from shared.claims_extractor import get_user_id_from_jwt
 from shared.database import get_db
-from shared.events import USER_DELETED, BrokerUnavailableError, publish
 from shared.models import User
 from shared.password_hashing import Password, hash_password
 

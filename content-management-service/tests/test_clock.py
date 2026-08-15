@@ -2,7 +2,7 @@ from datetime import UTC, date, datetime, timedelta, tzinfo
 
 import pytest
 
-from shared import clock
+from features.study_units import clock
 
 
 class FixedDatetime:

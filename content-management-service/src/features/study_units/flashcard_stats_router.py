@@ -3,7 +3,7 @@ from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from sqlalchemy import ColumnElement, func, or_, select
 
-from shared.clock import utc_today
+from features.study_units.clock import utc_today
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
 from shared.folder_access import owned_folder_id
 from shared.folder_tree import subfolder_ids
