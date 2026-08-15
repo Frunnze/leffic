@@ -11,7 +11,7 @@ from shared.claims_extractor import get_user_id_from_jwt
 from shared.database import get_db
 from shared.events import USER_DELETED, BrokerUnavailableError, publish
 from shared.models import User
-from shared.password_hashing import hash_password
+from shared.password_hashing import Password, hash_password
 
 account_router = APIRouter(prefix="/account")
 
@@ -30,12 +30,12 @@ class UsernameRequest(BaseModel):
 
 
 class PasswordRequest(BaseModel):
-    current_password: str
-    new_password: str
+    current_password: Password
+    new_password: Password
 
 
 class DeleteAccountRequest(BaseModel):
-    password: str
+    password: Password
 
 
 @account_router.get("")

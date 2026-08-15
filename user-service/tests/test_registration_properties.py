@@ -8,6 +8,8 @@ from tests.property_support import fresh_credentials, property_client
 
 _OK = 200
 _CONFLICT = 409
+_UNPROCESSABLE = 422
+_NUL_BYTE = chr(0)
 _CLIENT = property_client()
 
 
@@ -75,3 +77,15 @@ def test_refresh_token_property_renews_access_for_the_signed_in_user(
     assert response.status_code == _OK
     assert body["user_id"] == signed_up["user_id"]
     assert body["access_token"]
+
+
+@settings(max_examples=10, deadline=None)
+@given(st.uuids())
+def test_register_user_property_refuses_a_password_with_a_nul_byte(
+    marker: uuid.UUID,
+) -> None:
+    credentials = fresh_credentials(marker, "nulbyte")
+    credentials["password"] = f"good{_NUL_BYTE}phrase"
+    response = _CLIENT.post("/sign-up", json=credentials)
+
+    assert response.status_code == _UNPROCESSABLE

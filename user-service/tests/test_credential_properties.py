@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from typing import cast
 
 import jwt
+import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -11,13 +12,18 @@ from features.authentication.access import (
     create_access_token,
     create_refresh_token,
 )
-from shared.password_hashing import hash_password, verify_password
+from shared.password_hashing import (
+    hash_password,
+    storable_password,
+    verify_password,
+)
 
 _BCRYPT_SAFE_TEXT = st.text(
     alphabet=st.characters(min_codepoint=32, max_codepoint=126),
     min_size=1,
     max_size=40,
 )
+_NUL_BYTE = chr(0)
 _CLAIMS = st.dictionaries(
     st.sampled_from(["user_id", "email", "role"]),
     st.text(min_size=1, max_size=12),
@@ -79,3 +85,26 @@ def test_create_refresh_token_property_outlives_the_access_token(
     refresh_expiry = _expiry_of(create_refresh_token(claims))
 
     assert refresh_expiry > access_expiry
+
+
+@settings(max_examples=50)
+@given(_BCRYPT_SAFE_TEXT, st.integers(min_value=0, max_value=40))
+def test_storable_password_property_refuses_any_password_with_a_nul(
+    password: str, cut: int
+) -> None:
+    spoiled = password[:cut] + _NUL_BYTE + password[cut:]
+
+    assert storable_password(password) == password
+
+    with pytest.raises(ValueError, match="NUL byte"):
+        _ = storable_password(spoiled)
+
+
+@settings(max_examples=10, deadline=None)
+@given(_BCRYPT_SAFE_TEXT, st.integers(min_value=0, max_value=40))
+def test_verify_password_property_refuses_a_password_bcrypt_cannot_read(
+    password: str, cut: int
+) -> None:
+    spoiled = password[:cut] + _NUL_BYTE + password[cut:]
+
+    assert verify_password(spoiled, hash_password(password)) is False

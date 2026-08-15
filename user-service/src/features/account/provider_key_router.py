@@ -11,6 +11,7 @@ from features.account.account_lookup import confirmed_account
 from features.account.models import ProviderKey
 from shared.claims_extractor import get_user_id_from_jwt
 from shared.database import get_db
+from shared.password_hashing import Password
 
 provider_key_router = APIRouter(prefix="/account/provider-keys")
 
@@ -27,7 +28,7 @@ _SEALED_BEFORE = "This key was sealed with an earlier password."
 class ProviderKeyRequest(BaseModel):
     provider: str
     key: str
-    password: str
+    password: Password
     monthly_limit_cents: int | None = None
 
 
@@ -108,7 +109,7 @@ async def save_provider_key(
 
 
 class OpenKeyRequest(BaseModel):
-    password: str
+    password: Password
 
 
 @provider_key_router.post("/{provider}/open")
