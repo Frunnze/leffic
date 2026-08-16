@@ -60,7 +60,9 @@ services:
 
   celery-worker:
     <<: *content-service
-    command: celery -A shared.celery_app worker --loglevel info
+    command: >
+      celery -A features.study_units_generation.celery_app worker
+      --loglevel info
 
   user-events-consumer:
     <<: *content-service
