@@ -1,10 +1,12 @@
 #!/bin/sh
 set -e
-. "$(dirname "$0")/_env.sh"
+. "$(dirname "$0")/../../_env.sh"
 
 require_binary "$deptry_binary" deptry
 
 echo "pre-commit: dependencies (declare what you import, drop what you don't)"
+echo "pre-commit: be explicit - declare every dependency you import"
+echo "pre-commit: follow YAGNI - drop a dependency nothing imports"
 
 for service in $services; do
     if ! (cd "$service" && "$deptry_binary" src \

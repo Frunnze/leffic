@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
-. "$(dirname "$0")/_env.sh"
+. "$(dirname "$0")/../../_env.sh"
 
 require_binary "$pip_audit_binary" pip-audit
 
@@ -16,6 +16,7 @@ for advisory in $accepted_advisories; do
 done
 
 echo "pre-commit: dependencies (no known vulnerability)"
+echo "pre-commit: stay secure by default - upgrade rather than accept it"
 echo "pre-commit: still carrying $(echo $accepted_advisories | wc -w |
     tr -d ' ') accepted starlette advisories"
 

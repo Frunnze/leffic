@@ -1,12 +1,13 @@
 #!/bin/sh
 set -e
-. "$(dirname "$0")/_env.sh"
+. "$(dirname "$0")/../../_env.sh"
 
 require_binary "$vulture_binary" vulture
 
-whitelist="$repository_root/hooks/checks/vulture_whitelist.py"
+whitelist="$repository_root/hooks/checks/dead-code/vulture_whitelist.py"
 
 echo "pre-commit: dead code (delete what nothing reaches)"
+echo "pre-commit: follow YAGNI - delete what nothing reaches, do not keep it"
 
 for service in $services; do
     if ! (cd "$service" && "$vulture_binary" src run.py "$whitelist" \

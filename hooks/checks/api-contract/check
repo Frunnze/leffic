@@ -1,10 +1,11 @@
 #!/bin/sh
 set -e
-. "$(dirname "$0")/_env.sh"
+. "$(dirname "$0")/../../_env.sh"
 
 require_binary "$python_binary" python
 
 echo "pre-commit: api contract (no input crashes an endpoint)"
+echo "pre-commit: fail fast - refuse bad input at the edge, not deeper in"
 
 for service in $services; do
     if ! (cd "$service" && "$python_binary" -m pytest \

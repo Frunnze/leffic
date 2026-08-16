@@ -2,7 +2,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-_CHECKER = Path(__file__).parent.parent / "checks" / "shared_usage.py"
+_CHECKS = Path(__file__).parent.parent / "checks"
+_CHECKER = _CHECKS / "feature-isolation" / "shared_usage.py"
 
 
 def _report_for(tmp_path: Path, files: dict[str, str]) -> list[str]:

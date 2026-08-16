@@ -2,9 +2,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-CHECKER = (
-    Path(__file__).parent.parent / "checks" / "property_test_coverage.py"
-)
+CHECKS = Path(__file__).parent.parent / "checks"
+CHECKER = CHECKS / "property-tests" / "property_test_coverage.py"
 SOURCE = Path("service/src/features/study_units/scheduler.py")
 TESTS = Path("service/tests/test_scheduler.py")
 

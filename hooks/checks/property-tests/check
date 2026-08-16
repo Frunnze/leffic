@@ -1,12 +1,14 @@
 #!/bin/sh
 set -e
-. "$(dirname "$0")/_env.sh"
+. "$(dirname "$0")/../../_env.sh"
 
 require_binary "$python_binary" python
 
 finder="$(dirname "$0")/property_test_coverage.py"
 
 echo "pre-commit: property tests (one per definition)"
+echo "pre-commit: design by contract - assert the guarantee, not the behaviour"
+echo "pre-commit: test first - write the property before the implementation"
 
 python_files=$(
     git ls-files '*/src/*.py' '*/tests/*.py'

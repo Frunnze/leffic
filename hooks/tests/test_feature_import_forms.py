@@ -36,7 +36,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-_CHECKER = Path(__file__).parent.parent / "checks" / "feature_imports.py"
+_CHECKS = Path(__file__).parent.parent / "checks"
+_CHECKER = _CHECKS / "feature-isolation" / "feature_imports.py"
 _FEATURES = Path("service/src/features")
 
 

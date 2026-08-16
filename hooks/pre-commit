@@ -4,8 +4,40 @@ set -e
 repository_root=$(git rev-parse --show-toplevel)
 cd "$repository_root"
 
-for check in hooks/checks/*; do
-    [ -f "$check" ] || continue
-    [ -x "$check" ] || continue
-    "$check"
+checks_cheapest_first="
+secrets
+file-length
+feature-isolation
+definition-names
+nested-definitions
+class-methods
+duplicate-code
+dead-code
+ruff
+unused-deps
+property-tests
+vulnerable-deps
+strict-typing
+api-contract
+coverage
+mutmut
+"
+
+run_order=" $(echo $checks_cheapest_first) "
+
+for check_directory in hooks/checks/*/; do
+    check_name=$(basename "$check_directory")
+
+    case "$run_order" in
+        *" $check_name "*) ;;
+        *)
+            echo "pre-commit: $check_name is missing from" >&2
+            echo "pre-commit: checks_cheapest_first, so it never runs" >&2
+            exit 1
+            ;;
+    esac
+done
+
+for check_name in $checks_cheapest_first; do
+    "hooks/checks/$check_name/check"
 done

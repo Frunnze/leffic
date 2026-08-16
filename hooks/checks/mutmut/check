@@ -1,10 +1,11 @@
 #!/bin/sh
 set -e
-. "$(dirname "$0")/_env.sh"
+. "$(dirname "$0")/../../_env.sh"
 
 require_binary "$mutmut_binary" mutmut
 
 echo "pre-commit: mutation testing (staged source only)"
+echo "pre-commit: assert meaningfully - coverage is not proof of a check"
 
 # A name no mutant can have, so mutmut builds the mutants without running them.
 unmatchable_mutant="__no_such_mutant__"

@@ -1,12 +1,13 @@
 #!/bin/sh
 set -e
-. "$(dirname "$0")/_env.sh"
+. "$(dirname "$0")/../../_env.sh"
 
 joined_function='(async[[:space:]]+)?def[[:space:]]+[A-Za-z0-9_]*_and_'
 joined_class='class[[:space:]]+[A-Za-z0-9_]*And[A-Z]'
 joined_definition="^[[:space:]]*($joined_function|$joined_class)"
 
 echo "pre-commit: definition names (one responsibility per name)"
+echo "pre-commit: follow SRP - split a name that says 'and', it names two jobs"
 
 joined_names=$(git ls-files '*/src/*.py' | while read -r python_file; do
     [ -f "$python_file" ] || continue

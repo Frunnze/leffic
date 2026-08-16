@@ -1,10 +1,11 @@
 #!/bin/sh
 set -e
-. "$(dirname "$0")/_env.sh"
+. "$(dirname "$0")/../../_env.sh"
 
 maximum_file_lines=200
 
 echo "pre-commit: file length (max $maximum_file_lines lines)"
+echo "pre-commit: follow SRP - split a file that grew past one job"
 
 source_files=$(
     git ls-files '*.py' '*.ts' '*.tsx'

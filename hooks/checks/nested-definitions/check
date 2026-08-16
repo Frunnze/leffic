@@ -1,12 +1,14 @@
 #!/bin/sh
 set -e
-. "$(dirname "$0")/_env.sh"
+. "$(dirname "$0")/../../_env.sh"
 
 require_binary "$python_binary" python
 
 finder="$(dirname "$0")/nested_definitions.py"
 
 echo "pre-commit: nested definitions (no def inside a def)"
+echo "pre-commit: follow SRP - lift a nested def out, it is a unit of its own"
+echo "pre-commit: keep it testable - nothing can reach a def hidden in a def"
 
 python_files=$(git ls-files '*/src/*.py' '*/tests/*.py' 'hooks/*.py')
 nested_definitions=$(echo "$python_files" | "$python_binary" "$finder")

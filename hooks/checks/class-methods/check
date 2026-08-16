@@ -1,12 +1,14 @@
 #!/bin/sh
 set -e
-. "$(dirname "$0")/_env.sh"
+. "$(dirname "$0")/../../_env.sh"
 
 require_binary "$python_binary" python
 
 finder="$(dirname "$0")/class_method_counts.py"
 
 echo "pre-commit: class methods (one job per class)"
+echo "pre-commit: follow SRP - split a class that has two reasons to change"
+echo "pre-commit: follow ISP - no caller should depend on methods it ignores"
 
 crowded_classes=$(git ls-files '*/src/*.py' | "$python_binary" "$finder")
 
