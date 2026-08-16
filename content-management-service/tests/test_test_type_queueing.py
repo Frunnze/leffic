@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import Iterator
+from typing import cast
 from unittest import mock
 
 import pytest
@@ -68,6 +69,16 @@ def client(sessions: sessionmaker[Session]) -> Iterator[TestClient]:
         yield test_client
 
 
+def _generate_body(
+    client: TestClient, payload: dict[str, object]
+) -> dict[str, object]:
+    response = client.post(
+        "/generate-study-units", json=payload, headers=authorization()
+    )
+
+    return cast("dict[str, object]", response.json())
+
+
 def _generate(client: TestClient, payload: dict[str, object]) -> None:
     _ = client.post(
         "/generate-study-units", json=payload, headers=authorization()
@@ -79,7 +90,9 @@ def test_the_asked_test_types_reach_the_queued_task(
 ) -> None:
     test_task = FakeTask("test-1")
 
-    with mock.patch.object(router_module, "generate_test_task", test_task):
+    with mock.patch.object(
+        router_module, "generate_test_items_of_type_task", test_task
+    ):
         _generate(
             client,
             {
@@ -89,20 +102,22 @@ def test_the_asked_test_types_reach_the_queued_task(
             },
         )
 
-    assert test_task.calls[0]["test_item_types"] == ("true_or_false",)
+    assert test_task.calls[0]["item_type"] == "true_or_false"
 
 
-def test_a_test_without_asked_types_queues_an_empty_tuple(
+def test_a_test_without_asked_types_queues_the_default(
     client: TestClient,
 ) -> None:
     test_task = FakeTask("test-1")
 
-    with mock.patch.object(router_module, "generate_test_task", test_task):
+    with mock.patch.object(
+        router_module, "generate_test_items_of_type_task", test_task
+    ):
         _generate(
             client, {"text": _TEXT, "folder_id": _FOLDER_ID, "test": {}}
         )
 
-    assert test_task.calls[0]["test_item_types"] == ()
+    assert test_task.calls[0]["item_type"] == "multiple_choice"
 
 
 def test_the_text_and_folder_reach_the_queued_test_task(
@@ -110,7 +125,9 @@ def test_the_text_and_folder_reach_the_queued_test_task(
 ) -> None:
     test_task = FakeTask("test-1")
 
-    with mock.patch.object(router_module, "generate_test_task", test_task):
+    with mock.patch.object(
+        router_module, "generate_test_items_of_type_task", test_task
+    ):
         _generate(
             client,
             {
@@ -123,4 +140,38 @@ def test_the_text_and_folder_reach_the_queued_test_task(
     queued = test_task.calls[0]
 
     assert queued["extracted_text"] == _TEXT
-    assert queued["folder_id"] == _FOLDER_ID
+    assert queued["test_id"]
+
+
+def test_flashcards_queue_one_job_for_every_asked_type(
+    client: TestClient,
+) -> None:
+    flashcards_task = FakeTask("cards-1")
+
+    with mock.patch.object(
+        router_module,
+        "generate_flashcards_of_type_task",
+        flashcards_task,
+    ):
+        body = _generate_body(
+            client,
+            {
+                "text": _TEXT,
+                "folder_id": _FOLDER_ID,
+                "flashcards": {
+                    "types": ["cloze", "feynman"],
+                    "amount": 5,
+                },
+            },
+        )
+
+    queued = [call["flashcard_type"] for call in flashcards_task.calls]
+
+    assert body["flashcard_task_ids"] == ["cards-1", "cards-1"]
+    assert body["flashcard_deck_id"]
+    assert queued == ["cloze", "feynman"]
+    assert flashcards_task.calls[0]["amount"] == 5
+    assert flashcards_task.calls[0]["extracted_text"] == _TEXT
+    assert (
+        flashcards_task.calls[0]["deck_id"] == body["flashcard_deck_id"]
+    )

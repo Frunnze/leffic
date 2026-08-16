@@ -1,5 +1,4 @@
 import uuid
-from typing import cast
 from unittest import mock
 
 from hypothesis import given, settings
@@ -7,83 +6,118 @@ from hypothesis import strategies as st
 
 from features.study_units_generation import generation_tasks
 from features.study_units_generation.generation_tasks import (
-    FlashcardsMetadata,
-    _generate_flashcards_task,
+    _generate_flashcards_of_type_task,
     _generate_note_task,
-    _generate_test_task,
-    _test_items,
+    _generate_test_items_of_type_task,
 )
-from tests.property_fakes import FakeAiFactory, FakeAiManager, RecordingSave
+from tests.property_fakes import (
+    FakeAiFactory,
+    FakeAiManager,
+    RecordingAppend,
+    RecordingSave,
+)
 
-_METADATA: FlashcardsMetadata = {
-    "comprehensiveness": "medium",
-    "verbosity": "low",
-    "types": ["basic"],
-    "amount": None,
-}
 _NAMES = st.text(min_size=1, max_size=10)
+_CARD = st.fixed_dictionaries({"front": st.text(max_size=6)})
 _ITEM = st.fixed_dictionaries({"question": st.text(max_size=6)})
+_FLASHCARD_TYPES = st.sampled_from(["basic", "cloze", "feynman", "list"])
+_ITEM_TYPES = st.sampled_from(
+    ["multiple_choice", "true_or_false", "short_answer"]
+)
 
 
 def _answering(payload: dict[str, object]) -> FakeAiFactory:
     return FakeAiFactory(FakeAiManager(payload))
 
 
-@settings(max_examples=50)
-@given(
-    st.one_of(
-        st.lists(st.one_of(_ITEM, st.integers(), st.none()), max_size=4),
-        st.text(max_size=5),
-        st.integers(),
-        st.none(),
-    )
-)
-def test__test_items_property_keeps_exactly_the_mappings(
-    generated: object,
-) -> None:
-    kept = _test_items(generated)
+def _asked_prompt(factory: FakeAiFactory) -> str:
+    manager = factory.manager
 
-    if isinstance(generated, list):
-        expected: list[object] = [
-            item
-            for item in cast("list[object]", generated)
-            if isinstance(item, dict)
-        ]
+    assert isinstance(manager, FakeAiManager)
 
-        assert list(kept) == expected
-    else:
-        assert kept == []
+    return manager.system_prompts[0]
 
 
 @settings(max_examples=25, deadline=None)
-@given(_NAMES, st.uuids())
-def test__generate_flashcards_task_property_reports_the_deck_it_saved(
-    deck_name: str, deck_id: uuid.UUID
+@given(_FLASHCARD_TYPES, _NAMES, st.uuids(), st.lists(_CARD, max_size=3))
+def test__generate_flashcards_of_type_task_property_reports_its_type(
+    flashcard_type: str,
+    deck_name: str,
+    deck_id: uuid.UUID,
+    cards: list[dict[str, str]],
 ) -> None:
     payload: dict[str, object] = {
         "deck_name": deck_name,
-        "basic_flashcards": [],
+        f"{flashcard_type}_flashcards": cards,
+        "ignored_field": "not cards",
     }
-    saving = RecordingSave(str(deck_id))
+    appending = RecordingAppend(len(cards))
 
     with mock.patch.object(
         generation_tasks, "ai_factory", _answering(payload)
-    ), mock.patch.object(generation_tasks, "SessionLocal"), mock.patch.object(
-        generation_tasks, "save_flashcard_deck", saving
-    ):
-        reported = _generate_flashcards_task(
+    ), mock.patch.object(
+        generation_tasks, "SessionLocal"
+    ), mock.patch.object(
+        generation_tasks, "append_flashcards", appending
+    ), mock.patch.object(generation_tasks, "name_deck_once"):
+        reported = _generate_flashcards_of_type_task(
             ai_model=None,
             extracted_text="text",
-            flashcards_metadata=_METADATA,
-            folder_id=str(uuid.uuid4()),
-            source_kind=None,
-            source_reference=None,
+            deck_id=str(deck_id),
+            flashcard_type=flashcard_type,
+            comprehensiveness="medium",
+            verbosity="low",
+            amount=None,
         )
 
     assert reported == {
         "flashcard_deck_id": str(deck_id),
-        "deck_name": deck_name,
+        "type": flashcard_type,
+        "written": len(cards),
     }
+    assert appending.arguments[2] == flashcard_type
+    assert appending.arguments[3] == cards
+
+
+@settings(max_examples=25, deadline=None)
+@given(_ITEM_TYPES, _NAMES, st.uuids(), st.lists(_ITEM, max_size=3))
+def test__generate_test_items_of_type_task_property_reports_its_type(
+    item_type: str,
+    test_name: str,
+    test_id: uuid.UUID,
+    items: list[dict[str, str]],
+) -> None:
+    payload: dict[str, object] = {
+        "test_name": test_name,
+        f"{item_type}_test_items": items,
+        "ignored_field": "not items",
+    }
+    appending = RecordingAppend(len(items))
+    answering = _answering(payload)
+
+    with mock.patch.object(
+        generation_tasks, "ai_factory", answering
+    ), mock.patch.object(
+        generation_tasks, "SessionLocal"
+    ), mock.patch.object(
+        generation_tasks, "append_test_items", appending
+    ), mock.patch.object(generation_tasks, "name_test_once"):
+        reported = _generate_test_items_of_type_task(
+            ai_model=None,
+            extracted_text="text",
+            test_id=str(test_id),
+            item_type=item_type,
+            amount=9,
+        )
+
+    assert reported == {
+        "test_id": str(test_id),
+        "type": item_type,
+        "written": len(items),
+    }
+    assert appending.arguments[2] == item_type
+    assert appending.arguments[3] == items
+    assert "Test items number: 9" in _asked_prompt(answering)
 
 
 @settings(max_examples=25, deadline=None)
@@ -99,9 +133,10 @@ def test__generate_note_task_property_reports_the_note_it_saved(
 
     with mock.patch.object(
         generation_tasks, "ai_factory", _answering(payload)
-    ), mock.patch.object(generation_tasks, "SessionLocal"):
-        with mock.patch.object(generation_tasks, "save_note", saving):
-            reported = _generate_note_task(
+    ), mock.patch.object(
+        generation_tasks, "SessionLocal"
+    ), mock.patch.object(generation_tasks, "save_note", saving):
+        reported = _generate_note_task(
                 ai_model=None,
                 extracted_text="text",
                 folder_id=str(uuid.uuid4()),
@@ -110,31 +145,3 @@ def test__generate_note_task_property_reports_the_note_it_saved(
             )
 
     assert reported == {"note_id": str(note_id), "note_name": note_name}
-
-
-@settings(max_examples=25, deadline=None)
-@given(_NAMES, st.uuids(), st.lists(_ITEM, max_size=3))
-def test__generate_test_task_property_reports_the_test_it_saved(
-    test_name: str, test_id: uuid.UUID, items: list[dict[str, str]]
-) -> None:
-    payload: dict[str, object] = {
-        "test_name": test_name,
-        "multiple_choice_test_items": items,
-        "ignored_field": "not items",
-    }
-    saving = RecordingSave(str(test_id))
-
-    with mock.patch.object(
-        generation_tasks, "ai_factory", _answering(payload)
-    ), mock.patch.object(generation_tasks, "SessionLocal"):
-        with mock.patch.object(generation_tasks, "save_test", saving):
-            reported = _generate_test_task(
-                ai_model=None,
-                extracted_text="text",
-                folder_id=str(uuid.uuid4()),
-                source_kind=None,
-                source_reference=None,
-            )
-
-    assert reported == {"test_id": str(test_id), "test_name": test_name}
-    assert saving.arguments[3] == {"multiple_choice_test_items": items}

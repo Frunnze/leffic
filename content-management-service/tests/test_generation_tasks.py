@@ -5,25 +5,24 @@ import pytest
 from sqlalchemy.orm import Session, sessionmaker
 
 from features.study_units_generation import generation_tasks
-from features.study_units_generation.generation_tasks import (
-    FlashcardsMetadata,
+from features.study_units_generation.flashcard_deck_writer import (
+    create_flashcard_deck,
+)
+from features.study_units_generation.study_unit_source import (
+    StudyUnitSource,
 )
 from shared.models import Flashcard, FlashcardDeck, Folder
 from tests.support import USER_ID, in_memory_sessions
 
 HOME_ID = uuid.UUID(USER_ID)
 _TEXT = "some study material"
-_METADATA: FlashcardsMetadata = {
-    "comprehensiveness": "high",
-    "verbosity": "high",
-    "types": ["cloze"],
-    "amount": 5,
-}
+_SOURCE = StudyUnitSource(
+    kind="link", reference="https://example.com/neurons"
+)
 
 
 class FakeAi:
     def __init__(self, answer: object) -> None:
-        super().__init__()
         self.answer: object = answer
         self.prompts: list[str] = []
 
@@ -38,7 +37,6 @@ class FakeAi:
 
 class FakeFactory:
     def __init__(self, ai: FakeAi) -> None:
-        super().__init__()
         self.ai: FakeAi = ai
         self.models: list[str | None] = []
 
@@ -59,8 +57,17 @@ def sessions() -> sessionmaker[Session]:
     return factory
 
 
+def _seeded_deck(sessions: sessionmaker[Session]) -> str:
+    with sessions() as session:
+        return create_flashcard_deck(session, USER_ID, _SOURCE)
+
+
 def _generate(
-    answer: object, sessions: sessionmaker[Session], model: str | None = None
+    answer: object,
+    sessions: sessionmaker[Session],
+    deck_id: str,
+    flashcard_type: str = "cloze",
+    model: str | None = None,
 ) -> tuple[dict[str, object], FakeFactory]:
     factory = FakeFactory(FakeAi(answer))
 
@@ -68,27 +75,30 @@ def _generate(
         mock.patch.object(generation_tasks, "ai_factory", factory),
         mock.patch.object(generation_tasks, "SessionLocal", sessions),
     ):
-        result = generation_tasks._generate_flashcards_task(
+        result = generation_tasks._generate_flashcards_of_type_task(
             ai_model=model,
             extracted_text=_TEXT,
-            flashcards_metadata=_METADATA,
-            folder_id=USER_ID,
-            source_kind="link",
-            source_reference="https://example.com/neurons",
+            deck_id=deck_id,
+            flashcard_type=flashcard_type,
+            comprehensiveness="high",
+            verbosity="high",
+            amount=5,
         )
 
     return result, factory
 
 
-def test_generated_flashcards_land_in_a_new_deck(
+def test_generated_flashcards_land_in_the_waiting_deck(
     sessions: sessionmaker[Session],
 ) -> None:
+    deck_id = _seeded_deck(sessions)
     result, _unused = _generate(
         {
             "deck_name": "Neurons",
             "cloze_flashcards": [{"text": "a", "hidden_parts": ["a"]}],
         },
         sessions,
+        deck_id,
     )
 
     with sessions() as session:
@@ -96,9 +106,11 @@ def test_generated_flashcards_land_in_a_new_deck(
         card = session.query(Flashcard).one()
 
         assert result == {
-            "flashcard_deck_id": str(deck.id),
-            "deck_name": "Neurons",
+            "flashcard_deck_id": deck_id,
+            "type": "cloze",
+            "written": 1,
         }
+        assert str(deck.id) == deck_id
         assert deck.name == "Neurons"
         assert deck.source_kind == "link"
         assert deck.source_reference == "https://example.com/neurons"
@@ -109,12 +121,15 @@ def test_generated_flashcards_land_in_a_new_deck(
 def test_the_deck_name_is_not_stored_as_a_flashcard(
     sessions: sessionmaker[Session],
 ) -> None:
+    deck_id = _seeded_deck(sessions)
     _unused, _factory = _generate(
         {
             "deck_name": "Neurons",
             "basic_flashcards": [{"front": "q", "back": "a"}],
         },
         sessions,
+        deck_id,
+        "basic",
     )
 
     with sessions() as session:
@@ -124,12 +139,33 @@ def test_the_deck_name_is_not_stored_as_a_flashcard(
         assert cards[0].content == {"front": "q", "back": "a"}
 
 
-def test_generation_asks_the_chosen_model_for_the_chosen_types(
+def test_a_second_type_leaves_the_first_name_alone(
     sessions: sessionmaker[Session],
 ) -> None:
+    deck_id = _seeded_deck(sessions)
+    _first, _unused = _generate(
+        {"deck_name": "Neurons", "cloze_flashcards": []}, sessions, deck_id
+    )
+    _second, _factory = _generate(
+        {"deck_name": "Something else", "basic_flashcards": []},
+        sessions,
+        deck_id,
+        "basic",
+    )
+
+    with sessions() as session:
+        assert session.query(FlashcardDeck).one().name == "Neurons"
+
+
+def test_generation_asks_the_chosen_model_for_the_chosen_type(
+    sessions: sessionmaker[Session],
+) -> None:
+    deck_id = _seeded_deck(sessions)
     _unused, factory = _generate(
         {"deck_name": "Neurons", "cloze_flashcards": []},
         sessions,
+        deck_id,
+        "cloze",
         "gpt-4.1-nano",
     )
 
@@ -137,6 +173,7 @@ def test_generation_asks_the_chosen_model_for_the_chosen_types(
 
     assert factory.models == ["gpt-4.1-nano"]
     assert "cloze_flashcards" in prompt
+    assert "basic_flashcards" not in prompt
     assert "Flashcards number: 5" in prompt
     assert "Comprehensiveness: high" in prompt
     assert "Flashcard verbosity: high" in prompt

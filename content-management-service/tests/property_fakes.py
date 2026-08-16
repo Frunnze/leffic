@@ -16,12 +16,13 @@ class FakeAiManager:
     def __init__(self, payload: dict[str, object], answer: str = "") -> None:
         self.payload: dict[str, object] = payload
         self.answer: str = answer
+        self.system_prompts: list[str] = []
 
     def get_ai_res(
         self, system_prompt: str, user_prompt: str
     ) -> tuple[dict[str, object], float | None]:
-        _ = system_prompt
         _ = user_prompt
+        self.system_prompts.append(system_prompt)
 
         return self.payload, None
 
@@ -103,54 +104,6 @@ class FakeAsyncResult:
 
 
 @final
-class FakeAmqpChannel:
-    def __init__(self) -> None:
-        self.declared_exchange: str = ""
-        self.bound: dict[str, str] = {}
-
-    def exchange_declare(
-        self, *, exchange: str, exchange_type: str, durable: bool
-    ) -> None:
-        _ = exchange_type
-        _ = durable
-        self.declared_exchange = exchange
-
-    def queue_declare(self, *, queue: str, durable: bool) -> None:
-        _ = queue
-        _ = durable
-
-    def queue_bind(
-        self, *, queue: str, exchange: str, routing_key: str
-    ) -> None:
-        self.bound = {
-            "queue": queue,
-            "exchange": exchange,
-            "routing_key": routing_key,
-        }
-
-    def basic_consume(
-        self, *, queue: str, on_message_callback: object
-    ) -> None:
-        _ = queue
-        _ = on_message_callback
-
-    def start_consuming(self) -> None:
-        return None
-
-
-@final
-class FakeAmqpConnection:
-    def __init__(self) -> None:
-        self.opened_channel: FakeAmqpChannel = FakeAmqpChannel()
-
-    def channel(self) -> FakeAmqpChannel:
-        return self.opened_channel
-
-    def close(self) -> None:
-        return None
-
-
-@final
 class RecordingSave:
     def __init__(self, saved_id: str) -> None:
         self.saved_id: str = saved_id
@@ -160,6 +113,18 @@ class RecordingSave:
         self.arguments = arguments
 
         return self.saved_id
+
+
+@final
+class RecordingAppend:
+    def __init__(self, written: int) -> None:
+        self.written: int = written
+        self.arguments: tuple[object, ...] = ()
+
+    def __call__(self, *arguments: object) -> int:
+        self.arguments = arguments
+
+        return self.written
 
 
 @final
@@ -177,3 +142,19 @@ class FakeTemporaryStorage:
         traceback: TracebackType | None,
     ) -> None:
         return None
+
+
+@final
+class RecordingQueuedTask:
+    def __init__(self, task_id: str) -> None:
+        self.task_id: str = task_id
+        self.calls: list[dict[str, object]] = []
+
+    def delay(self, **arguments: object) -> "RecordingQueuedTask":
+        self.calls.append(arguments)
+
+        return self
+
+    @property
+    def id(self) -> str:
+        return self.task_id

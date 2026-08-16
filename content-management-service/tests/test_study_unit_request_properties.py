@@ -103,7 +103,7 @@ def test__queued_tasks_property_queues_only_what_was_asked_for(
     with mock.patch.object(
         generation_router, "generate_note_task", queued
     ), mock.patch.object(
-        generation_router, "generate_flashcards_task", queued
+        generation_router, "generate_flashcards_of_type_task", queued
     ):
         response = _CLIENT.post(
             "/generate-study-units",

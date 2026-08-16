@@ -110,44 +110,20 @@ def test_a_note_is_queued_with_the_reviewed_text(
     }
 
 
-def test_flashcards_carry_their_type_and_amount(
-    client: TestClient,
-) -> None:
-    flashcards_task = FakeTask("cards-1")
-
-    with mock.patch.object(
-        router_module, "generate_flashcards_task", flashcards_task
-    ):
-        _code, body = _generate(
-            client,
-            {
-                "text": _TEXT,
-                "folder_id": _FOLDER_ID,
-                "flashcards": {"types": ["cloze"], "amount": 5},
-            },
-        )
-
-    metadata = cast(
-        "dict[str, object]", flashcards_task.calls[0]["flashcards_metadata"]
-    )
-
-    assert body == {"task_id": "cards-1"}
-    assert metadata["types"] == ["cloze"]
-    assert metadata["amount"] == 5
-    assert flashcards_task.calls[0]["extracted_text"] == _TEXT
-    assert flashcards_task.calls[0]["folder_id"] == _FOLDER_ID
-
-
 def test_a_test_is_queued_on_its_own(client: TestClient) -> None:
     test_task = FakeTask("test-1")
 
-    with mock.patch.object(router_module, "generate_test_task", test_task):
+    with mock.patch.object(
+        router_module, "generate_test_items_of_type_task", test_task
+    ):
         _code, body = _generate(
             client,
             {"text": _TEXT, "folder_id": _FOLDER_ID, "test": {}},
         )
 
-    assert body == {"test_task_id": "test-1"}
+    assert body["test_task_ids"] == ["test-1"]
+    assert body["test_id"]
+    assert test_task.calls[0]["item_type"] == "multiple_choice"
 
 
 def test_home_resolves_to_the_callers_own_folder(

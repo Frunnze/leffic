@@ -91,9 +91,9 @@ export class GenerationApi {
     const raw = Json.object(payload, "generation");
 
     return {
-      flashcardsTaskId: Json.stringOrNull(raw.task_id),
+      flashcardsTaskIds: Json.strings(raw.flashcard_task_ids),
       noteTaskId: Json.stringOrNull(raw.note_task_id),
-      testTaskId: Json.stringOrNull(raw.test_task_id),
+      testTaskIds: Json.strings(raw.test_task_ids),
     };
   }
 

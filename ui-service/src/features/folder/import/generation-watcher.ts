@@ -1,14 +1,10 @@
 import { GenerationApi, type GeneratedKind } from "./generation-api";
+import { GenerationTally, type GenerationOutcome } from "./generation-tally";
 import type { GenerationTaskIds } from "./generation-models";
-import type { Unit } from "../../../shared/models/units";
 
 const POLL_INTERVAL_MS = 2000;
 
-export type GenerationOutcome = {
-  readonly kind: GeneratedKind;
-  readonly succeeded: boolean;
-  readonly unit: Unit | null;
-};
+export type { GenerationOutcome };
 
 export class GenerationWatcher {
   static awaitOne(
@@ -29,22 +25,39 @@ export class GenerationWatcher {
     tasks: GenerationTaskIds,
     onOutcome: (outcome: GenerationOutcome) => void,
   ): () => void {
+    const noteIds = tasks.noteTaskId === null ? [] : [tasks.noteTaskId];
     const stops = [
-      GenerationWatcher.poll("flashcards", tasks.flashcardsTaskId, onOutcome),
-      GenerationWatcher.poll("note", tasks.noteTaskId, onOutcome),
-      GenerationWatcher.poll("test", tasks.testTaskId, onOutcome),
+      ...GenerationWatcher.pollEvery(
+        "flashcards",
+        tasks.flashcardsTaskIds,
+        onOutcome,
+      ),
+      ...GenerationWatcher.pollEvery("note", noteIds, onOutcome),
+      ...GenerationWatcher.pollEvery("test", tasks.testTaskIds, onOutcome),
     ];
 
     return () => stops.forEach((stop) => stop());
   }
 
+  private static pollEvery(
+    kind: GeneratedKind,
+    taskIds: readonly string[],
+    onOutcome: (outcome: GenerationOutcome) => void,
+  ): readonly (() => void)[] {
+    if (taskIds.length === 0) return [];
+
+    const tally = new GenerationTally(kind, taskIds.length, onOutcome);
+
+    return taskIds.map((taskId) =>
+      GenerationWatcher.poll(kind, taskId, (outcome) => tally.record(outcome)),
+    );
+  }
+
   private static poll(
     kind: GeneratedKind,
-    taskId: string | null,
+    taskId: string,
     onOutcome: (outcome: GenerationOutcome) => void,
   ): () => void {
-    if (taskId === null) return () => undefined;
-
     const timer = window.setInterval(() => {
       void GenerationWatcher.checkOnce(kind, taskId, timer, onOutcome);
     }, POLL_INTERVAL_MS);

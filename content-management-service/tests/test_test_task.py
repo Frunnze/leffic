@@ -5,11 +5,18 @@ import pytest
 from sqlalchemy.orm import Session, sessionmaker
 
 from features.study_units_generation import generation_tasks
+from features.study_units_generation.assessment_writer import (
+    create_test,
+)
+from features.study_units_generation.study_unit_source import (
+    StudyUnitSource,
+)
 from shared.models import Folder, Test, TestItem
 from tests.support import USER_ID, in_memory_sessions
 
 HOME_ID = uuid.UUID(USER_ID)
 _TEXT = "some study material"
+_SOURCE = StudyUnitSource(kind="file", reference="biology.pdf")
 
 
 class FakeAi:
@@ -56,6 +63,9 @@ def _run_test(
     factory: FakeFactory | None = None,
     model: str | None = None,
 ) -> dict[str, object]:
+    with sessions() as session:
+        test_id = create_test(session, USER_ID, _SOURCE)
+
     with (
         mock.patch.object(
             generation_tasks,
@@ -64,12 +74,12 @@ def _run_test(
         ),
         mock.patch.object(generation_tasks, "SessionLocal", sessions),
     ):
-        return generation_tasks._generate_test_task(
+        return generation_tasks._generate_test_items_of_type_task(
             ai_model=model,
             extracted_text=_TEXT,
-            folder_id=USER_ID,
-            source_kind="file",
-            source_reference="biology.pdf",
+            test_id=test_id,
+            item_type="multiple_choice",
+            amount=10,
         )
 
 
@@ -88,7 +98,11 @@ def test_a_generated_test_lands_with_its_items(
         test = session.query(Test).one()
         item = session.query(TestItem).one()
 
-        assert result == {"test_id": str(test.id), "test_name": "Neurons"}
+        assert result == {
+            "test_id": str(test.id),
+            "type": "multiple_choice",
+            "written": 1,
+        }
         assert test.name == "Neurons"
         assert test.source_kind == "file"
         assert test.source_reference == "biology.pdf"

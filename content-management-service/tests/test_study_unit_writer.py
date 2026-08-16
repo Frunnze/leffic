@@ -3,14 +3,22 @@ import uuid
 import pytest
 from sqlalchemy.orm import Session, sessionmaker
 
+from features.study_units_generation.assessment_writer import (
+    append_test_items,
+    create_test,
+)
+from features.study_units_generation.flashcard_deck_writer import (
+    append_flashcards,
+    create_flashcard_deck,
+    name_deck_once,
+)
 from features.study_units_generation.study_unit_source import (
     StudyUnitSource,
 )
 from features.study_units_generation.study_unit_writer import (
+    PENDING_NAME,
     MissingFolderError,
-    save_flashcard_deck,
     save_note,
-    save_test,
 )
 from shared.models import Flashcard, FlashcardDeck, Folder, Note, Test
 from tests.support import USER_ID, in_memory_sessions
@@ -35,13 +43,11 @@ def test_a_deck_is_saved_with_its_cards(
     with sessions() as session:
         _home_folder(session)
 
-        deck_id = save_flashcard_deck(
-            session,
-            USER_ID,
-            "Neurons",
-            {"basic_flashcards": [{"front": "q", "back": "a"}]},
-            _SOURCE,
+        deck_id = create_flashcard_deck(session, USER_ID, _SOURCE)
+        _ = append_flashcards(
+            session, deck_id, "basic", [{"front": "q", "back": "a"}]
         )
+        _ = name_deck_once(session, deck_id, "Neurons")
 
     with sessions() as session:
         deck = session.query(FlashcardDeck).filter_by(id=deck_id).one()
@@ -56,21 +62,33 @@ def test_a_deck_is_saved_with_its_cards(
         assert cards[0].content == {"front": "q", "back": "a"}
 
 
+def test_a_new_deck_waits_for_its_name(
+    sessions: sessionmaker[Session],
+) -> None:
+    with sessions() as session:
+        _home_folder(session)
+        deck_id = create_flashcard_deck(session, USER_ID, _SOURCE)
+
+    with sessions() as session:
+        deck = session.query(FlashcardDeck).filter_by(id=deck_id).one()
+
+        assert deck.name == PENDING_NAME
+
+
 def test_each_flashcard_type_keeps_its_own_name(
     sessions: sessionmaker[Session],
 ) -> None:
     with sessions() as session:
         _home_folder(session)
-
-        _ = save_flashcard_deck(
+        deck_id = create_flashcard_deck(session, USER_ID, _SOURCE)
+        _ = append_flashcards(
+            session, deck_id, "basic", [{"front": "q", "back": "a"}]
+        )
+        _ = append_flashcards(
             session,
-            USER_ID,
-            "Neurons",
-            {
-                "basic_flashcards": [{"front": "q", "back": "a"}],
-                "cloze_flashcards": [{"text": "t", "hidden_parts": ["t"]}],
-            },
-            _SOURCE,
+            deck_id,
+            "cloze",
+            [{"text": "t", "hidden_parts": ["t"]}],
         )
 
     with sessions() as session:
@@ -79,31 +97,15 @@ def test_each_flashcard_type_keeps_its_own_name(
         assert types == {"basic", "cloze"}
 
 
-def test_a_card_list_that_is_not_a_list_is_skipped(
-    sessions: sessionmaker[Session],
-) -> None:
-    with sessions() as session:
-        _home_folder(session)
-
-        _ = save_flashcard_deck(
-            session,
-            USER_ID,
-            "Neurons",
-            {"basic_flashcards": "oops"},
-            _SOURCE,
-        )
-
-    with sessions() as session:
-        assert session.query(Flashcard).all() == []
-
-
 def test_a_note_is_saved_with_its_content(
     sessions: sessionmaker[Session],
 ) -> None:
     with sessions() as session:
         _home_folder(session)
 
-        note_id = save_note(session, USER_ID, "Neurons", "<p>Hi</p>", _SOURCE)
+        note_id = save_note(
+            session, USER_ID, "Neurons", "<p>Hi</p>", _SOURCE
+        )
 
     with sessions() as session:
         note = session.query(Note).filter_by(id=note_id).one()
@@ -122,18 +124,14 @@ def test_a_test_is_saved_with_its_items(
     with sessions() as session:
         _home_folder(session)
 
-        test_id = save_test(
-            session,
-            USER_ID,
-            "Neurons",
-            {"multiple_choice_test_items": [{"question": "q"}]},
-            _SOURCE,
+        test_id = create_test(session, USER_ID, _SOURCE)
+        _ = append_test_items(
+            session, test_id, "multiple_choice", [{"question": "q"}]
         )
 
     with sessions() as session:
         saved = session.query(Test).filter_by(id=test_id).one()
 
-        assert saved.name == "Neurons"
         assert str(saved.folder_id) == USER_ID
         assert saved.source_kind == "file"
         assert saved.source_reference == "biology.pdf"
@@ -145,7 +143,9 @@ def test_a_test_is_saved_with_its_items(
 def test_saving_into_a_missing_folder_is_refused(
     sessions: sessionmaker[Session],
 ) -> None:
-    with sessions() as session, pytest.raises(MissingFolderError) as refusal:
+    with sessions() as session, pytest.raises(
+        MissingFolderError
+    ) as refusal:
         _ = save_note(
             session, str(uuid.uuid4()), "Ghost", "<p>Hi</p>", _SOURCE
         )
@@ -155,43 +155,9 @@ def test_saving_into_a_missing_folder_is_refused(
 
 def test_a_deck_needs_a_folder(sessions: sessionmaker[Session]) -> None:
     with sessions() as session, pytest.raises(MissingFolderError):
-        _ = save_flashcard_deck(
-            session, str(uuid.uuid4()), "Ghost", {}, _SOURCE
-        )
+        _ = create_flashcard_deck(session, str(uuid.uuid4()), _SOURCE)
 
 
 def test_a_test_needs_a_folder(sessions: sessionmaker[Session]) -> None:
     with sessions() as session, pytest.raises(MissingFolderError):
-        _ = save_test(session, str(uuid.uuid4()), "Ghost", {}, _SOURCE)
-
-
-def test_only_dictionary_cards_are_saved(
-    sessions: sessionmaker[Session],
-) -> None:
-    with sessions() as session:
-        _home_folder(session)
-
-        _ = save_flashcard_deck(
-            session,
-            USER_ID,
-            "Neurons",
-            {"basic_flashcards": [{"front": "q", "back": "a"}, "junk"]},
-            _SOURCE,
-        )
-
-    with sessions() as session:
-        assert len(session.query(Flashcard).all()) == 1
-
-
-def test_a_card_field_that_cannot_be_iterated_is_skipped(
-    sessions: sessionmaker[Session],
-) -> None:
-    with sessions() as session:
-        _home_folder(session)
-
-        _ = save_flashcard_deck(
-            session, USER_ID, "Neurons", {"basic_flashcards": 42}, _SOURCE
-        )
-
-    with sessions() as session:
-        assert session.query(Flashcard).all() == []
+        _ = create_test(session, str(uuid.uuid4()), _SOURCE)

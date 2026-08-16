@@ -1,72 +1,97 @@
-from collections.abc import Sequence
-from typing import TypedDict
-
+from features.study_units_generation.assessment_writer import (
+    append_test_items,
+    name_test_once,
+)
 from features.study_units_generation.celery_app import celery_app
-from features.study_units_generation.prompts.flashcards_prompt import (
-    get_flashcards_system_prompt,
+from features.study_units_generation.flashcard_deck_writer import (
+    append_flashcards,
+    name_deck_once,
 )
-from features.study_units_generation.prompts.notes_prompt import (
-    get_notes_system_prompt,
-)
-from features.study_units_generation.prompts.tests_prompt import (
-    get_test_system_prompt,
+from features.study_units_generation.prompts.prompt_file import (
+    assessment_item_values,
+    flashcard_values,
+    rendered_prompt,
 )
 from features.study_units_generation.study_unit_source import (
     StudyUnitSource,
 )
-from features.study_units_generation.study_unit_writer import (
-    save_flashcard_deck,
-    save_note,
-    save_test,
+from features.study_units_generation.study_unit_types import (
+    NOTE_PROMPT_FILE,
+    study_unit_type,
 )
+from features.study_units_generation.study_unit_writer import save_note
 from shared.ai_manager import ai_factory
 from shared.database import SessionLocal
 
 _DECK_NAME = "deck_name"
+_TEST_NAME = "test_name"
 
-FLASHCARDS_TASK = "generate_flashcards"
+FLASHCARDS_TASK = "generate_flashcards_of_type"
 NOTE_TASK = "generate_note"
-TEST_TASK = "generate_test"
+TEST_TASK = "generate_test_items_of_type"
 
 
-class FlashcardsMetadata(TypedDict):
-    comprehensiveness: str
-    verbosity: str
-    types: list[str] | None
-    amount: int | None
-
-
-def _generate_flashcards_task(
+def _generate_flashcards_of_type_task(
     *,
     ai_model: str | None,
     extracted_text: str,
-    flashcards_metadata: FlashcardsMetadata,
-    folder_id: str,
-    source_kind: str | None,
-    source_reference: str | None,
+    deck_id: str,
+    flashcard_type: str,
+    comprehensiveness: str,
+    verbosity: str,
+    amount: int | None,
 ) -> dict[str, object]:
+    unit_type = study_unit_type(flashcard_type)
     ai = ai_factory.get_ai(ai_model)
-    flashcards, _unused = ai.get_ai_res(
-        system_prompt=get_flashcards_system_prompt(
-            comprehensiveness=flashcards_metadata["comprehensiveness"],
-            verbosity=flashcards_metadata["verbosity"],
-            amount=flashcards_metadata["amount"],
-            flashcard_types=tuple(flashcards_metadata["types"] or ()),
+    generated, _unused = ai.get_ai_res(
+        system_prompt=rendered_prompt(
+            unit_type.prompt_file,
+            flashcard_values(comprehensiveness, verbosity, amount),
         ),
         user_prompt=extracted_text,
     )
-    deck_name = flashcards.pop(_DECK_NAME)
 
     with SessionLocal() as db:
-        deck_id = save_flashcard_deck(
-            db,
-            folder_id,
-            str(deck_name),
-            flashcards,
-            StudyUnitSource(kind=source_kind, reference=source_reference),
+        written = append_flashcards(
+            db, deck_id, unit_type.name, generated.get(unit_type.result_key)
         )
+        _ = name_deck_once(db, deck_id, str(generated.get(_DECK_NAME)))
 
-    return {"flashcard_deck_id": deck_id, "deck_name": deck_name}
+    return {
+        "flashcard_deck_id": deck_id,
+        "type": unit_type.name,
+        "written": written,
+    }
+
+
+def _generate_test_items_of_type_task(
+    *,
+    ai_model: str | None,
+    extracted_text: str,
+    test_id: str,
+    item_type: str,
+    amount: int | None,
+) -> dict[str, object]:
+    unit_type = study_unit_type(item_type)
+    ai = ai_factory.get_ai(ai_model)
+    generated, _unused = ai.get_ai_res(
+        system_prompt=rendered_prompt(
+            unit_type.prompt_file, assessment_item_values(amount)
+        ),
+        user_prompt=extracted_text,
+    )
+
+    with SessionLocal() as db:
+        written = append_test_items(
+            db, test_id, unit_type.name, generated.get(unit_type.result_key)
+        )
+        _ = name_test_once(db, test_id, str(generated.get(_TEST_NAME)))
+
+    return {
+        "test_id": test_id,
+        "type": unit_type.name,
+        "written": written,
+    }
 
 
 def _generate_note_task(
@@ -79,7 +104,7 @@ def _generate_note_task(
 ) -> dict[str, object]:
     ai = ai_factory.get_ai(ai_model)
     note, _unused = ai.get_ai_res(
-        system_prompt=get_notes_system_prompt(),
+        system_prompt=rendered_prompt(NOTE_PROMPT_FILE, {}),
         user_prompt=extracted_text,
     )
     note_name = str(note.get("note_name"))
@@ -96,51 +121,10 @@ def _generate_note_task(
     return {"note_id": note_id, "note_name": note_name}
 
 
-_TEST_ITEMS_SUFFIX = "_test_items"
-
-
-def _test_items(generated: object) -> list[dict[str, object]]:
-    if not isinstance(generated, Sequence) or isinstance(generated, str):
-        return []
-
-    return [item for item in generated if isinstance(item, dict)]
-
-
-def _generate_test_task(
-    *,
-    ai_model: str | None,
-    extracted_text: str,
-    folder_id: str,
-    source_kind: str | None,
-    source_reference: str | None,
-    test_item_types: tuple[str, ...] = (),
-) -> dict[str, object]:
-    ai = ai_factory.get_ai(ai_model)
-    test, _unused = ai.get_ai_res(
-        system_prompt=get_test_system_prompt(test_item_types),
-        user_prompt=extracted_text,
-    )
-    test_name = str(test.get("test_name"))
-    items = {
-        key: _test_items(value)
-        for key, value in test.items()
-        if key.endswith(_TEST_ITEMS_SUFFIX)
-    }
-
-    with SessionLocal() as db:
-        test_id = save_test(
-            db,
-            folder_id,
-            test_name,
-            items,
-            StudyUnitSource(kind=source_kind, reference=source_reference),
-        )
-
-    return {"test_id": test_id, "test_name": test_name}
-
-
-generate_flashcards_task = celery_app.task(
-    _generate_flashcards_task, name=FLASHCARDS_TASK
+generate_flashcards_of_type_task = celery_app.task(
+    _generate_flashcards_of_type_task, name=FLASHCARDS_TASK
+)
+generate_test_items_of_type_task = celery_app.task(
+    _generate_test_items_of_type_task, name=TEST_TASK
 )
 generate_note_task = celery_app.task(_generate_note_task, name=NOTE_TASK)
-generate_test_task = celery_app.task(_generate_test_task, name=TEST_TASK)

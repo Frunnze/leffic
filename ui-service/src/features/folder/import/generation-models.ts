@@ -17,9 +17,9 @@ export type GenerationOrigin = {
 };
 
 export type GenerationTaskIds = {
-  readonly flashcardsTaskId: string | null;
+  readonly flashcardsTaskIds: readonly string[];
   readonly noteTaskId: string | null;
-  readonly testTaskId: string | null;
+  readonly testTaskIds: readonly string[];
 };
 
 export type UploadedFile = {
