@@ -140,8 +140,3 @@
   font-size: var(--text-sm);
   font-weight: 500;
 }
-
-.chat-empty-hint {
-  max-width: 34ch;
-  font-size: var(--text-sm);
-}

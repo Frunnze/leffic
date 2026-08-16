@@ -16,8 +16,6 @@ type LoggedMessage = ChatMessage & {
   readonly shownAs: string;
 };
 
-const EMPTY_HINT = "Ask me anything about the material in this folder.";
-
 export type ChatbotProps = {
   readonly onClose: () => void;
 };
@@ -94,7 +92,6 @@ export function Chatbot(props: ChatbotProps): JSX.Element {
         <Show when={messages().length === 0 && !isWaiting()}>
           <div class="chat-empty">
             <span class="chat-empty-title">No messages yet</span>
-            <span class="chat-empty-hint">{EMPTY_HINT}</span>
           </div>
         </Show>
 
