@@ -10,11 +10,10 @@ echo "pre-commit: property tests (one per definition)"
 echo "pre-commit: design by contract - assert the guarantee, not the behaviour"
 echo "pre-commit: test first - write the property before the implementation"
 
-python_files=$(
-    git ls-files '*/src/*.py' '*/tests/*.py'
-    git ls-files --others --exclude-standard '*/src/*.py' '*/tests/*.py'
+untested=$(
+    python_files_in $source_directories $test_directories \
+        | "$python_binary" "$finder"
 )
-untested=$(echo "$python_files" | "$python_binary" "$finder")
 
 if [ -n "$untested" ]; then
     echo "pre-commit: nothing states a property about these - give" >&2

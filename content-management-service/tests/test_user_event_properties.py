@@ -22,11 +22,10 @@ from features.user_events.user_cleanup import (
 )
 from shared.models import Folder
 from tests.folder_seeding import seeded_folder
-from tests.property_fakes import FakeAmqpConnection
+from tests.amqp_fakes import FakeAmqpConnection
 from tests.support import in_memory_sessions
 
 _BLOCKING_CONNECTION = "features.user_events.consumer.pika.BlockingConnection"
-_SESSIONS = in_memory_sessions()
 _FILE_COUNTS = st.integers(min_value=0, max_value=3)
 
 
@@ -56,7 +55,9 @@ class _Delivery:
 def test__stored_file_names_property_names_one_file_per_stored_row(
     owner: uuid.UUID, file_count: int
 ) -> None:
-    with _SESSIONS() as session:
+    sessions = in_memory_sessions()
+
+    with sessions() as session:
         _ = seeded_folder(session, owner, {"file": file_count})
         names = _stored_file_names(session, owner)
 
@@ -69,7 +70,9 @@ def test__stored_file_names_property_names_one_file_per_stored_row(
 def test_remove_everything_owned_by_property_spares_every_other_owner(
     owner: uuid.UUID, stranger: uuid.UUID, file_count: int
 ) -> None:
-    with _SESSIONS() as session:
+    sessions = in_memory_sessions()
+
+    with sessions() as session:
         _ = seeded_folder(session, owner, {"file": file_count})
         _ = seeded_folder(session, stranger, {"file": file_count})
         mine_before = _folder_count(session, owner)

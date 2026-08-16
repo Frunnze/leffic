@@ -10,7 +10,7 @@ usage_finder="$(dirname "$0")/shared_usage.py"
 echo "pre-commit: feature isolation (siblings meet only in shared)"
 echo "pre-commit: keep coupling low - reach a sibling only through shared"
 
-crossings=$(git ls-files '*/src/features/*.py' \
+crossings=$(python_files_in $source_directories \
     | "$python_binary" "$crossing_finder")
 
 if [ -n "$crossings" ]; then
@@ -26,7 +26,7 @@ echo "pre-commit: follow YAGNI - move it into the one feature that needs it"
 lonely=""
 
 for service in $services; do
-    found=$(git ls-files "$service/src/*.py" \
+    found=$(python_files_in "$service/src" \
         | "$python_binary" "$usage_finder")
 
     if [ -n "$found" ]; then

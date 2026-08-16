@@ -20,17 +20,29 @@ echo "pre-commit: stay secure by default - upgrade rather than accept it"
 echo "pre-commit: still carrying $(echo $accepted_advisories | wc -w |
     tr -d ' ') accepted starlette advisories"
 
+reported_vulnerability="known vulnerabilit"
+unreachable_database="requests\.exceptions\.(ConnectionError|ConnectTimeout\
+|ReadTimeout|Timeout|ProxyError|SSLError)"
+
 if ! audit_output=$("$pip_audit_binary" --progress-spinner off \
     $ignore_flags 2>&1); then
-    if echo "$audit_output" | grep -qiE "connection|resolve|timed out"; then
+    if echo "$audit_output" | grep -q "$reported_vulnerability"; then
+        echo "pre-commit: an installed package has a known" >&2
+        echo "pre-commit: vulnerability - upgrade it, or add the advisory" >&2
+        echo "pre-commit: id to accepted_advisories with the reason it" >&2
+        echo "pre-commit: cannot move:" >&2
+        echo "$audit_output" >&2
+        exit 1
+    fi
+
+    if echo "$audit_output" | grep -qE "$unreachable_database"; then
         echo "pre-commit: advisory database unreachable - skipping the" >&2
         echo "pre-commit: vulnerability scan" >&2
         exit 0
     fi
 
-    echo "pre-commit: an installed package has a known vulnerability -" >&2
-    echo "pre-commit: upgrade it, or add the advisory id to" >&2
-    echo "pre-commit: accepted_advisories with the reason it cannot move:" >&2
+    echo "pre-commit: pip-audit failed before it could scan - the" >&2
+    echo "pre-commit: vulnerability gate did not run:" >&2
     echo "$audit_output" >&2
     exit 1
 fi

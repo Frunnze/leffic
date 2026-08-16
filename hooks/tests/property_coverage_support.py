@@ -8,11 +8,12 @@ SOURCE = Path("service/src/features/study_units/scheduler.py")
 TESTS = Path("service/tests/test_scheduler.py")
 
 
-def report_for(tmp_path: Path, source: str, tests: str) -> list[str]:
-    written = [
-        _write(tmp_path, SOURCE, source),
-        _write(tmp_path, TESTS, tests),
-    ]
+def report_for_files(tmp_path: Path, files: dict[str, str]) -> list[str]:
+    written: list[str] = []
+
+    for relative, source in files.items():
+        written.append(_write(tmp_path, Path(relative), source))
+
     finished = subprocess.run(
         [sys.executable, str(CHECKER)],
         input="\n".join(written),
@@ -25,11 +26,21 @@ def report_for(tmp_path: Path, source: str, tests: str) -> list[str]:
     return finished.stdout.splitlines()
 
 
-def missing(name: str, line_number: int) -> str:
+def report_for(tmp_path: Path, source: str, tests: str) -> list[str]:
+    return report_for_files(
+        tmp_path, {str(SOURCE): source, str(TESTS): tests}
+    )
+
+
+def missing_in(source: str, name: str, line_number: int) -> str:
     return (
-        f"{SOURCE}:{line_number}: {name} needs a property test "
+        f"{source}:{line_number}: {name} needs a property test "
         f"named test_{name}_property*"
     )
+
+
+def missing(name: str, line_number: int) -> str:
+    return missing_in(str(SOURCE), name, line_number)
 
 
 def given_test(name: str, decorators: str = "@given()") -> str:

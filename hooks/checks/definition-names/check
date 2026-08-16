@@ -9,10 +9,11 @@ joined_definition="^[[:space:]]*($joined_function|$joined_class)"
 echo "pre-commit: definition names (one responsibility per name)"
 echo "pre-commit: follow SRP - split a name that says 'and', it names two jobs"
 
-joined_names=$(git ls-files '*/src/*.py' | while read -r python_file; do
-    [ -f "$python_file" ] || continue
-    grep -nHE "$joined_definition" "$python_file" || true
-done)
+joined_names=$(
+    python_files_in $source_directories | while read -r python_file; do
+        grep -nHE "$joined_definition" "$python_file" || true
+    done
+)
 
 if [ -n "$joined_names" ]; then
     echo "pre-commit: these names join two responsibilities - split them:" >&2

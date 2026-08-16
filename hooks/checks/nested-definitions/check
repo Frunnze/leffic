@@ -10,8 +10,10 @@ echo "pre-commit: nested definitions (no def inside a def)"
 echo "pre-commit: follow SRP - lift a nested def out, it is a unit of its own"
 echo "pre-commit: keep it testable - nothing can reach a def hidden in a def"
 
-python_files=$(git ls-files '*/src/*.py' '*/tests/*.py' 'hooks/*.py')
-nested_definitions=$(echo "$python_files" | "$python_binary" "$finder")
+nested_definitions=$(
+    python_files_in $source_directories $test_directories hooks \
+        | "$python_binary" "$finder"
+)
 
 if [ -n "$nested_definitions" ]; then
     echo "pre-commit: these definitions are nested - lift them out:" >&2

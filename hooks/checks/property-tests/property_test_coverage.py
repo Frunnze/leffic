@@ -20,22 +20,35 @@ class UntestedDefinition(NamedTuple):
 
 
 class SplitPaths(NamedTuple):
-    sources: list[Path]
-    tests: list[Path]
+    sources: dict[str, list[Path]]
+    tests: dict[str, list[Path]]
+
+
+class ServiceName:
+    def of(self, path: Path) -> str:
+        parts = path.parts
+
+        if TESTS_DIRECTORY in parts:
+            boundary = parts.index(TESTS_DIRECTORY)
+        else:
+            boundary = parts.index(SOURCE_DIRECTORY)
+
+        return "/".join(parts[:boundary])
 
 
 class SourcesAndTests:
     def split(self, paths: list[str]) -> SplitPaths:
-        sources: list[Path] = []
-        tests: list[Path] = []
+        sources: dict[str, list[Path]] = {}
+        tests: dict[str, list[Path]] = {}
+        service = ServiceName()
 
         for given_path in paths:
             path = Path(given_path)
 
             if TESTS_DIRECTORY in path.parts:
-                tests.append(path)
+                tests.setdefault(service.of(path), []).append(path)
             elif SOURCE_DIRECTORY in path.parts:
-                sources.append(path)
+                sources.setdefault(service.of(path), []).append(path)
 
         return SplitPaths(sources, tests)
 
@@ -90,11 +103,15 @@ class PropertyTestName:
 class UntestedDefinitions:
     def find_in(self, paths: list[str]) -> list[UntestedDefinition]:
         split = SourcesAndTests().split(paths)
-        property_tests = PropertyTestNames().collected_from(split.tests)
         found: list[UntestedDefinition] = []
 
-        for path in split.sources:
-            found.extend(self._find_in_file(path, property_tests))
+        for service, sources in split.sources.items():
+            property_tests = PropertyTestNames().collected_from(
+                split.tests.get(service, [])
+            )
+
+            for path in sources:
+                found.extend(self._find_in_file(path, property_tests))
 
         return sorted(found)
 

@@ -13,9 +13,26 @@ deptry_binary="$repository_root/.venv/bin/deptry"
 python_binary="$repository_root/.venv/bin/python"
 pip_audit_binary="$repository_root/.venv/bin/pip-audit"
 
+source_directories=""
+test_directories=""
+
+for service in $services; do
+    source_directories="$source_directories $service/src"
+    test_directories="$test_directories $service/tests"
+done
+
 require_binary() {
     if [ ! -x "$1" ]; then
         echo "pre-commit: $2 is not installed - run ./install.sh" >&2
         exit 1
     fi
+}
+
+python_files_in() {
+    find "$@" \
+        -name __pycache__ -prune -o \
+        -name mutants -prune -o \
+        -type f -name '*.py' -print \
+        | sed 's|^\./||' \
+        | sort
 }
