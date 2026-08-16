@@ -155,7 +155,7 @@
 }
 
 .due-item.is-clear .due-count {
-  color: var(--good);
+  color: var(--ink-3);
 }
 
 .due-action {
