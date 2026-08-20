@@ -15,6 +15,12 @@
   -webkit-font-smoothing: antialiased;
 }
 
+@media (min-width: 768px) {
+  .screen-with-chat {
+    --rail-inline: calc(var(--rail-width) + var(--chat-width));
+  }
+}
+
 @media (max-width: 767px) {
   .screen {
     --rail-inline: 0px;

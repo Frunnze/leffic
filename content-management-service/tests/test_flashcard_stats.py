@@ -4,7 +4,6 @@ from datetime import UTC, datetime, timedelta
 from typing import cast
 
 import pytest
-import requests
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -14,10 +13,14 @@ from shared.models import Flashcard, FlashcardDeck, Folder
 from tests.support import (
     OTHER_USER_ID,
     USER_ID,
+    FakeHTTPError,
     SessionProvider,
     authorization,
     in_memory_sessions,
 )
+
+_BAD_REQUEST = 400
+_NOT_FOUND = 404
 
 _HOME_ID = uuid.UUID(USER_ID)
 
@@ -31,8 +34,8 @@ class FakeResponse:
         self.status_code: int = status_code
 
     def raise_for_status(self) -> None:
-        if self.status_code >= 400:
-            raise requests.HTTPError(f"status {self.status_code}")
+        if self.status_code >= _BAD_REQUEST:
+            raise FakeHTTPError(self.status_code)
 
     def json(self) -> dict[str, object]:
         return self.payload
@@ -99,7 +102,7 @@ def test_flashcard_stats_need_an_owned_folder(client: TestClient) -> None:
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
 
 
 def test_flashcard_stats_report_nothing_for_an_empty_folder(
@@ -115,7 +118,7 @@ def test_flashcard_stats_report_nothing_for_an_empty_folder(
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
     assert cast("dict[str, str]", response.json())["msg"] == "No flashcards!"
 
 

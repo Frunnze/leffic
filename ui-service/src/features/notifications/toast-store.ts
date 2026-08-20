@@ -6,7 +6,7 @@ export type Toast = {
   readonly id: string;
   readonly tone: ToastTone;
   readonly title: string;
-  readonly detail: string;
+  readonly detail?: string;
 };
 
 export type ToastStore = {

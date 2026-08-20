@@ -9,6 +9,10 @@ _DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 _CORRECT_OPTION_ID = 0
 _CORRECT = 1
 _INCORRECT = 0
+_TRUE_OR_FALSE = "true_or_false"
+_SHORT_ANSWER = "short_answer"
+_TRUE_LABEL = "True"
+_FALSE_LABEL = "False"
 
 
 def _is_object_list(value: object) -> TypeGuard[list[object]]:
@@ -39,7 +43,37 @@ def flashcard_results(
     ]
 
 
-def prepare_content(content: dict[str, object]) -> dict[str, object]:
+def prepare_content(
+    content: dict[str, object], item_type: str
+) -> dict[str, object]:
+    if item_type == _TRUE_OR_FALSE:
+        return _prepared_true_false_content(content)
+
+    if item_type == _SHORT_ANSWER:
+        return {"question": content.get("question"), "shuffled_options": []}
+
+    return _prepared_options(content)
+
+
+def _prepared_true_false_content(
+    content: dict[str, object],
+) -> dict[str, object]:
+    is_true = bool(content.get("is_true"))
+    correct = _TRUE_LABEL if is_true else _FALSE_LABEL
+    wrong = _FALSE_LABEL if is_true else _TRUE_LABEL
+    options: list[dict[str, object]] = [
+        {"id": _CORRECT_OPTION_ID, "option": correct},
+        {"id": _CORRECT_OPTION_ID + 1, "option": wrong},
+    ]
+    secrets.SystemRandom().shuffle(options)
+
+    return {
+        "question": content.get("statement"),
+        "shuffled_options": options,
+    }
+
+
+def _prepared_options(content: dict[str, object]) -> dict[str, object]:
     true_options = [content.get("true_option")]
     options: list[dict[str, object]] = [
         {"id": index, "option": option}
@@ -62,8 +96,25 @@ def prepare_content(content: dict[str, object]) -> dict[str, object]:
     }
 
 
-def evaluate_accuracy(user_answers: Sequence[object]) -> int:
+def evaluate_accuracy(
+    user_answers: Sequence[object],
+    item_type: str,
+    content: dict[str, object],
+) -> int:
+    if item_type == _SHORT_ANSWER:
+        return _typed_accuracy(user_answers[0], content.get("answer"))
+
     if user_answers[0] == _CORRECT_OPTION_ID:
+        return _CORRECT
+
+    return _INCORRECT
+
+
+def _typed_accuracy(typed: object, stored: object) -> int:
+    if not isinstance(typed, str) or not isinstance(stored, str):
+        return _INCORRECT
+
+    if typed.strip().casefold() == stored.strip().casefold():
         return _CORRECT
 
     return _INCORRECT

@@ -57,7 +57,7 @@ export function DueSection(props: DueSectionProps): JSX.Element {
         <Show when={totalDue() > 0}>
           <div class="due-action">
             <button
-              class="btn btn-primary btn-lg"
+              class="btn btn-primary"
               type="button"
               aria-expanded={isMenuOpen()}
               onClick={() => setMenuOpen(!isMenuOpen())}

@@ -2,7 +2,6 @@ import os
 from datetime import UTC, datetime, timedelta
 
 import jwt
-from passlib.context import CryptContext
 
 _configured_key = os.getenv("JWT_SECRET_KEY")
 if not _configured_key:
@@ -12,15 +11,6 @@ SECRET_KEY: str = _configured_key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-def hash_password(password: str) -> str:
-    return str(pwd_context.hash(password))
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return bool(pwd_context.verify(plain_password, hashed_password))
 
 
 def create_access_token(

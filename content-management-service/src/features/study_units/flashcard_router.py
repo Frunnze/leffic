@@ -1,37 +1,36 @@
 import uuid
 from datetime import datetime
-from typing import TypeGuard, cast
+from typing import cast
 
-import requests
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
+from fsrs.card import CardDict
+from fsrs.review_log import ReviewLogDict
 from pydantic import BaseModel
 from sqlalchemy import ColumnElement, func, or_, select
 from sqlalchemy.orm import Query, Session
 
+from features.study_units.clock import utc_today
 from features.study_units.formatting import date_to_str, flashcard_results
-from shared.clock import utc_today
+from shared.content_access import owned_content
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.flashcard_scheduling import (
+    schedule_flashcard_fsrs,
+)
+from shared.folder_access import resolved_folder_id
 from shared.folder_tree import subfolder_ids
+from shared.identifiers import RowId
 from shared.models import (
     Flashcard,
     FlashcardDeck,
     FlashcardReview,
 )
-from shared.settings import SCHEDULER_SERVICE
 
 flashcard_router = APIRouter()
 
-_HOME_FOLDER = "home"
 _DEFAULT_PER_PAGE = 10
-_MISSING_FOLDER = "Folder does not exist!"
 _MISSING_FLASHCARD = "Flashcard does not exist!"
-_SCHEDULER_TIMEOUT_SECONDS = 30
-_NO_CARD_RETURNED = "Scheduler returned no card"
-
-
-def _is_object_dict(value: object) -> TypeGuard[dict[str, object]]:
-    return isinstance(value, dict)
+_MISSING_DECK = "Deck does not exist!"
 
 
 def _due_condition() -> ColumnElement[bool]:
@@ -41,9 +40,9 @@ def _due_condition() -> ColumnElement[bool]:
     )
 
 
-def _deck_flashcards(db: Session, deck_id: str) -> Query[Flashcard]:
+def _deck_flashcards(db: Session, deck_id: uuid.UUID) -> Query[Flashcard]:
     return db.query(Flashcard).filter(
-        Flashcard.deck_id == uuid.UUID(deck_id), _due_condition()
+        Flashcard.deck_id == deck_id, _due_condition()
     )
 
 
@@ -59,6 +58,24 @@ def _folder_flashcards(
     )
 
 
+def _due_flashcards(
+    db: Session,
+    user_id: str,
+    flashcard_deck_id: str | None,
+    folder_id: str | None,
+) -> Query[Flashcard]:
+    if flashcard_deck_id:
+        deck = owned_content(
+            db, user_id, FlashcardDeck, flashcard_deck_id, _MISSING_DECK
+        )
+
+        return _deck_flashcards(db, deck.id)
+
+    return _folder_flashcards(
+        db, resolved_folder_id(user_id, folder_id), user_id
+    )
+
+
 @flashcard_router.get("/flashcards")
 async def get_flashcards(
     user_id: AuthenticatedUserId,
@@ -67,19 +84,9 @@ async def get_flashcards(
     folder_id: str | None = None,
     per_page: int = _DEFAULT_PER_PAGE,
 ) -> JSONResponse:
-    if flashcard_deck_id:
-        due_flashcards = _deck_flashcards(db, flashcard_deck_id)
-    else:
-        resolved_folder_id = (
-            user_id if folder_id == _HOME_FOLDER else folder_id
-        )
-
-        if resolved_folder_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=_MISSING_FOLDER
-            )
-
-        due_flashcards = _folder_flashcards(db, resolved_folder_id, user_id)
+    due_flashcards = _due_flashcards(
+        db, user_id, flashcard_deck_id, folder_id
+    )
 
     flashcards = (
         due_flashcards.order_by(Flashcard.next_review.asc().nullsfirst())
@@ -96,7 +103,7 @@ async def get_flashcards(
 
 
 class ReviewFlashcardRequest(BaseModel):
-    flashcard_id: int
+    flashcard_id: RowId
     rating: int
 
 
@@ -116,44 +123,30 @@ def review_flashcard(
             status_code=status.HTTP_404_NOT_FOUND, detail=_MISSING_FLASHCARD
         )
 
-    # Call scheduler
-    response = requests.post(
-        url=f"{SCHEDULER_SERVICE}/schedule-flashcard",
-        json={
-            "card": card.fsrs_card,
-            "rating": request_data.rating,
-            "user_id": user_id,
-        },
-        timeout=_SCHEDULER_TIMEOUT_SECONDS,
+    _ = user_id
+    new_card, review_log = schedule_flashcard_fsrs(
+        cast("CardDict | None", card.fsrs_card), None, request_data.rating
     )
-    response.raise_for_status()
 
-    scheduled = cast("dict[str, object]", response.json())
-
-    return JSONResponse(content=_recorded_review(db, card, scheduled))
+    return JSONResponse(
+        content=_recorded_review(db, card, new_card, review_log)
+    )
 
 
 def _recorded_review(
-    db: Session, card: Flashcard, scheduled: dict[str, object]
+    db: Session,
+    card: Flashcard,
+    new_card: CardDict,
+    review_log: ReviewLogDict,
 ) -> dict[str, object]:
-    new_card = scheduled.get("new_card")
-
-    if not _is_object_dict(new_card):
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=_NO_CARD_RETURNED,
-        )
-
-    # Save new card
-    card.fsrs_card = new_card
+    card.fsrs_card = dict(new_card)
     next_review_date = datetime.fromisoformat(
-        str(new_card.get("due"))
+        str(new_card["due"])
     ).replace(tzinfo=None)
     card.next_review = next_review_date
 
-    # Add new card review log
     card.flashcard_reviews.append(
-        FlashcardReview(fsrs_review=scheduled.get("review_log"))
+        FlashcardReview(fsrs_review=dict(review_log))
     )
     db.commit()
 

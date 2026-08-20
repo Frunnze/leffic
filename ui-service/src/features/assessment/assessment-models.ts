@@ -3,11 +3,14 @@ export type AssessmentOption = {
   readonly option: string;
 };
 
+export type AssessmentAnswer = number | string;
+
 export type AssessmentItem = {
   readonly id: string;
+  readonly type: string;
   readonly question: string;
   readonly options: readonly AssessmentOption[];
-  readonly lastAnswers: readonly number[];
+  readonly lastAnswers: readonly AssessmentAnswer[];
 };
 
 export type AssessmentPage = {

@@ -44,6 +44,12 @@ export class Json {
     return typeof value === "string" ? value : null;
   }
 
+  static strings(value: unknown): readonly string[] {
+    if (!Array.isArray(value)) return [];
+
+    return value.filter((entry): entry is string => typeof entry === "string");
+  }
+
   static objectOrNull(value: unknown): JsonObject | null {
     if (typeof value !== "object" || value === null || Array.isArray(value)) {
       return null;

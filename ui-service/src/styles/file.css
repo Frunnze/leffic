@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
   padding-left: var(--rail-inline);
   padding-bottom: var(--rail-block);
   background: var(--surface-2);
@@ -126,4 +127,73 @@
   width: 100%;
   border: 0;
   background: var(--surface-3);
+}
+
+.file-bookmark {
+  margin-left: auto;
+}
+
+.file-bookmark.is-bookmarked {
+  color: var(--brand);
+}
+
+.pdf-pages {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  overflow-y: auto;
+  background: var(--surface-2);
+}
+
+.pdf-page {
+  position: relative;
+  width: min(100%, var(--pdf-page-width, 100%));
+  flex: none;
+  aspect-ratio: var(--pdf-page-ratio, auto);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  box-shadow: var(--shadow-1);
+}
+
+.pdf-page-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.file-failure {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  color: var(--danger);
+  text-align: center;
+}
+
+.file-failure-title {
+  color: var(--ink);
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.file-failure-reason {
+  max-width: 46ch;
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+.file-position {
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }

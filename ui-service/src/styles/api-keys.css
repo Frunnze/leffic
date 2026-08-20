@@ -1,0 +1,56 @@
+.key-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.key-field .field {
+  flex: 1 1 200px;
+  margin: 0;
+}
+
+.key-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+.key-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.key-limit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.key-usage {
+  padding-bottom: var(--space-2);
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+}
+
+.amount-input {
+  position: relative;
+  display: flex;
+  width: 132px;
+}
+
+.amount-prefix {
+  position: absolute;
+  top: 50%;
+  left: var(--space-3);
+  transform: translateY(-50%);
+  color: var(--ink-3);
+  pointer-events: none;
+}
+
+.amount-input .input {
+  padding-left: var(--space-6);
+}

@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 
 from shared import database
 
+_EXPECTED_STATEMENT_COUNT = 2
+
 
 class FakeCursor:
     def __init__(self, existing: tuple[int] | None) -> None:
@@ -51,9 +53,7 @@ class FakeConnection:
     @autocommit.setter
     def autocommit(self, enabled: bool) -> None:
         self._autocommit = enabled
-        self.statements_before_autocommit = len(
-            self.cursor_object.statements
-        )
+        self.statements_before_autocommit = len(self.cursor_object.statements)
 
     def cursor(self) -> FakeCursor:
         return self.cursor_object
@@ -81,7 +81,7 @@ def test_creates_the_database_when_it_is_missing() -> None:
     ) as connect:
         database.create_database_if_not_exists()
 
-    assert len(cursor.statements) == 2
+    assert len(cursor.statements) == _EXPECTED_STATEMENT_COUNT
     assert connect.call_args.kwargs == {
         "dbname": "postgres",
         "user": database.db_user,
@@ -110,9 +110,7 @@ def test_enables_autocommit_before_any_statement() -> None:
     cursor = FakeCursor(existing=None)
     connection = FakeConnection(cursor)
 
-    with mock.patch.object(
-        psycopg2, "connect", return_value=connection
-    ):
+    with mock.patch.object(psycopg2, "connect", return_value=connection):
         database.create_database_if_not_exists()
 
     assert connection.autocommit
@@ -123,9 +121,7 @@ def test_does_not_wrap_the_statements_in_a_transaction() -> None:
     cursor = FakeCursor(existing=None)
     connection = FakeConnection(cursor)
 
-    with mock.patch.object(
-        psycopg2, "connect", return_value=connection
-    ):
+    with mock.patch.object(psycopg2, "connect", return_value=connection):
         database.create_database_if_not_exists()
 
     assert not connection.entered
@@ -135,9 +131,7 @@ def test_closes_the_connection() -> None:
     cursor = FakeCursor(existing=None)
     connection = FakeConnection(cursor)
 
-    with mock.patch.object(
-        psycopg2, "connect", return_value=connection
-    ):
+    with mock.patch.object(psycopg2, "connect", return_value=connection):
         database.create_database_if_not_exists()
 
     assert connection.closed

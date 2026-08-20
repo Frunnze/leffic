@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/../../_env.sh"
+
+require_binary "$python_binary" python
+
+minimum_coverage=100
+
+echo "pre-commit: branch coverage (min $minimum_coverage%), shuffled"
+echo "pre-commit: test first - do not write a branch no test asked for"
+
+for service in $services; do
+    (cd "$service" && "$python_binary" -m pytest tests -q \
+        -p randomly \
+        --cov=src \
+        --cov-branch \
+        --cov-report=term-missing:skip-covered \
+        --cov-fail-under="$minimum_coverage")
+done

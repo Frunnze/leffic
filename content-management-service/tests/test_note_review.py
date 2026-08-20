@@ -16,6 +16,9 @@ from tests.support import (
     in_memory_sessions,
 )
 
+_NOT_FOUND = 404
+_OK = 200
+
 _HOME_ID = uuid.UUID(USER_ID)
 
 
@@ -51,7 +54,9 @@ def test_reading_a_note_leaves_it_unread(
 ) -> None:
     note_id = _stored_note(sessions)
 
-    first = client.get("/note", params={"note_id": note_id})
+    first = client.get(
+        "/note", params={"note_id": note_id}, headers=authorization()
+    )
 
     with sessions() as session:
         assert not session.query(Note).one().read
@@ -70,7 +75,7 @@ def test_reviewing_a_note_marks_it_read(
         headers=authorization(str(_HOME_ID)),
     )
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
 
     with sessions() as session:
         assert session.query(Note).one().read
@@ -89,7 +94,7 @@ def test_reviewing_a_note_twice_keeps_it_read(
         "/review-note", json=payload, headers=authorization(str(_HOME_ID))
     )
 
-    assert second.status_code == 200
+    assert second.status_code == _OK
 
     with sessions() as session:
         assert session.query(Note).one().read
@@ -102,7 +107,7 @@ def test_reviewing_an_unknown_note_is_not_found(client: TestClient) -> None:
         headers=authorization(str(_HOME_ID)),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
 
 
 def test_reviewing_a_note_of_another_user_is_rejected(
@@ -116,12 +121,10 @@ def test_reviewing_a_note_of_another_user_is_rejected(
         headers=authorization(str(uuid.uuid4())),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
 
     with sessions() as session:
         assert not session.query(Note).one().read
-
-
 
 
 def test_reading_a_note_reports_its_read_state(
@@ -129,7 +132,9 @@ def test_reading_a_note_reports_its_read_state(
 ) -> None:
     note_id = _stored_note(sessions)
 
-    before = client.get("/note", params={"note_id": note_id})
+    before = client.get(
+        "/note", params={"note_id": note_id}, headers=authorization()
+    )
 
     assert cast("dict[str, object]", before.json())["read"] is False
 
@@ -138,6 +143,8 @@ def test_reading_a_note_reports_its_read_state(
         json={"note_id": note_id},
         headers=authorization(str(_HOME_ID)),
     )
-    after = client.get("/note", params={"note_id": note_id})
+    after = client.get(
+        "/note", params={"note_id": note_id}, headers=authorization()
+    )
 
     assert cast("dict[str, object]", after.json())["read"] is True

@@ -12,6 +12,10 @@ from app_factory import create_app
 from features.authentication.access import ALGORITHM, SECRET_KEY
 from shared.database import Base, get_db
 
+_CONFLICT = 409
+_NOT_FOUND = 404
+_OK = 200
+
 _EMAIL = "learner@example.com"
 _USERNAME = "learner"
 _LOGIN_PHRASE = "correct horse battery staple"
@@ -113,7 +117,7 @@ def test_sign_up_rejects_a_duplicate_username(client: TestClient) -> None:
         },
     )
 
-    assert response.status_code == 409
+    assert response.status_code == _CONFLICT
     assert response.json() == "Username already registered"
 
 
@@ -129,7 +133,7 @@ def test_sign_up_rejects_a_duplicate_email(client: TestClient) -> None:
         },
     )
 
-    assert response.status_code == 409
+    assert response.status_code == _CONFLICT
     assert response.json() == "Email already registered"
 
 
@@ -142,7 +146,7 @@ def test_login_returns_a_token_for_the_right_password(
         "/login", json={"email": _EMAIL, "password": _LOGIN_PHRASE}
     )
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
     assert response.json()["username"] == _USERNAME
 
 
@@ -152,7 +156,7 @@ def test_login_rejects_an_unknown_email(client: TestClient) -> None:
         json={"email": "nobody@example.com", "password": _LOGIN_PHRASE},
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
     assert response.json()["detail"] == "Incorrect email"
 
 
@@ -163,5 +167,5 @@ def test_login_rejects_a_wrong_password(client: TestClient) -> None:
         "/login", json={"email": _EMAIL, "password": "not-the-password"}
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
     assert response.json()["detail"] == "Incorrect password"

@@ -5,7 +5,8 @@
   width: 100%;
   max-width: 920px;
   margin: 0 auto;
-  padding: var(--space-6) var(--space-4) var(--space-8);
+  padding: var(--space-6) var(--space-4)
+    calc(var(--space-8) + var(--rail-block));
 }
 
 @media (min-width: 768px) {
@@ -64,6 +65,11 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+.folder-actions .btn {
+  height: var(--control-height-sm);
+  padding: 0 var(--space-3);
 }
 
 .folder-action {
@@ -149,7 +155,7 @@
 }
 
 .due-item.is-clear .due-count {
-  color: var(--good);
+  color: var(--ink-3);
 }
 
 .due-action {

@@ -2,18 +2,18 @@ from datetime import UTC, date, datetime, timedelta, tzinfo
 
 import pytest
 
-from shared import clock
+from features.study_units import clock
 
 
 class FixedDatetime:
     @staticmethod
     def now(tz: tzinfo | None = None) -> datetime:
-        moment = datetime(2026, 8, 8, 1, 30, tzinfo=UTC)
+        dateobj = datetime(2026, 8, 8, 1, 30, tzinfo=UTC)
 
         if tz is None:
-            return (moment - timedelta(hours=3)).replace(tzinfo=None)
+            return (dateobj - timedelta(hours=3)).replace(tzinfo=None)
 
-        return moment
+        return dateobj
 
 
 def test_today_is_read_in_utc(monkeypatch: pytest.MonkeyPatch) -> None:

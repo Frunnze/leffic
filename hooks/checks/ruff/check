@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/../../_env.sh"
+
+require_binary "$ruff_binary" ruff
+
+echo "pre-commit: ruff (all)"
+echo "pre-commit: write for the reader - code is read far more than written"
+echo "pre-commit: avoid astonishment - behave as the call site expects"
+
+for service in $services; do
+    (cd "$service" && "$ruff_binary" check src run.py)
+done

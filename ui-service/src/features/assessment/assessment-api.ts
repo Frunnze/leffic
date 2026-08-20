@@ -1,6 +1,8 @@
 import { HttpClient } from "../../shared/api/http";
 import { Json, type JsonObject } from "../../shared/api/json";
+import type { EditedTestItem } from "./TestItemEditor";
 import type {
+  AssessmentAnswer,
   AssessmentItem,
   AssessmentOption,
   AssessmentPage,
@@ -42,7 +44,7 @@ export class AssessmentApi {
   static async submitAnswer(
     testItemId: string,
     testSession: string,
-    answers: readonly number[],
+    answers: readonly AssessmentAnswer[],
   ): Promise<void> {
     await HttpClient.send({
       endpoint: "/api/content/review-test-item",
@@ -69,6 +71,24 @@ export class AssessmentApi {
     return { correct: Json.numberOr(Json.object(payload, "result").correct, 0) };
   }
 
+  static async updateItem(
+    testItemId: string,
+    edited: EditedTestItem,
+  ): Promise<void> {
+    await HttpClient.json({
+      endpoint: "/api/content/update-test-item",
+      method: "PATCH",
+      body: {
+        test_item_id: Number(testItemId),
+        content: {
+          question: edited.question,
+          true_option: edited.correctAnswer,
+          false_options: edited.wrongAnswers,
+        },
+      },
+    });
+  }
+
   private static toItem(raw: JsonObject): AssessmentItem {
     const content = Json.object(raw.content, "assessmentItem.content");
     const rawOptions = Json.array(
@@ -78,6 +98,7 @@ export class AssessmentApi {
 
     return {
       id: Json.identifier(raw.id, "assessmentItem.id"),
+      type: Json.stringOr(raw.type, "multiple_choice"),
       question: Json.stringOr(content.question, ""),
       options: rawOptions.map((entry, index) =>
         AssessmentApi.toOption(Json.object(entry, `testItem.options[${index}]`)),
@@ -93,11 +114,12 @@ export class AssessmentApi {
     };
   }
 
-  private static toAnswers(value: unknown): readonly number[] {
+  private static toAnswers(value: unknown): readonly AssessmentAnswer[] {
     if (!Array.isArray(value)) return [];
 
-    return value.map((entry, index) =>
-      Json.number(entry, `testItem.last_answers[${index}]`),
+    return value.filter(
+      (entry): entry is AssessmentAnswer =>
+        typeof entry === "number" || typeof entry === "string",
     );
   }
 }

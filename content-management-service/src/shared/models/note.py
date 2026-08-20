@@ -3,10 +3,10 @@ from sqlalchemy import Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from shared.database import Base
-from shared.models.mixins import FolderContent
+from shared.models.mixins import GeneratedContent
 
 
-class Note(FolderContent, Base):
+class Note(GeneratedContent, Base):
     __tablename__: str = "notes"
 
     content: Mapped[str] = mapped_column(String, nullable=False)

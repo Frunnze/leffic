@@ -44,9 +44,13 @@ Set `OPENAI_API_KEY`, `JWT_SECRET_KEY` and the Postgres credentials from
 
 ## Architecture
 
-Six deployables and four datastores. Every backend service is FastAPI on
+Seven deployables and four datastores. No service calls another over
+HTTP: the only cross-service traffic is the `user.deleted` event on
+RabbitMQ. Every backend service is FastAPI on
 Python 3.12 with the same layout — `run.py` → `app_factory.py` →
-`features/` and `shared/`.
+`features/` and `shared/`. Two of the deployables are background workers
+built from the content service image: the Celery generation worker and the
+user-events consumer.
 
 <p align="center">
   <img src="docs/diagrams/c1/c1-system-context.png" alt="System context (C1)" width="620">
@@ -63,18 +67,26 @@ Python 3.12 with the same layout — `run.py` → `app_factory.py` →
 | Service | Holds | Talks to |
 |---|---|---|
 | `ui-service` | SolidJS SPA, built by Vite, served by nginx | the gateway |
-| `api-gateway` | Kong, DB-less; verifies the JWT and applies CORS | every service |
-| `user-service` | Accounts and the only JWT issuer | Postgres `users` |
-| `content-management-service` | Folders, decks, cards, tests, notes, file rows, reviews | Postgres `content`, scheduler |
-| `file-processor-service` | Uploads, text extraction, PDF conversion, chatbot | Redis, OpenAI, content service |
-| `celery-worker` | The three generation tasks, same image as the file processor | OpenAI, content service |
-| `scheduler-service` | FSRS next-review dates and interval labels | MongoDB |
+| `api-gateway` | nginx with njs; verifies the JWT and applies CORS | every service |
+| `user-service` | Accounts, sealed AI provider keys, and the only JWT issuer | Postgres `users`, RabbitMQ |
+| `content-management-service` | Folders, decks, cards, tests, notes, files, reviews, scheduling, generation and the chatbot | Postgres `content`, OpenAI |
+| `content-documents` | Upload, extract-text and file, on an image with LibreOffice and OCR | Postgres `content`, the file volume |
+| `celery-worker` | The three generation tasks, same image as the content service | OpenAI, Postgres `content` |
+| `user-events-consumer` | Removes a deleted account's content, same image as the content service | RabbitMQ, Postgres `content` |
 
 ### How an import flows
 
-The file processor extracts the text, then enqueues one Celery task per
-study-unit type. The browser polls each task id until it succeeds, and each
-finished task posts its result to the content service.
+The browser uploads a file to the documents deployable, which stores the
+bytes and the row itself, then asks it to extract the text. You review that
+text, and the content API enqueues one Celery task per study-unit type. The
+browser polls each task id until it succeeds, and the worker writes each
+finished study unit straight to the content database. All four deployables
+are built from `content-management-service`; only the documents image
+carries LibreOffice and OCR.
+
+Deleting an account publishes a durable `user.deleted` event to RabbitMQ
+before the account row goes, and a consumer on the content side removes that
+learner's folders, study units and uploaded documents.
 
 ## Data
 
@@ -82,7 +94,6 @@ finished task posts its result to the content service.
 |---|---|---|
 | `users` | PostgreSQL | accounts, password hashes |
 | `content` | PostgreSQL | folders, decks, flashcards, tests, sessions, notes, files, reviews |
-| `fsrs_db` | MongoDB | per-user FSRS scheduler parameters |
 | `files` | Docker volume | the uploaded documents themselves |
 | Redis | — | Celery broker and result backend |
 
@@ -93,9 +104,9 @@ migrations. A user's root folder is the folder whose id equals their user id.
 
 - SolidJS, TypeScript, Vite
 - FastAPI, SQLAlchemy, Pydantic
-- Kong
+- nginx with njs
 - Celery, Redis
-- PostgreSQL, MongoDB
+- PostgreSQL
 - OpenAI
 - py-fsrs
 - Docker Compose

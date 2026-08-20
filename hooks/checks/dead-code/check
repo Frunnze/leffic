@@ -1,0 +1,20 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/../../_env.sh"
+
+require_binary "$vulture_binary" vulture
+
+whitelist="$repository_root/hooks/checks/dead-code/vulture_whitelist.py"
+
+echo "pre-commit: dead code (delete what nothing reaches)"
+echo "pre-commit: follow YAGNI - delete what nothing reaches, do not keep it"
+
+for service in $services; do
+    if ! (cd "$service" && "$vulture_binary" src run.py "$whitelist" \
+        --min-confidence 60); then
+        echo "pre-commit: nothing reaches this code in $service -" >&2
+        echo "pre-commit: delete it, or add it to $whitelist" >&2
+        echo "pre-commit: when a framework calls it" >&2
+        exit 1
+    fi
+done

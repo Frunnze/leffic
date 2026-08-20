@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
 from app_factory import create_app
-from features.file_system import file_storage
+from shared import file_storage
 from shared.database import get_db
 from shared.models import (
     File,
@@ -21,8 +21,11 @@ from shared.models import (
 from tests.support import (
     USER_ID,
     SessionProvider,
+    authorization,
     in_memory_sessions,
 )
+
+_NOT_FOUND = 404
 
 _HOME_ID = uuid.UUID(USER_ID)
 
@@ -49,49 +52,6 @@ def _home_folder(session: Session) -> Folder:
     return folder
 
 
-def test_saving_file_names_attaches_them_to_the_folder(
-    client: TestClient, sessions: sessionmaker[Session]
-) -> None:
-    with sessions() as session:
-        folder = _home_folder(session)
-        folder_id = str(folder.id)
-
-    response = client.post(
-        "/save-file-names",
-        json={
-            "folder_id": folder_id,
-            "file_metadata": [
-                {
-                    "file_id": str(uuid.uuid4()),
-                    "name": "notes",
-                    "extension": "pdf",
-                }
-            ],
-        },
-    )
-
-    assert response.json() == {"msg": "File names saved!"}
-
-
-def test_saving_file_names_without_a_folder_makes_one(
-    client: TestClient,
-) -> None:
-    response = client.post(
-        "/save-file-names",
-        json={
-            "file_metadata": [
-                {
-                    "file_id": str(uuid.uuid4()),
-                    "name": "orphan",
-                    "extension": "pdf",
-                }
-            ]
-        },
-    )
-
-    assert response.json() == {"msg": "File names saved!"}
-
-
 def test_deleting_a_deck_removes_its_flashcards(
     client: TestClient, sessions: sessionmaker[Session]
 ) -> None:
@@ -104,7 +64,10 @@ def test_deleting_a_deck_removes_its_flashcards(
         deck_id = str(deck.id)
 
     response = client.request(
-        "DELETE", "/delete-deck/", params={"deck_id": deck_id}
+        "DELETE",
+        "/delete-deck/",
+        params={"deck_id": deck_id},
+        headers=authorization(),
     )
 
     assert response.json() == {"msg": "Deck deleted!"}
@@ -121,7 +84,10 @@ def test_deleting_a_test(
         test_id = str(quiz.id)
 
     response = client.request(
-        "DELETE", "/delete-test/", params={"test_id": test_id}
+        "DELETE",
+        "/delete-test/",
+        params={"test_id": test_id},
+        headers=authorization(),
     )
 
     assert response.json() == {"msg": "Test deleted!"}
@@ -132,15 +98,16 @@ def test_deleting_a_note(
 ) -> None:
     with sessions() as session:
         folder = _home_folder(session)
-        note = Note(
-            folder_id=folder.id, name="N", content="c", type="general"
-        )
+        note = Note(folder_id=folder.id, name="N", content="c", type="general")
         session.add(note)
         session.commit()
         note_id = str(note.id)
 
     response = client.request(
-        "DELETE", "/delete-note/", params={"note_id": note_id}
+        "DELETE",
+        "/delete-note/",
+        params={"note_id": note_id},
+        headers=authorization(),
     )
 
     assert response.json() == {"msg": "Note deleted!"}
@@ -160,7 +127,10 @@ def test_deleting_a_file_removes_it_from_storage(
 
     with mock.patch.object(file_storage, "_FILES_DIRECTORY", str(tmp_path)):
         response = client.request(
-            "DELETE", "/delete-file/", params={"file_id": file_id}
+            "DELETE",
+            "/delete-file/",
+            params={"file_id": file_id},
+            headers=authorization(),
         )
 
     assert response.json() == {"msg": "File deleted!"}
@@ -169,7 +139,10 @@ def test_deleting_a_file_removes_it_from_storage(
 
 def test_deleting_an_unknown_file_is_not_found(client: TestClient) -> None:
     response = client.request(
-        "DELETE", "/delete-file/", params={"file_id": str(uuid.uuid4())}
+        "DELETE",
+        "/delete-file/",
+        params={"file_id": str(uuid.uuid4())},
+        headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND

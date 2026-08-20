@@ -1,0 +1,38 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/../../_env.sh"
+
+maximum_file_lines=200
+
+echo "pre-commit: file length (max $maximum_file_lines lines)"
+echo "pre-commit: follow SRP - split a file that grew past one job"
+
+source_files=$(
+    find . \
+        -name __pycache__ -prune -o \
+        -name node_modules -prune -o \
+        -name mutants -prune -o \
+        -name .git -prune -o \
+        -name .venv -prune -o \
+        -name dist -prune -o \
+        -name build -prune -o \
+        -name htmlcov -prune -o \
+        -name '.*_cache' -prune -o \
+        -name .hypothesis -prune -o \
+        -type f \( -name '*.py' -o -name '*.ts' -o -name '*.tsx' \) \
+        -print \
+        | sed 's|^\./||' \
+        | sort
+)
+
+overlong_files=$(echo "$source_files" | while read -r source_file; do
+    awk -v limit="$maximum_file_lines" -v name="$source_file" \
+        'END {if (NR > limit) print name " (" NR " lines)"}' \
+        "$source_file"
+done)
+
+if [ -n "$overlong_files" ]; then
+    echo "pre-commit: over $maximum_file_lines lines:" >&2
+    echo "$overlong_files" >&2
+    exit 1
+fi

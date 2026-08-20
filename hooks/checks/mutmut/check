@@ -1,0 +1,72 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/../../_env.sh"
+
+require_binary "$mutmut_binary" mutmut
+
+echo "pre-commit: mutation testing (staged source only)"
+echo "pre-commit: assert meaningfully - coverage is not proof of a check"
+
+# A name no mutant can have, so mutmut builds the mutants without running them.
+unmatchable_mutant="__no_such_mutant__"
+
+for service in $services; do
+    staged_sources=$(git diff --cached --name-only --diff-filter=ACMR \
+        -- "$service/src" | grep '\.py$' || true)
+
+    if [ -z "$staged_sources" ]; then
+        continue
+    fi
+
+    rm -rf "$repository_root/$service/mutants"
+    build_output=$( (cd "$service" \
+        && "$mutmut_binary" run "$unmatchable_mutant") 2>&1 || true)
+
+    every_mutant=$(cd "$service" && "$mutmut_binary" results \
+        | awk -F: '{print $1}' | tr -d ' ')
+
+    if [ -z "$every_mutant" ]; then
+        echo "pre-commit: mutmut built no mutants for $service, so" >&2
+        echo "pre-commit: nothing was mutation tested - fix the build" >&2
+        echo "pre-commit: before committing:" >&2
+        echo "$build_output" >&2
+        exit 1
+    fi
+
+    staged_mutants=""
+
+    for source_file in $staged_sources; do
+        module=$(echo "$source_file" \
+            | sed "s|^$service/src/||; s|\.py\$||; s|/|.|g")
+        matching=$(echo "$every_mutant" | grep "^$module\." || true)
+        staged_mutants="$staged_mutants $matching"
+    done
+
+    if [ -z "$(echo "$staged_mutants" | tr -d ' ')" ]; then
+        echo "pre-commit: no mutant covers what is staged in $service"
+        continue
+    fi
+
+    echo "pre-commit: mutating what is staged in $service"
+
+    mutation_failed=""
+
+    if ! mutation_output=$(cd "$service" \
+        && "$mutmut_binary" run $staged_mutants 2>&1); then
+        mutation_failed=1
+    fi
+
+    surviving_mutants=$(cd "$service" && "$mutmut_binary" results \
+        | grep ': survived$' || true)
+
+    if [ -z "$surviving_mutants" ] && [ -n "$mutation_failed" ]; then
+        echo "$mutation_output" >&2
+        exit 1
+    fi
+
+    if [ -n "$surviving_mutants" ]; then
+        echo "pre-commit: these mutants survived in $service:" >&2
+        echo "$surviving_mutants" >&2
+        exit 1
+    fi
+done

@@ -4,7 +4,6 @@ from datetime import UTC, datetime, timedelta
 from typing import cast
 
 import pytest
-import requests
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -14,10 +13,13 @@ from shared.models import Flashcard, FlashcardDeck, Folder
 from tests.support import (
     OTHER_USER_ID,
     USER_ID,
+    FakeHTTPError,
     SessionProvider,
     authorization,
     in_memory_sessions,
 )
+
+_BAD_REQUEST = 400
 
 _HOME_ID = uuid.UUID(USER_ID)
 
@@ -31,8 +33,8 @@ class FakeResponse:
         self.status_code: int = status_code
 
     def raise_for_status(self) -> None:
-        if self.status_code >= 400:
-            raise requests.HTTPError(f"status {self.status_code}")
+        if self.status_code >= _BAD_REQUEST:
+            raise FakeHTTPError(self.status_code)
 
     def json(self) -> dict[str, object]:
         return self.payload
@@ -131,9 +133,7 @@ def test_another_users_cards_are_not_offered(
 
     with sessions() as session:
         stranger = uuid.UUID(OTHER_USER_ID)
-        session.add(
-            Folder(id=stranger, name="Home", user_id=stranger)
-        )
+        session.add(Folder(id=stranger, name="Home", user_id=stranger))
         deck = FlashcardDeck(folder_id=stranger, name="Theirs")
         deck.flashcards.append(Flashcard(type="basic", content={"q": "c"}))
         session.add(deck)

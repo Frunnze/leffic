@@ -1,116 +1,31 @@
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 51;
+.review-page {
   display: flex;
   flex-direction: column;
-  background: var(--surface-2);
-  overflow: auto;
+  min-height: 0;
 }
 
-.overlay-bar {
+.review-bar {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   flex: none;
   min-height: 52px;
-  padding: 0 var(--space-3) 0 var(--space-4);
+  padding: 0 var(--space-3) 0 calc(var(--rail-inline) + var(--space-4));
   border-bottom: 1px solid var(--line);
   background: var(--surface);
 }
 
-.overlay-title {
+.review-bar-title {
   font-size: var(--text-sm);
   font-weight: 600;
 }
 
-.overlay-bar .btn-icon {
+.review-bar .btn-icon {
   margin-left: auto;
 }
 
-.overlay .review,
-.overlay .test-stage {
+.review-page .review,
+.review-page .test-stage {
   flex: 1;
   min-height: 0;
-  padding-left: var(--space-4);
-  background: var(--surface-2);
-}
-
-.toast-stack {
-  position: fixed;
-  top: var(--space-4);
-  right: var(--space-4);
-  z-index: 60;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  width: 340px;
-  max-width: calc(100% - var(--space-8));
-}
-
-.toast {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--ink-3);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-2);
-}
-
-.toast-icon {
-  margin-top: 2px;
-}
-
-.toast-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.toast-title {
-  font-size: var(--text-sm);
-  font-weight: 600;
-}
-
-.toast-detail {
-  color: var(--ink-2);
-  font-size: var(--text-sm);
-}
-
-.toast .btn-icon {
-  flex: none;
-  margin-left: auto;
-}
-
-.toast-progress {
-  border-left-color: var(--brand);
-}
-
-.toast-progress .toast-icon {
-  color: var(--brand);
-}
-
-.toast-success {
-  border-left-color: var(--success);
-}
-
-.toast-success .toast-icon {
-  color: var(--success);
-}
-
-.toast-failure {
-  border-left-color: var(--danger);
-}
-
-.toast-failure .toast-icon {
-  color: var(--danger);
-}
-
-.toast .text-action {
-  align-self: flex-start;
-  margin-top: var(--space-1);
 }

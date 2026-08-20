@@ -30,3 +30,10 @@ class FolderContent(NamedRecord):
     folder_id: Mapped[uuid.UUID] = mapped_column(
         FlexibleUuid(), ForeignKey("folders.id"), nullable=False
     )
+
+
+class GeneratedContent(FolderContent):
+    source_kind: Mapped[str | None] = mapped_column(String, nullable=True)
+    source_reference: Mapped[str | None] = mapped_column(
+        String, nullable=True
+    )

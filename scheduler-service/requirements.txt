@@ -1,6 +1,0 @@
-fsrs
-pymongo
-fastapi==0.115.12
-uvicorn
-PyJWT
-pydantic

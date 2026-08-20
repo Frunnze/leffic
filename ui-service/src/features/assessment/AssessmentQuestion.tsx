@@ -1,14 +1,20 @@
 import { For, Show, type JSX } from "solid-js";
 import { AssessmentProgress } from "./assessment-progress";
+import { TestItemActions } from "./TestItemActions";
 import { Meter } from "../../shared/ui/Meter";
-import type { AssessmentItem } from "./assessment-models";
+import type {
+  AssessmentAnswer,
+  AssessmentItem,
+} from "./assessment-models";
+import type { EditedTestItem } from "./TestItemEditor";
 
 export type AssessmentQuestionProps = {
   readonly item: AssessmentItem;
-  readonly chosenAnswers: readonly number[];
+  readonly chosenAnswers: readonly AssessmentAnswer[];
   readonly position: number;
   readonly totalItems: number;
-  readonly onChoose: (optionId: number) => void;
+  readonly onChoose: (answer: AssessmentAnswer) => void;
+  readonly onEdit: (edited: EditedTestItem) => void;
   readonly onBack: () => void;
   readonly onNext: () => void;
 };
@@ -26,24 +32,39 @@ export function AssessmentQuestion(props: AssessmentQuestionProps): JSX.Element 
       />
 
       <div class="test-card">
+        <TestItemActions item={props.item} onSave={props.onEdit} />
         <h1 class="test-question">{props.item.question}</h1>
-        <div class="test-options">
-          <For each={props.item.options}>
-            {(option, index) => (
-              <button
-                class="test-option"
-                type="button"
-                aria-pressed={props.chosenAnswers.includes(option.id)}
-                onClick={() => props.onChoose(option.id)}
-              >
-                <span class="test-key">
-                  {AssessmentProgress.optionLetter(index())}
-                </span>
-                {option.option}
-              </button>
-            )}
-          </For>
-        </div>
+        <Show
+          when={props.item.options.length > 0}
+          fallback={
+            <input
+              class="input test-typed"
+              type="text"
+              aria-label="Your answer"
+              placeholder="Type your answer"
+              value={String(props.chosenAnswers[0] ?? "")}
+              onInput={(event) => props.onChoose(event.currentTarget.value)}
+            />
+          }
+        >
+          <div class="test-options">
+            <For each={props.item.options}>
+              {(option, index) => (
+                <button
+                  class="test-option"
+                  type="button"
+                  aria-pressed={props.chosenAnswers.includes(option.id)}
+                  onClick={() => props.onChoose(option.id)}
+                >
+                  <span class="test-key">
+                    {AssessmentProgress.optionLetter(index())}
+                  </span>
+                  {option.option}
+                </button>
+              )}
+            </For>
+          </div>
+        </Show>
       </div>
 
       <div class="test-nav">

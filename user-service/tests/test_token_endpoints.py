@@ -16,6 +16,9 @@ from features.authentication.access import (
 )
 from shared.database import Base, get_db
 
+_OK = 200
+_UNAUTHORIZED = 401
+
 _EMAIL = "learner@example.com"
 _USERNAME = "learner"
 _LOGIN_PHRASE = "correct horse battery staple"
@@ -73,14 +76,14 @@ def test_refresh_token_issues_a_new_access_token(
 
     response = client.post("/refresh-token")
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
     assert response.json()["user_id"] == user_id
 
 
 def test_refresh_token_rejects_a_missing_cookie(client: TestClient) -> None:
     response = client.post("/refresh-token")
 
-    assert response.status_code == 401
+    assert response.status_code == _UNAUTHORIZED
     assert response.json()["detail"] == "Missing refresh token"
 
 
@@ -89,7 +92,7 @@ def test_refresh_token_rejects_a_forged_cookie(client: TestClient) -> None:
 
     response = client.post("/refresh-token")
 
-    assert response.status_code == 401
+    assert response.status_code == _UNAUTHORIZED
     assert response.json()["detail"] == "Invalid token"
 
 
@@ -101,7 +104,7 @@ def test_refresh_token_rejects_a_token_without_a_user_id(
 
     response = client.post("/refresh-token")
 
-    assert response.status_code == 401
+    assert response.status_code == _UNAUTHORIZED
     assert response.json()["detail"] == "Invalid token"
 
 
@@ -123,5 +126,5 @@ def test_logout_clears_the_refresh_cookie(client: TestClient) -> None:
 
     response = client.post("/logout")
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
     assert response.json()["message"] == "Successfully logged out"

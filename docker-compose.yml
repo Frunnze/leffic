@@ -1,19 +1,34 @@
-x-file-processor: &file-processor
-  build: ./file-processor-service
+x-healthcheck-timing: &healthcheck-timing
+  interval: 5s
+  timeout: 5s
+  retries: 20
+  start_period: 10s
+
+x-content-service: &content-service
+  build: ./content-management-service
   environment:
+    - CM_DB_USER=postgres
+    - CM_DB_PASS=postgres
+    - CM_DB_HOST=postgres
+    - CM_DB_PORT=5432
     - REDIS_HOST=redis:6379
     - OPENAI_API_KEY=${OPENAI_API_KEY}
-    - CONTENT_MANAGEMENT_SERVICE=http://content-management-service:8000
-  restart: unless-stopped
-
-x-postgres-client: &postgres-client
+    - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
   depends_on:
-    - postgres
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    rabbitmq:
+      condition: service_healthy
   restart: unless-stopped
 
 services:
   frontend:
-    build: ./ui-service
+    build:
+      context: ./ui-service
+      args:
+        - VITE_GATEWAY_URL=${VITE_GATEWAY_URL:-http://localhost:8888}
     ports:
       - "3009:80"
     restart: unless-stopped
@@ -27,39 +42,35 @@ services:
     depends_on:
       - user-service
       - content-management-service
-      - file-processor-service
-      - scheduler-service
+      - content-documents
     restart: unless-stopped
 
-  file-processor-service:
-    <<: *file-processor
+  content-management-service:
+    <<: *content-service
     volumes:
       - files:/app/files
-    depends_on:
-      - redis
-      - content-management-service
+
+  content-documents:
+    <<: *content-service
+    build:
+      context: ./content-management-service
+      dockerfile: Dockerfile.documents
+    volumes:
+      - files:/app/files
 
   celery-worker:
-    <<: *file-processor
-    depends_on:
-      - redis
-      - file-processor-service
-    command: celery -A shared.celery_app worker --loglevel info
+    <<: *content-service
+    command: >
+      celery -A features.study_units_generation.celery_app worker
+      --loglevel info
 
-  content-management-service:
-    <<: *postgres-client
-    build: ./content-management-service
-    environment:
-      - CM_DB_USER=postgres
-      - CM_DB_PASS=postgres
-      - CM_DB_HOST=postgres
-      - CM_DB_PORT=5432
-      - SCHEDULER_SERVICE=http://scheduler-service:8000
+  user-events-consumer:
+    <<: *content-service
     volumes:
       - files:/app/files
+    command: python run_consumer.py
 
   user-service:
-    <<: *postgres-client
     build: ./user-service
     environment:
       - DB_USER=postgres
@@ -67,19 +78,30 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-
-  scheduler-service:
-    build: ./scheduler-service
-    environment:
-      - MONGODB_HOST=mongodb:27017
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
     depends_on:
-      - mongodb
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.13-alpine
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
+      <<: *healthcheck-timing
     restart: unless-stopped
 
   redis:
     image: redis:6.2-alpine
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      <<: *healthcheck-timing
     restart: unless-stopped
 
   postgres:
@@ -89,16 +111,13 @@ services:
       POSTGRES_PASSWORD: postgres
     volumes:
       - postgres:/var/lib/postgresql/data
-    restart: unless-stopped
-
-  mongodb:
-    image: mongo:latest
-    volumes:
-      - mongodb:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      <<: *healthcheck-timing
     restart: unless-stopped
 
 volumes:
+  rabbitmq:
   redis-data:
   files:
   postgres:
-  mongodb:

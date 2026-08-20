@@ -19,30 +19,23 @@ type Method = {
   readonly icon: IconName;
   readonly name: string;
   readonly claim: string;
-  readonly applied: string;
 };
 
 const METHODS: readonly Method[] = [
   {
     icon: "test",
     name: "Active recall",
-    claim: "Pulling an answer from memory teaches you more than reading it again.",
-    applied:
-      "Every flashcard and test question makes you produce the answer before it is shown.",
+    claim: "You produce the answer before seeing it, on every card and question.",
   },
   {
     icon: "study",
     name: "Spaced repetition",
-    claim: "The same hour of study is worth more spread out than crammed.",
-    applied:
-      "An FSRS scheduler returns each item just before you would have forgotten it.",
+    claim: "FSRS brings each item back just before you would forget it.",
   },
   {
     icon: "flashcards",
     name: "Interleaving",
-    claim: "Mixing topics is harder in the moment and stronger later.",
-    applied:
-      "Reviewing a folder draws from every deck inside it, not one deck at a time.",
+    claim: "Folder review mixes every deck — harder now, stronger later.",
   },
 ];
 
@@ -61,19 +54,15 @@ export default function LandingPage(): JSX.Element {
         </header>
 
         <div class="landing-hero">
-          <h1 class="landing-title">Learn it once. Remember it for good.</h1>
+          <h1 class="landing-title">Learn efficiently.</h1>
           <p class="landing-lede">
-            Turn any file, link or topic into flashcards, notes and a test — then
-            review them exactly when you're about to forget.
+            Any file, link or topic becomes flashcards, a note and a test.
           </p>
           <div class="landing-cta">
             <A class="btn btn-primary btn-lg" href="/sign-up">
               Start free
             </A>
           </div>
-          <p class="landing-note">
-            No card needed. Your first deck takes about a minute.
-          </p>
         </div>
 
         <section class="mechanic" aria-label="How Leffic works">
@@ -112,23 +101,15 @@ export default function LandingPage(): JSX.Element {
               total={55}
             />
             <p class="mechanic-note">
-              Each item comes back just before you would have forgotten it, so
-              most days are short.
+              Each item returns just before you would forget it.
             </p>
           </div>
         </section>
 
         <section class="method" aria-labelledby="method-title">
-          <div class="method-heading">
-            <h2 class="method-title" id="method-title">
-              Three findings from learning science, built in
-            </h2>
-            <p class="method-lede">
-              The testing effect, the spacing effect and mixed practice are among
-              the most replicated results in the study of memory. Leffic is
-              assembled out of all three rather than leaving them to you.
-            </p>
-          </div>
+          <h2 class="method-title" id="method-title">
+            Three findings from learning research, built in
+          </h2>
 
           <ul class="method-list">
             <For each={METHODS}>
@@ -137,7 +118,6 @@ export default function LandingPage(): JSX.Element {
                   <Icon name={method.icon} />
                   <h3 class="method-name">{method.name}</h3>
                   <p class="method-claim">{method.claim}</p>
-                  <p class="method-applied">{method.applied}</p>
                 </li>
               )}
             </For>

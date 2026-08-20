@@ -4,7 +4,6 @@ from datetime import UTC, datetime, timedelta
 from typing import cast
 
 import pytest
-import requests
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -14,10 +13,14 @@ from shared.models import Flashcard, FlashcardDeck, Folder
 from tests.support import (
     OTHER_USER_ID,
     USER_ID,
+    FakeHTTPError,
     SessionProvider,
     authorization,
     in_memory_sessions,
 )
+
+_BAD_REQUEST = 400
+_EXPECTED_TOTAL_FLASHCARDS = 2
 
 _HOME_ID = uuid.UUID(USER_ID)
 
@@ -31,11 +34,12 @@ class FakeResponse:
         self.status_code: int = status_code
 
     def raise_for_status(self) -> None:
-        if self.status_code >= 400:
-            raise requests.HTTPError(f"status {self.status_code}")
+        if self.status_code >= _BAD_REQUEST:
+            raise FakeHTTPError(self.status_code)
 
     def json(self) -> dict[str, object]:
         return self.payload
+
 
 @pytest.fixture
 def sessions() -> sessionmaker[Session]:
@@ -73,9 +77,7 @@ def test_cards_in_a_nested_subfolder_are_offered(
         child = Folder(parent_id=_HOME_ID, name="Sub", user_id=_HOME_ID)
         session.add(child)
         session.commit()
-        grandchild = Folder(
-            parent_id=child.id, name="Deep", user_id=_HOME_ID
-        )
+        grandchild = Folder(parent_id=child.id, name="Deep", user_id=_HOME_ID)
         session.add(grandchild)
         session.commit()
         deck = FlashcardDeck(folder_id=grandchild.id, name="Deep deck")
@@ -89,7 +91,10 @@ def test_cards_in_a_nested_subfolder_are_offered(
         headers=authorization(),
     )
 
-    assert cast("dict[str, object]", response.json())["total_flashcards"] == 2
+    assert (
+        cast("dict[str, object]", response.json())["total_flashcards"]
+        == _EXPECTED_TOTAL_FLASHCARDS
+    )
 
 
 def test_cards_under_a_folder_i_do_not_own_are_hidden(

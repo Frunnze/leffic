@@ -61,7 +61,7 @@ def test_id(sessions: sessionmaker[Session]) -> str:
 
 
 def test_prepare_content_shuffles_and_ids_the_options() -> None:
-    prepared = prepare_content(_QUESTION)
+    prepared = prepare_content(_QUESTION, "multiple_choice")
     options = cast("list[dict[str, object]]", prepared["shuffled_options"])
     by_id = {int(str(option["id"])): option["option"] for option in options}
 
@@ -72,14 +72,18 @@ def test_prepare_content_shuffles_and_ids_the_options() -> None:
 
 
 def test_prepare_content_copes_without_false_options() -> None:
-    prepared = prepare_content({"question": "q", "true_option": "a"})
+    prepared = prepare_content(
+        {"question": "q", "true_option": "a"}, "multiple_choice"
+    )
     options = cast("list[dict[str, object]]", prepared["shuffled_options"])
 
     assert options == [{"id": 0, "option": "a"}]
 
 
 def test_prepare_content_without_a_true_option() -> None:
-    prepared = prepare_content({"question": "q", "false_options": ["b"]})
+    prepared = prepare_content(
+        {"question": "q", "false_options": ["b"]}, "multiple_choice"
+    )
     options = cast("list[dict[str, object]]", prepared["shuffled_options"])
     by_id = {int(str(option["id"])): option["option"] for option in options}
 
@@ -87,9 +91,9 @@ def test_prepare_content_without_a_true_option() -> None:
 
 
 def test_the_true_option_scores_one() -> None:
-    assert evaluate_accuracy([0]) == 1
+    assert evaluate_accuracy([0], "multiple_choice", {}) == 1
 
 
 def test_any_other_option_scores_zero() -> None:
-    assert evaluate_accuracy([2]) == 0
+    assert evaluate_accuracy([2], "multiple_choice", {}) == 0
 

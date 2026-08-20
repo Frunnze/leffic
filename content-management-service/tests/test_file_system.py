@@ -22,6 +22,8 @@ from tests.support import (
     in_memory_sessions,
 )
 
+_UNPROCESSABLE_ENTITY = 422
+
 _HOME_ID = uuid.UUID(USER_ID)
 
 
@@ -87,7 +89,7 @@ def test_creating_a_folder_needs_a_parent(client: TestClient) -> None:
         headers=authorization(),
     )
 
-    assert response.status_code == 422
+    assert response.status_code == _UNPROCESSABLE_ENTITY
 
 
 def test_accessing_home_creates_it_when_missing(
@@ -147,9 +149,7 @@ def test_accessing_a_folder_lists_every_kind_of_child(
         session.add(Folder(parent_id=folder.id, name="Sub", user_id=_HOME_ID))
         session.add(FlashcardDeck(folder_id=folder.id, name="Deck"))
         session.add(Test(folder_id=folder.id, name="Quiz"))
-        session.add(
-            File(folder_id=folder.id, name="doc", extension="pdf")
-        )
+        session.add(File(folder_id=folder.id, name="doc", extension="pdf"))
         session.commit()
 
     response = client.get(
@@ -181,4 +181,4 @@ def test_accessing_an_unknown_folder_falls_back_to_home(
 def test_accessing_needs_a_folder_id(client: TestClient) -> None:
     response = client.get("/access-folder/", headers=authorization())
 
-    assert response.status_code == 422
+    assert response.status_code == _UNPROCESSABLE_ENTITY

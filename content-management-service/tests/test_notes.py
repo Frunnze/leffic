@@ -3,20 +3,22 @@ from collections.abc import Iterator
 from typing import cast
 
 import pytest
-import requests
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
 from app_factory import create_app
 from shared.database import get_db
 from shared.models import Flashcard, FlashcardDeck, Folder, Note
-from shared.settings import SCHEDULER_SERVICE
 from tests.support import (
     USER_ID,
+    FakeHTTPError,
     SessionProvider,
     authorization,
     in_memory_sessions,
 )
+
+_BAD_REQUEST = 400
+_NOT_FOUND = 404
 
 _HOME_ID = uuid.UUID(USER_ID)
 
@@ -30,8 +32,8 @@ class FakeResponse:
         self.status_code: int = status_code
 
     def raise_for_status(self) -> None:
-        if self.status_code >= 400:
-            raise requests.HTTPError(f"status {self.status_code}")
+        if self.status_code >= _BAD_REQUEST:
+            raise FakeHTTPError(self.status_code)
 
     def json(self) -> dict[str, object]:
         return self.payload
@@ -65,9 +67,13 @@ def deck_id(sessions: sessionmaker[Session]) -> str:
 
 
 def test_reading_an_unknown_note_is_not_found(client: TestClient) -> None:
-    response = client.get("/note", params={"note_id": str(uuid.uuid4())})
+    response = client.get(
+        "/note",
+        params={"note_id": str(uuid.uuid4())},
+        headers=authorization(),
+    )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
 
 
 def test_note_stats_count_read_and_due(
@@ -112,7 +118,7 @@ def test_note_stats_need_an_owned_folder(client: TestClient) -> None:
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
 
 
 def test_note_stats_report_nothing_for_an_empty_folder(
@@ -128,9 +134,5 @@ def test_note_stats_report_nothing_for_an_empty_folder(
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
     assert cast("dict[str, str]", response.json())["msg"] == "No notes!"
-
-
-def test_the_scheduler_url_comes_from_settings() -> None:
-    assert SCHEDULER_SERVICE == "http://scheduler"

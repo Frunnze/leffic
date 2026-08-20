@@ -9,8 +9,19 @@ from shared.models import (
     Note,
     Test,
 )
+from shared.models.mixins import GeneratedContent
 
 ContentEntry = dict[str, str]
+
+
+def _source_of(row: GeneratedContent) -> ContentEntry:
+    if row.source_kind is None:
+        return {}
+
+    return {
+        "source_kind": row.source_kind,
+        "source_reference": row.source_reference or "",
+    }
 
 
 def entries_in(
@@ -22,7 +33,7 @@ def entries_in(
     entries.extend(_flashcard_decks(db, folder_id, owner_id))
     entries.extend(_tests(db, folder_id, owner_id))
     entries.extend(_files(db, folder_id, owner_id))
-    entries.extend(_notes(db, folder_id))
+    entries.extend(_notes(db, folder_id, owner_id))
 
     return entries
 
@@ -63,6 +74,7 @@ def _flashcard_decks(
             "name": row.name,
             "created_at": str(row.created_at),
             "type": "flashcard_deck",
+            **_source_of(row),
         }
         for row in rows
     ]
@@ -84,6 +96,7 @@ def _tests(
             "name": row.name,
             "created_at": str(row.created_at),
             "type": "test",
+            **_source_of(row),
         }
         for row in rows
     ]
@@ -111,10 +124,13 @@ def _files(
     ]
 
 
-def _notes(db: Session, folder_id: str) -> list[ContentEntry]:
+def _notes(
+    db: Session, folder_id: str, owner_id: uuid.UUID
+) -> list[ContentEntry]:
     rows = (
         db.query(Note)
-        .filter(Note.folder_id == folder_id)
+        .join(Folder)
+        .filter(Folder.id == folder_id, Folder.user_id == owner_id)
         .all()
     )
 
@@ -124,6 +140,7 @@ def _notes(db: Session, folder_id: str) -> list[ContentEntry]:
             "name": row.name,
             "created_at": str(row.created_at),
             "type": "note",
+            **_source_of(row),
         }
         for row in rows
     ]

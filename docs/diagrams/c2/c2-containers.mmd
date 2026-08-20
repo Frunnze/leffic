@@ -5,33 +5,35 @@ config:
   layout: elk
   theme: neutral
 ---
-flowchart TB
+flowchart LR
     learner["«person»<br/><b>Learner</b><br/>Imports material and reviews it"]
 
     subgraph leffic["Leffic"]
-        ui["«container»<br/><b>Web app</b><br/>SolidJS / TypeScript, Vite, served by nginx<br/>Folder tree, import menu, flashcard and test<br/>review, note reader, chatbot panel"]
+        ui["«container»<br/><b>Web app</b><br/>SolidJS / TypeScript, Vite, served by nginx<br/>Folder tree, import dialog, flashcard and test<br/>review, note reader, settings, chatbot panel"]
 
-        gateway["«container»<br/><b>API gateway</b><br/>Kong 3.9, DB-less<br/>One public port; verifies the JWT and applies<br/>CORS before anything reaches a service"]
+        gateway["«container»<br/><b>API gateway</b><br/>nginx with njs<br/>One public port; verifies the JWT and applies<br/>CORS before anything reaches a service"]
 
-        userService["«container»<br/><b>User service</b><br/>FastAPI / Python<br/>The only identity authority: sign-up, login,<br/>refresh, and JWT issuance"]
+        userService["«container»<br/><b>User service</b><br/>FastAPI / Python<br/>The only identity authority: sign-up, login,<br/>refresh, account settings and sealed AI keys"]
 
-        contentService["«container»<br/><b>Content service</b><br/>FastAPI / SQLAlchemy<br/>System of record for folders, decks, cards,<br/>tests, notes and files; serves the due counts"]
+        subgraph contentCodebase["Content service — one codebase, four deployables"]
+            contentService["«container»<br/><b>Content API</b><br/>FastAPI / SQLAlchemy, slim image<br/>System of record for folders, decks, cards,<br/>tests, notes and files; starts generation, schedules<br/>the next review with py-fsrs, serves the chatbot"]
 
-        fileService["«container»<br/><b>File processor</b><br/>FastAPI / Python<br/>Uploads, text extraction, LibreOffice to PDF,<br/>enqueues generation, answers the chatbot"]
+            documents["«container»<br/><b>Documents</b><br/>Same code, image with LibreOffice and OCR<br/>Serves upload, extract-text and file: the three<br/>paths that need the document toolchain"]
 
-        worker["«container»<br/><b>Generation worker</b><br/>Celery / Python, same image<br/>Three tasks per import: flashcards, note, test;<br/>posts each result to the content service"]
+            worker["«container»<br/><b>Generation worker</b><br/>Celery / Python, same image<br/>Runs the three generation tasks that live in<br/>this service and writes their results itself"]
 
-        scheduler["«container»<br/><b>Scheduler service</b><br/>FastAPI / py-fsrs<br/>Computes the next review date and the<br/>per-rating interval labels"]
+            userEvents["«container»<br/><b>User events consumer</b><br/>pika / Python, same image<br/>On user.deleted, removes that learner's folders<br/>and their uploaded documents"]
+        end
 
-        userDb[("«container»<br/><b>User database</b><br/>PostgreSQL<br/>Accounts and password hashes")]
+        userDb[("«container»<br/><b>User database</b><br/>PostgreSQL<br/>Accounts, password hashes and sealed keys")]
 
         contentDb[("«container»<br/><b>Content database</b><br/>PostgreSQL<br/>Folders, study units, review history<br/>and test sessions")]
 
-        schedulerDb[("«container»<br/><b>Scheduler store</b><br/>MongoDB<br/>Per-user FSRS parameters")]
-
         queue[("«container»<br/><b>Task queue</b><br/>Redis<br/>Celery broker and result backend")]
 
-        fileVolume[("«container»<br/><b>File store</b><br/>Shared Docker volume<br/>Uploaded documents, read by both the file<br/>processor and the content service")]
+        events[("«container»<br/><b>Event broker</b><br/>RabbitMQ<br/>Durable topic exchange for domain events<br/>between services")]
+
+        fileVolume[("«container»<br/><b>File store</b><br/>Docker volume<br/>Uploaded documents and their converted PDFs")]
     end
 
     openai["«external system»<br/><b>OpenAI Platform</b><br/>Study-unit generation and chatbot replies"]
@@ -40,39 +42,44 @@ flowchart TB
 
     learner -->|"Uses [HTTPS]"| ui
     ui -->|"Calls every API through one origin [HTTPS/JSON]"| gateway
-    gateway -->|"Signs up, logs in, refreshes the access token [HTTP/JSON]"| userService
-    gateway -->|"Reads folders and study units, records reviews [HTTP/JSON]"| contentService
-    gateway -->|"Uploads files, starts a generation, polls its status [HTTP/JSON]"| fileService
-    gateway -->|"Asks for the per-rating interval labels [HTTP/JSON]"| scheduler
+    gateway -->|"Signs up, logs in, refreshes the token, changes the account [HTTP/JSON]"| userService
+    gateway -->|"Reads folders and units, records reviews, starts generation, asks the chatbot [HTTP/JSON]"| contentService
+    gateway -->|"Uploads a file, extracts its text, reads it back as PDF [HTTP/JSON]"| documents
 
     userService -->|"Stores accounts in [SQLAlchemy]"| userDb
-    contentService -->|"Stores folders, units and reviews in [SQLAlchemy]"| contentDb
-    contentService -->|"Asks for the next review date on each rating [HTTP/JSON]"| scheduler
-    contentService -->|"Reads and deletes uploaded documents on [Filesystem]"| fileVolume
-    scheduler -->|"Loads the user's tuned scheduler from [PyMongo]"| schedulerDb
+    userService -->|"Publishes user.deleted, confirmed before the account goes [AMQP]"| events
 
-    fileService -->|"Writes uploads, converts them to PDF on [Filesystem]"| fileVolume
-    fileService -->|"Records the uploaded file metadata in [HTTP/JSON]"| contentService
-    fileService -->|"Enqueues one task per study-unit type on [Celery]"| queue
-    fileService -->|"Answers the chatbot with [HTTPS/JSON]"| openai
-    fileService -->|"Extracts the source text from [HTTPS]"| sources
+    contentService -->|"Stores folders, units and reviews in [SQLAlchemy]"| contentDb
+    contentService -->|"Reads and deletes uploaded documents on [Filesystem]"| fileVolume
+    contentService -->|"Answers the chatbot with [HTTPS/JSON]"| openai
+
+    documents -->|"Writes uploads, converts them to PDF on [Filesystem]"| fileVolume
+    documents -->|"Records the uploaded file itself in [SQLAlchemy]"| contentDb
+    documents -->|"Extracts the source text from [HTTPS]"| sources
+
+    contentService -->|"Enqueues one task per study-unit type on [Celery]"| queue
 
     queue -->|"Delivers the queued generation tasks to [Celery]"| worker
     worker -->|"Generates the flashcards, note and test with [HTTPS/JSON]"| openai
-    worker -->|"Saves each finished study unit through [HTTP/JSON]"| contentService
+    worker -->|"Writes each finished study unit to [SQLAlchemy]"| contentDb
+
+    events -->|"Delivers user.deleted to the durable queue of [AMQP]"| userEvents
+    userEvents -->|"Deletes that learner's folders and units from [SQLAlchemy]"| contentDb
+    userEvents -->|"Deletes that learner's uploaded documents on [Filesystem]"| fileVolume
 
     style learner fill:#08427b,stroke:#052e56,color:#ffffff
     style ui fill:#1168bd,stroke:#0b4884,color:#ffffff
     style gateway fill:#1168bd,stroke:#0b4884,color:#ffffff
     style userService fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style contentCodebase fill:#eef4fb,stroke:#98b9dc,color:#0b4884
     style contentService fill:#1168bd,stroke:#0b4884,color:#ffffff
-    style fileService fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style documents fill:#1168bd,stroke:#0b4884,color:#ffffff
     style worker fill:#1168bd,stroke:#0b4884,color:#ffffff
-    style scheduler fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style userEvents fill:#1168bd,stroke:#0b4884,color:#ffffff
     style userDb fill:#438dd5,stroke:#2e6295,color:#ffffff
     style contentDb fill:#438dd5,stroke:#2e6295,color:#ffffff
-    style schedulerDb fill:#438dd5,stroke:#2e6295,color:#ffffff
     style queue fill:#438dd5,stroke:#2e6295,color:#ffffff
+    style events fill:#438dd5,stroke:#2e6295,color:#ffffff
     style fileVolume fill:#438dd5,stroke:#2e6295,color:#ffffff
     style openai fill:#999999,stroke:#6b6b6b,color:#ffffff
     style sources fill:#999999,stroke:#6b6b6b,color:#ffffff

@@ -31,6 +31,14 @@ export class NotesApi {
     });
   }
 
+  static asPlainText(html: string): string {
+    return html
+      .replace(TAG_PATTERN, " ")
+      .split(WHITESPACE_PATTERN)
+      .filter((word) => word.length > 0)
+      .join(" ");
+  }
+
   private static readingMinutes(html: string): number | null {
     const wordCount = html
       .replace(TAG_PATTERN, " ")

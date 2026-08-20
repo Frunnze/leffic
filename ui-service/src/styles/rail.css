@@ -97,10 +97,10 @@
 
 .page {
   display: flex;
+  align-items: flex-start;
   width: 100%;
   min-height: 100%;
   padding-left: var(--rail-inline);
-  padding-bottom: var(--rail-block);
 }
 
 @media (max-width: 767px) {

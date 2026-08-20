@@ -26,6 +26,9 @@ export type IconName =
   | "failure"
   | "check"
   | "chevronRight"
+  | "send"
+  | "bookmark"
+  | "mnemonic"
   | "start";
 
 type IconShape = {
@@ -168,6 +171,21 @@ export const ICONS: Readonly<Record<IconName, IconShape>> = {
     viewBox: "0 0 24 24",
     body:
       "<path d=\"M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.42 1.41l4.58-4.58a1 1 0 0 0 0-1.42L10.71 6.71a1 1 0 0 0-1.42 0Z\"/>",
+  },
+  send: {
+    viewBox: "0 0 24 24",
+    body:
+      "<path d=\"M11.29 4.29a1 1 0 0 1 1.42 0l5.58 5.58a1 1 0 1 1-1.42 1.42L13 7.41V19a1 1 0 1 1-2 0V7.41l-3.87 3.88a1 1 0 0 1-1.42-1.42Z\"/>",
+  },
+  mnemonic: {
+    viewBox: "0 0 24 24",
+    body:
+      "<path d=\"M12 2a7 7 0 0 0-4.2 12.6c.44.33.7.85.7 1.4V17a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1v-1a1.75 1.75 0 0 1 .7-1.4A7 7 0 0 0 12 2Zm0 2a5 5 0 0 1 3 9 3.74 3.74 0 0 0-1.4 2h-3.2A3.74 3.74 0 0 0 9 13a5 5 0 0 1 3-9Z\"/><path d=\"M9.5 20a1 1 0 0 1 1-1h3a1 1 0 0 1 0 2h-3a1 1 0 0 1-1-1Z\"/>",
+  },
+  bookmark: {
+    viewBox: "0 0 24 24",
+    body:
+      "<path d=\"M7 3a2 2 0 0 0-2 2v15a1 1 0 0 0 1.55.83L12 17.2l5.45 3.63A1 1 0 0 0 19 20V5a2 2 0 0 0-2-2Zm0 2h10v13.13l-4.45-2.96a1 1 0 0 0-1.1 0L7 18.13Z\"/>",
   },
   start: {
     viewBox: "0 0 20 20",

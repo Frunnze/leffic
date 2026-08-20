@@ -8,8 +8,9 @@ export type PromptDialogProps = {
   readonly description: string;
   readonly label: string;
   readonly placeholder: string;
-  readonly inputType: "text" | "url";
+  readonly inputType: "text" | "url" | "password";
   readonly confirmLabel: string;
+  readonly confirmTone?: "primary" | "danger";
   readonly onConfirm: (value: string) => void;
   readonly onCancel: () => void;
 };
@@ -88,7 +89,15 @@ export function PromptDialog(props: PromptDialogProps): JSX.Element {
           <button class="btn" type="button" onClick={() => props.onCancel()}>
             Cancel
           </button>
-          <button class="btn btn-primary" type="submit" disabled={isEmpty()}>
+          <button
+            class={
+              props.confirmTone === "danger"
+                ? "btn btn-danger"
+                : "btn btn-primary"
+            }
+            type="submit"
+            disabled={isEmpty()}
+          >
             {props.confirmLabel}
           </button>
         </div>

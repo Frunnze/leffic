@@ -1,8 +1,10 @@
 import { HttpClient } from "../../shared/api/http";
 import { Json, type JsonObject } from "../../shared/api/json";
+import { FlashcardContent } from "./flashcard-content";
 import type {
   Flashcard,
   FlashcardDeck,
+  FlashcardFace,
   FlashcardRating,
   FlashcardReviewResult,
   FsrsCard,
@@ -40,7 +42,7 @@ export class FlashcardsApi {
     card: FsrsCard | null,
   ): Promise<RatingIntervals | null> {
     const response = await HttpClient.send({
-      endpoint: "/api/scheduler/public/ratings-times",
+      endpoint: "/api/content/rating-intervals",
       method: "POST",
       body: { card },
     });
@@ -75,13 +77,33 @@ export class FlashcardsApi {
     };
   }
 
+  static async update(
+    flashcardId: string,
+    face: FlashcardFace,
+  ): Promise<void> {
+    await HttpClient.json({
+      endpoint: "/api/content/update-flashcard",
+      method: "PATCH",
+      body: {
+        flashcard_id: Number(flashcardId),
+        content: FlashcardContent.toContent(face),
+      },
+    });
+  }
+
+  static async remove(flashcardId: string): Promise<void> {
+    await HttpClient.send({
+      endpoint: `/api/content/delete-flashcard/?flashcard_id=${flashcardId}`,
+      method: "DELETE",
+    });
+  }
+
   private static toFlashcard(raw: JsonObject): Flashcard {
     const content = Json.object(raw.content, "flashcard.content");
 
     return {
       id: Json.identifier(raw.id, "flashcard.id"),
-      front: Json.stringOr(content.front, ""),
-      back: Json.stringOr(content.back, ""),
+      face: FlashcardContent.toFace(Json.stringOr(raw.type, "basic"), content),
       nextReview: Json.stringOrNull(raw.next_review),
       fsrsCard: Json.objectOrNull(raw.fsrs_card),
     };

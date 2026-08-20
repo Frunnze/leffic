@@ -1,0 +1,18 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/../../_env.sh"
+
+require_binary "$python_binary" python
+
+echo "pre-commit: api contract (no input crashes an endpoint)"
+echo "pre-commit: fail fast - refuse bad input at the edge, not deeper in"
+
+for service in $services; do
+    if ! (cd "$service" && "$python_binary" -m pytest \
+        tests/test_api_contract.py -q -p no:randomly); then
+        echo "pre-commit: a generated request crashed an endpoint in" >&2
+        echo "pre-commit: $service - refuse the input with a 4xx instead" >&2
+        echo "pre-commit: of letting it reach the handler" >&2
+        exit 1
+    fi
+done

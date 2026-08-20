@@ -17,12 +17,11 @@ from features.authentication.access import (
     SECRET_KEY,
     create_access_token,
     create_refresh_token,
-    hash_password,
-    verify_password,
 )
-from features.authentication.models import User
 from features.authentication.schemas import UserCreate, UserLogin
 from shared.database import get_db
+from shared.models import User
+from shared.password_hashing import hash_password, verify_password
 
 auth = APIRouter()
 

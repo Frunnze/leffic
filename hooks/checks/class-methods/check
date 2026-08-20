@@ -1,0 +1,20 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/../../_env.sh"
+
+require_binary "$python_binary" python
+
+finder="$(dirname "$0")/class_method_counts.py"
+
+echo "pre-commit: class methods (one job per class)"
+echo "pre-commit: follow SRP - split a class that has two reasons to change"
+echo "pre-commit: follow ISP - no caller should depend on methods it ignores"
+
+crowded_classes=$(python_files_in $source_directories \
+    | "$python_binary" "$finder")
+
+if [ -n "$crowded_classes" ]; then
+    echo "pre-commit: these classes do too much - split them:" >&2
+    echo "$crowded_classes" >&2
+    exit 1
+fi

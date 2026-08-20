@@ -1,0 +1,44 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/../../_env.sh"
+
+require_binary "$python_binary" python
+
+crossing_finder="$(dirname "$0")/feature_imports.py"
+usage_finder="$(dirname "$0")/shared_usage.py"
+
+echo "pre-commit: feature isolation (siblings meet only in shared)"
+echo "pre-commit: keep coupling low - reach a sibling only through shared"
+
+crossings=$(python_files_in $source_directories \
+    | "$python_binary" "$crossing_finder")
+
+if [ -n "$crossings" ]; then
+    echo "pre-commit: these features reach into a sibling - move what" >&2
+    echo "pre-commit: they share into shared/ and depend on that:" >&2
+    echo "$crossings" >&2
+    exit 1
+fi
+
+echo "pre-commit: shared ownership (two features or it is not shared)"
+echo "pre-commit: follow YAGNI - move it into the one feature that needs it"
+
+lonely=""
+
+for service in $services; do
+    found=$(python_files_in "$service/src" \
+        | "$python_binary" "$usage_finder")
+
+    if [ -n "$found" ]; then
+        lonely="$lonely$found
+"
+    fi
+done
+
+if [ -n "$(echo "$lonely" | tr -d '\n ')" ]; then
+    echo "pre-commit: shared/ is for what several features need." >&2
+    echo "pre-commit: these modules are not shared by anyone - move" >&2
+    echo "pre-commit: each into the one feature that uses it:" >&2
+    echo "$lonely" | grep . >&2
+    exit 1
+fi

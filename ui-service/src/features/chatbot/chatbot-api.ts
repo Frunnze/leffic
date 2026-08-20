@@ -7,7 +7,7 @@ const MISSING_ANSWER = "Sorry, there was no answer.";
 export class ChatbotApi {
   static async ask(conversation: readonly ChatMessage[]): Promise<string> {
     const payload = await HttpClient.json({
-      endpoint: "/api/files/chat",
+      endpoint: "/api/content/chat",
       method: "POST",
       body: { conversation },
     });

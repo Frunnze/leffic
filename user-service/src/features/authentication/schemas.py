@@ -1,12 +1,14 @@
 from pydantic import BaseModel, EmailStr, Field
 
+from shared.password_hashing import Password
+
 _MINIMUM_PASSWORD_LENGTH = 4
 
 
 class UserCreate(BaseModel):
     username: str
     email: str
-    password: str
+    password: Password
 
 
 class UserResponse(BaseModel):
@@ -17,4 +19,6 @@ class UserResponse(BaseModel):
 
 class UserLogin(BaseModel):
     email: EmailStr
-    password: str = Field(..., min_length=_MINIMUM_PASSWORD_LENGTH)
+    password: Password = Field(
+        ..., min_length=_MINIMUM_PASSWORD_LENGTH
+    )
