@@ -85,12 +85,13 @@ owns the row.
   reaches the `FlexibleUuid` bind, so `create-folder`, `move-unit`,
   `notes-stats`, `flashcards-stats` and the folder read paths answer 404
   instead of raising out of the database layer.
-- [ ] **`GET /file` has no identity at all.** `get_file` in
-  `features/file_upload/file_uploader.py` takes `file_id` and
-  `file_extension` and no `AuthenticatedUserId`, so any logged-in caller
-  downloads any learner's uploaded file by its id. `owned_file` in
-  `shared/file_access.py` is the lookup it should route through — the
-  bookmark endpoints in the same feature already do.
+- [x] **`GET /file` now proves ownership.** `get_file`
+  (`features/file_upload/file_uploader.py`) takes `AuthenticatedUserId`
+  and resolves the id through `owned_file`
+  (`features/file_system/file_access.py`) before it reads anything off
+  disk — the same lookup the bookmark endpoints in that feature already
+  routed through. A foreign or unknown file id now answers 404 instead
+  of streaming the file.
 - [ ] **The task-status endpoints have no identity.**
   `/flashcards-status/{task_id}`, `/test-task-status/{task_id}` and
   `/note-task-status/{task_id}` (`task_status_router.py`) take a task id

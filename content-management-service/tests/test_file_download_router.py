@@ -1,16 +1,34 @@
 import subprocess
+import uuid
 from collections.abc import Iterator
 from pathlib import Path
 from unittest import mock
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session, sessionmaker
 
 from app_factory import create_app
 from features.file_upload import file_uploader as upload_module
+from shared.database import get_db
+from shared.models import File, Folder
+from tests.support import (
+    OTHER_USER_ID,
+    USER_ID,
+    SessionProvider,
+    authorization,
+    in_memory_sessions,
+)
 
-_USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"
-_FOLDER_ID = "6f1c7d4e-0000-4000-8000-000000000002"
+_NOT_FOUND = 404
+_OK = 200
+_UNAUTHORIZED = 401
+
+_HOME_ID = uuid.UUID(USER_ID)
+_STRANGER_ID = uuid.UUID(OTHER_USER_ID)
+_PDF_FILE_ID = "6f1c7d4e-0000-4000-8000-0000000000b1"
+_DOCX_FILE_ID = "6f1c7d4e-0000-4000-8000-0000000000b2"
+_STRANGER_FILE_ID = "6f1c7d4e-0000-4000-8000-0000000000b3"
 
 
 class WritingLibreOffice:
@@ -33,86 +51,107 @@ class WritingLibreOffice:
         )
 
 
-class FakeTaskResult:
-    def __init__(self, task_id: str) -> None:
-        super().__init__()
-        self.id: str = task_id
+@pytest.fixture
+def sessions() -> sessionmaker[Session]:
+    factory = in_memory_sessions()
 
+    with factory() as session:
+        session.add_all(
+            [
+                Folder(id=_HOME_ID, name="Home", user_id=_HOME_ID),
+                Folder(
+                    id=_STRANGER_ID, name="Home", user_id=_STRANGER_ID
+                ),
+                File(
+                    id=uuid.UUID(_PDF_FILE_ID),
+                    folder_id=_HOME_ID,
+                    name="doc.pdf",
+                    extension="pdf",
+                ),
+                File(
+                    id=uuid.UUID(_DOCX_FILE_ID),
+                    folder_id=_HOME_ID,
+                    name="doc.docx",
+                    extension="docx",
+                ),
+                File(
+                    id=uuid.UUID(_STRANGER_FILE_ID),
+                    folder_id=_STRANGER_ID,
+                    name="secret.pdf",
+                    extension="pdf",
+                ),
+            ]
+        )
+        session.commit()
 
-class FakeTask:
-    def __init__(self, task_id: str) -> None:
-        super().__init__()
-        self.task_id: str = task_id
-        self.calls: list[dict[str, object]] = []
-
-    def delay(self, **kwargs: object) -> FakeTaskResult:
-        self.calls.append(kwargs)
-
-        return FakeTaskResult(self.task_id)
-
-
-class FakeAsyncResult:
-    def __init__(
-        self, status: str, result: dict[str, object] | None
-    ) -> None:
-        super().__init__()
-        self.status: str = status
-        self.result: dict[str, object] | None = result
-
-    def ready(self) -> bool:
-        return self.result is not None
-
-
-class FakeAi:
-    def get_ai_res_hist(
-        self, system_prompt: str, history: list[object]
-    ) -> str:
-        return f"answered {len(history)} messages for {len(system_prompt)}"
-
-
-class FakeFactory:
-    def __init__(self) -> None:
-        super().__init__()
-        self.models: list[str | None] = []
-
-    def get_ai(self, model: str | None = None) -> FakeAi:
-        self.models.append(model)
-
-        return FakeAi()
+    return factory
 
 
 @pytest.fixture
-def client() -> Iterator[TestClient]:
-    with TestClient(create_app()) as test_client:
+def client(sessions: sessionmaker[Session]) -> Iterator[TestClient]:
+    app = create_app()
+    app.dependency_overrides[get_db] = SessionProvider(sessions)
+
+    with TestClient(app) as test_client:
         yield test_client
 
 
 def test_downloading_a_missing_file_is_not_found(client: TestClient) -> None:
     response = client.get(
-        "/file", params={"file_id": "x", "file_extension": "pdf"}
+        "/file",
+        params={"file_id": "x", "file_extension": "pdf"},
+        headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
+
+
+def test_downloading_a_file_needs_a_token(client: TestClient) -> None:
+    response = client.get(
+        "/file", params={"file_id": _PDF_FILE_ID, "file_extension": "pdf"}
+    )
+
+    assert response.status_code == _UNAUTHORIZED
+
+
+def test_a_strangers_file_cannot_be_downloaded(
+    client: TestClient, tmp_path: Path
+) -> None:
+    _ = (tmp_path / f"{_STRANGER_FILE_ID}.pdf").write_bytes(b"%PDF-1.4")
+
+    with mock.patch.object(upload_module, "_FILES_DIRECTORY", str(tmp_path)):
+        response = client.get(
+            "/file",
+            params={
+                "file_id": _STRANGER_FILE_ID,
+                "file_extension": "pdf",
+            },
+            headers=authorization(),
+        )
+
+    assert response.status_code == _NOT_FOUND
 
 
 def test_downloading_a_pdf_returns_it_directly(
     client: TestClient, tmp_path: Path
 ) -> None:
-    _ = (tmp_path / "doc.pdf").write_bytes(b"%PDF-1.4")
+    _ = (tmp_path / f"{_PDF_FILE_ID}.pdf").write_bytes(b"%PDF-1.4")
 
     with mock.patch.object(upload_module, "_FILES_DIRECTORY", str(tmp_path)):
         response = client.get(
-            "/file", params={"file_id": "doc", "file_extension": "pdf"}
+            "/file",
+            params={"file_id": _PDF_FILE_ID, "file_extension": "pdf"},
+            headers=authorization(),
         )
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
     assert response.headers["content-type"] == "application/pdf"
 
 
 def test_downloading_another_format_converts_it(
     client: TestClient, tmp_path: Path
 ) -> None:
-    _ = (tmp_path / "doc.docx").write_bytes(b"docx bytes")
+    _ = (tmp_path / f"{_DOCX_FILE_ID}.docx").write_bytes(b"docx bytes")
     libreoffice = WritingLibreOffice(b"%PDF-converted")
 
     with (
@@ -120,12 +159,17 @@ def test_downloading_another_format_converts_it(
         mock.patch.object(subprocess, "run", libreoffice),
     ):
         response = client.get(
-            "/file", params={"file_id": "doc", "file_extension": "docx"}
+            "/file",
+            params={
+                "file_id": _DOCX_FILE_ID,
+                "file_extension": "docx",
+            },
+            headers=authorization(),
         )
 
     command = libreoffice.commands[0]
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
     assert response.content == b"%PDF-converted"
     assert command[:4] == [
         "libreoffice",

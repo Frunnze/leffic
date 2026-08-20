@@ -8,6 +8,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 
+from shared.content_access import owned_content
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
 from shared.folder_access import resolved_folder_id
 from shared.models import File as StoredFile
@@ -21,6 +22,7 @@ _HOME_FOLDER = "home"
 _PDF_EXTENSION = "pdf"
 _PDF_MEDIA_TYPE = "application/pdf"
 _FILE_NOT_FOUND = "File not found"
+_MISSING_FILE = "File does not exist!"
 _MISSING_FOLDER = "Folder does not exist!"
 
 UploadedFiles = Annotated[list[UploadFile], File(...)]
@@ -77,16 +79,20 @@ async def upload_files(
     folder_id: FolderId = None,
 ) -> dict[str, object]:
     uploaded_files = [_stored_file(file) for file in files]
-    _recorded_files(
-        db, resolved_folder_id(user_id, folder_id), uploaded_files
-    )
+    _recorded_files(db, resolved_folder_id(user_id, folder_id), uploaded_files)
 
     return {"msg": "Files uploaded!", "file_metadata": uploaded_files}
 
 
 @file_uploader.get("/file")
-async def get_file(file_id: str, file_extension: str) -> Response:
-    input_path = Path(_FILES_DIRECTORY) / f"{file_id}.{file_extension}"
+async def get_file(
+    file_id: str,
+    file_extension: str,
+    user_id: AuthenticatedUserId,
+    db: DatabaseSession,
+) -> Response:
+    owned = owned_content(db, user_id, StoredFile, file_id, _MISSING_FILE)
+    input_path = Path(_FILES_DIRECTORY) / f"{owned.id}.{file_extension}"
 
     if not input_path.exists():
         raise HTTPException(
@@ -113,9 +119,7 @@ async def get_file(file_id: str, file_extension: str) -> Response:
 
 def _converted_to_pdf(input_path: Path, file_extension: str) -> bytes:
     try:
-        return PdfConversion.converted(
-            input_path.read_bytes(), file_extension
-        )
+        return PdfConversion.converted(input_path.read_bytes(), file_extension)
     except ConversionError as failure:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

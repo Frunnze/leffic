@@ -159,6 +159,7 @@ def test_get_file_property_reports_a_file_that_is_not_stored(
                 "file_id": str(file_id),
                 "file_extension": extension,
             },
+            headers=authorization(),
         )
 
     assert response.status_code == _NOT_FOUND
