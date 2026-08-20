@@ -13,6 +13,8 @@ from shared.folder_tree import subfolder_ids
 from shared.identifiers import parsed_identifier
 from shared.json_extraction import _is_object_dict, get_dict_from_text
 
+_NOT_FOUND = 404
+
 _PLAIN_TEXT = st.text(
     alphabet=st.characters(
         min_codepoint=32, max_codepoint=126, blacklist_characters="\\\"'{}"
@@ -78,7 +80,7 @@ def test_parsed_identifier_property_reports_unparsable_text_as_missing(
     with pytest.raises(HTTPException) as raised:
         _ = parsed_identifier(identifier_text, _MISSING_DETAIL)
 
-    assert raised.value.status_code == 404
+    assert raised.value.status_code == _NOT_FOUND
     assert raised.value.detail == _MISSING_DETAIL
 
 

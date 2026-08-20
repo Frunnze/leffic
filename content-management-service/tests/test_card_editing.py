@@ -16,6 +16,9 @@ from tests.support import (
     in_memory_sessions,
 )
 
+_NOT_FOUND = 404
+_OK = 200
+
 HOME_ID = uuid.UUID(USER_ID)
 _OTHER_HOME_ID = uuid.UUID(OTHER_USER_ID)
 
@@ -74,7 +77,7 @@ def test_updating_a_flashcard_replaces_its_content(
         headers=authorization(),
     )
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
 
     with sessions() as session:
         updated = session.query(Flashcard).filter_by(id=card_id).one()
@@ -94,7 +97,7 @@ def test_updating_a_missing_flashcard_is_not_found(
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
 
 
 def test_updating_another_users_flashcard_is_not_found(
@@ -108,9 +111,7 @@ def test_updating_another_users_flashcard_is_not_found(
         )
         session.commit()
         _ = home_folder(session, _OTHER_HOME_ID)
-        deck_of_theirs = FlashcardDeck(
-            name="Theirs", folder_id=_OTHER_HOME_ID
-        )
+        deck_of_theirs = FlashcardDeck(name="Theirs", folder_id=_OTHER_HOME_ID)
         session.add(deck_of_theirs)
         session.commit()
         card = Flashcard(
@@ -126,7 +127,7 @@ def test_updating_another_users_flashcard_is_not_found(
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
 
 
 def test_deleting_a_flashcard_removes_only_that_card(
@@ -151,7 +152,7 @@ def test_deleting_a_flashcard_removes_only_that_card(
         headers=authorization(),
     )
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
 
     with sessions() as session:
         remaining = session.query(Flashcard).all()
@@ -169,4 +170,4 @@ def test_deleting_a_missing_flashcard_is_not_found(
         "/delete-flashcard/?flashcard_id=4242", headers=authorization()
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND

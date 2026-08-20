@@ -5,7 +5,7 @@ from hypothesis import strategies as st
 
 from features.study_units.formatting import (
     _prepared_options,
-    _prepared_true_or_false,
+    _prepared_true_false_content,
     _typed_accuracy,
     evaluate_accuracy,
 )
@@ -25,23 +25,21 @@ def _options_of(
 
 
 @settings(max_examples=50)
-@given(st.booleans(), st.text(max_size=8))
-def test__prepared_true_or_false_property_marks_the_truth_as_option_zero(
-    is_true: bool, statement: str
+@given(is_true=st.booleans(), statement=st.text(max_size=8))
+def test__prepared_true_false_content_property_marks_the_truth_as_option_zero(
+    *, is_true: bool, statement: str
 ) -> None:
-    prepared = _prepared_true_or_false(
+    prepared = _prepared_true_false_content(
         {"is_true": is_true, "statement": statement}
     )
     options = _options_of(prepared)
 
-    assert sorted(
-        str(option["option"]) for option in options
-    ) == sorted(_LABELS)
+    assert sorted(str(option["option"]) for option in options) == sorted(
+        _LABELS
+    )
 
     correct = next(
-        option
-        for option in options
-        if option["id"] == _CORRECT_OPTION_ID
+        option for option in options if option["id"] == _CORRECT_OPTION_ID
     )
 
     assert correct["option"] == ("True" if is_true else "False")
@@ -63,9 +61,7 @@ def test__prepared_options_property_numbers_every_option_exactly_once(
     )
 
     correct = next(
-        option
-        for option in options
-        if option["id"] == _CORRECT_OPTION_ID
+        option for option in options if option["id"] == _CORRECT_OPTION_ID
     )
 
     assert correct["option"] == true_option
@@ -81,9 +77,7 @@ def test_evaluate_accuracy_property_credits_only_the_first_option(
 ) -> None:
     scored = evaluate_accuracy([answer], item_type, {"answer": "ignored"})
 
-    assert scored == (
-        _CORRECT if answer == _CORRECT_OPTION_ID else _INCORRECT
-    )
+    assert scored == (_CORRECT if answer == _CORRECT_OPTION_ID else _INCORRECT)
 
 
 @settings(max_examples=50)

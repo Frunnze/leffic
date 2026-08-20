@@ -80,9 +80,9 @@ def _generate(
             extracted_text=_TEXT,
             deck_id=deck_id,
             flashcard_type=flashcard_type,
-            comprehensiveness="high",
-            verbosity="high",
-            amount=5,
+            settings=generation_tasks.FlashcardGenerationSettings(
+                comprehensiveness="high", verbosity="high", amount=5
+            ),
         )
 
     return result, factory

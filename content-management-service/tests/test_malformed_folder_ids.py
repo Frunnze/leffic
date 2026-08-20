@@ -9,6 +9,9 @@ from tests.access_support import HOME_ID, MISSING_FOLDER, crashless_client
 from tests.hostile_identifiers import HOSTILE_IDENTIFIERS
 from tests.support import authorization, in_memory_sessions
 
+_INTERNAL_SERVER_ERROR = 500
+_NOT_FOUND = 404
+
 _MALFORMED = ("not-a-uuid", "' OR 1=1 --", "12345", "üñíçø∂é")
 
 
@@ -36,7 +39,7 @@ def test_creating_a_folder_under_a_malformed_parent_is_not_found(
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
     assert response.json()["detail"] == MISSING_FOLDER
 
 
@@ -54,7 +57,7 @@ def test_moving_a_unit_to_a_malformed_folder_is_not_found(
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
 
 
 @pytest.mark.parametrize("folder_id", _MALFORMED)
@@ -67,7 +70,7 @@ def test_note_stats_for_a_malformed_folder_are_not_found(
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
     assert response.json()["detail"] == MISSING_FOLDER
 
 
@@ -81,7 +84,7 @@ def test_flashcard_stats_for_a_malformed_folder_are_not_found(
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
 
 
 @pytest.mark.parametrize("folder_id", _MALFORMED)
@@ -94,7 +97,7 @@ def test_flashcards_for_a_malformed_folder_are_not_found(
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
 
 
 @pytest.mark.parametrize("folder_id", HOSTILE_IDENTIFIERS)
@@ -107,4 +110,4 @@ def test_a_hostile_folder_id_never_crashes(
         headers=authorization(),
     )
 
-    assert response.status_code != 500
+    assert response.status_code != _INTERNAL_SERVER_ERROR

@@ -8,6 +8,8 @@ from shared.folder_access import owned_folder_id
 from shared.models import Folder
 from tests.support import OTHER_USER_ID, USER_ID, in_memory_sessions
 
+_NOT_FOUND = 404
+
 _MISSING_FOLDER = "Folder does not exist!"
 _OWNED_ID = uuid.UUID("6f1c7d4e-0000-4000-8000-0000000000aa")
 
@@ -55,7 +57,7 @@ def test_a_folder_owned_by_another_user_is_rejected(
     with sessions() as session, pytest.raises(HTTPException) as raised:
         _ = owned_folder_id(session, USER_ID, str(_OWNED_ID))
 
-    assert raised.value.status_code == 404
+    assert raised.value.status_code == _NOT_FOUND
     assert raised.value.detail == _MISSING_FOLDER
 
 
@@ -68,7 +70,7 @@ def test_another_folder_id_is_rejected_even_when_the_user_owns_one(
     with sessions() as session, pytest.raises(HTTPException) as raised:
         _ = owned_folder_id(session, USER_ID, str(unknown_id))
 
-    assert raised.value.status_code == 404
+    assert raised.value.status_code == _NOT_FOUND
     assert raised.value.detail == _MISSING_FOLDER
 
 
@@ -80,5 +82,5 @@ def test_a_missing_folder_id_is_rejected(
     with sessions() as session, pytest.raises(HTTPException) as raised:
         _ = owned_folder_id(session, USER_ID, None)
 
-    assert raised.value.status_code == 404
+    assert raised.value.status_code == _NOT_FOUND
     assert raised.value.detail == _MISSING_FOLDER

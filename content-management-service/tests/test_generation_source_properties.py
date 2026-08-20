@@ -1,4 +1,5 @@
 import uuid
+from typing import cast
 from unittest import mock
 
 from hypothesis import given, settings
@@ -47,8 +48,12 @@ def test__queued_flashcards_property_falls_back_to_the_default_settings(
                 request_data, str(folder_id), session, _NO_SOURCE
             )
 
-    assert queued_task.calls[0]["comprehensiveness"] == "medium"
-    assert queued_task.calls[0]["verbosity"] == "low"
+    queued_settings = cast(
+        "dict[str, object]", queued_task.calls[0]["settings"]
+    )
+
+    assert queued_settings["comprehensiveness"] == "medium"
+    assert queued_settings["verbosity"] == "low"
 
 
 @settings(max_examples=25, deadline=None)

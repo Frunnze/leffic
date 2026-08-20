@@ -1,11 +1,10 @@
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from unittest import mock
 
 import requests
 from bs4 import BeautifulSoup, Tag
 from hypothesis import given, settings
 from hypothesis import strategies as st
-from youtube_transcript_api import Transcript, TranscriptList
 
 from features.study_units_generation.link_extractor import (
     _any_transcript,
@@ -21,10 +20,11 @@ from features.study_units_generation.link_extractor import (
 )
 from tests.test_link_extractor import FakeTranscript, FakeTranscriptList
 
+if TYPE_CHECKING:
+    from youtube_transcript_api import Transcript, TranscriptList
+
 _MINIMUM_CONTENT_LENGTH = 200
-_REQUESTS_GET = (
-    "features.study_units_generation.link_extractor.requests.get"
-)
+_REQUESTS_GET = "features.study_units_generation.link_extractor.requests.get"
 _LANGUAGES = ("en",)
 _VIDEO_IDS = st.text(
     alphabet=st.characters(min_codepoint=97, max_codepoint=122),
@@ -73,15 +73,15 @@ def test__joined_transcript_property_keeps_every_snippet_in_order(
     transcript = FakeTranscript(snippets[0], is_generated=False)
     transcript.extra_snippets = snippets[1:]
 
-    assert _joined_transcript(cast("Transcript", cast("object", transcript))) == " ".join(
-        snippets
-    )
+    assert _joined_transcript(
+        cast("Transcript", cast("object", transcript))
+    ) == " ".join(snippets)
 
 
 @settings(max_examples=25)
-@given(st.booleans(), st.booleans())
+@given(has_manual=st.booleans(), has_generated=st.booleans())
 def test__preferred_transcript_property_prefers_the_manual_one(
-    has_manual: bool, has_generated: bool
+    *, has_manual: bool, has_generated: bool
 ) -> None:
     manual = FakeTranscript("manual", is_generated=False)
     generated = FakeTranscript("generated", is_generated=True)

@@ -22,6 +22,7 @@ _SHORT_ANSWER: dict[str, object] = {
     "question": "Which sea did Athens dominate?",
     "answer": "The Aegean",
 }
+_MULTIPLE_CHOICE_OPTION_COUNT = 3
 
 
 @pytest.fixture
@@ -87,13 +88,13 @@ def test_a_short_answer_item_keeps_its_question() -> None:
 def test_multiple_choice_still_shuffles_every_option() -> None:
     prepared = prepare_content(_MULTIPLE_CHOICE, "multiple_choice")
 
-    assert len(_options(prepared)) == 3
+    assert len(_options(prepared)) == _MULTIPLE_CHOICE_OPTION_COUNT
 
 
 def test_a_legacy_multiple_choice_type_is_still_understood() -> None:
     prepared = prepare_content(_MULTIPLE_CHOICE, "mult_choice")
 
-    assert len(_options(prepared)) == 3
+    assert len(_options(prepared)) == _MULTIPLE_CHOICE_OPTION_COUNT
 
 
 @pytest.mark.parametrize(

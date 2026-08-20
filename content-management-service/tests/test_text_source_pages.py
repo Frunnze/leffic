@@ -17,9 +17,7 @@ from tests.pdf_support import DocumentRecorder, PdfDocuments
 _FILE_ID = "3f6c2b1a"
 
 
-def _pages_reaching_the_extractor(
-    tmp_path: Path, asked: PageRange
-) -> int:
+def _pages_reaching_the_extractor(tmp_path: Path, asked: PageRange) -> int:
     _ = (tmp_path / f"{_FILE_ID}.pdf").write_bytes(PdfDocuments.blank(6))
     ranged = FileMetadata(file_id=_FILE_ID, extension="pdf", pages=asked)
     recorder = DocumentRecorder([])
@@ -35,20 +33,29 @@ def _pages_reaching_the_extractor(
 
 def test_only_the_asked_pages_reach_the_extractor(tmp_path: Path) -> None:
     asked = PageRange(first=2, last=3)
+    expected_page_count = 2
 
-    assert _pages_reaching_the_extractor(tmp_path, asked) == 2
+    assert _pages_reaching_the_extractor(tmp_path, asked) == (
+        expected_page_count
+    )
 
 
 def test_only_an_end_page_reads_from_the_first_page(tmp_path: Path) -> None:
     asked = PageRange(last=2)
+    expected_page_count = 2
 
-    assert _pages_reaching_the_extractor(tmp_path, asked) == 2
+    assert _pages_reaching_the_extractor(tmp_path, asked) == (
+        expected_page_count
+    )
 
 
 def test_only_a_start_page_reads_on_to_the_end(tmp_path: Path) -> None:
     asked = PageRange(first=5)
+    expected_page_count = 2
 
-    assert _pages_reaching_the_extractor(tmp_path, asked) == 2
+    assert _pages_reaching_the_extractor(tmp_path, asked) == (
+        expected_page_count
+    )
 
 
 def test_a_backwards_range_is_refused() -> None:

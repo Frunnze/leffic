@@ -7,14 +7,16 @@ from youtube_transcript_api import NoTranscriptFound
 from features.study_units_generation.link_extractor import (
     extract_link_main_content,
 )
+from tests.support import FakeHTTPError
+
+_BAD_REQUEST = 400
 
 _LONG_TEXT = "B" * 250
 _OTHER_TEXT = "E" * 260
 _HUGE_TEXT = "F" * 400
 _VIDEO_ID = "dQw4w9WgXcQ"
 _TRANSCRIPT_API_LIST = (
-    "features.study_units_generation.link_extractor"
-    ".YouTubeTranscriptApi.list"
+    "features.study_units_generation.link_extractor.YouTubeTranscriptApi.list"
 )
 
 
@@ -25,8 +27,8 @@ class FakeResponse:
         self.status_code: int = status_code
 
     def raise_for_status(self) -> None:
-        if self.status_code >= 400:
-            raise requests.HTTPError(f"status {self.status_code}")
+        if self.status_code >= _BAD_REQUEST:
+            raise FakeHTTPError(self.status_code)
 
 
 class FakeSnippet:
@@ -81,9 +83,7 @@ class FakeTranscriptList:
 def test_returns_nothing_when_the_page_is_too_short() -> None:
     html = "<html><body><div>tiny</div></body></html>"
 
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
+    with mock.patch.object(requests, "get", return_value=FakeResponse(html)):
         assert extract_link_main_content("http://test.com") is None
 
 
@@ -126,18 +126,14 @@ def test_skips_a_short_article_for_a_longer_content_div() -> None:
         f'<div class="content">{_LONG_TEXT}</div></body></html>'
     )
 
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
+    with mock.patch.object(requests, "get", return_value=FakeResponse(html)):
         assert extract_link_main_content("http://test.com") == _LONG_TEXT
 
 
 def test_reads_the_main_element() -> None:
     html = f"<html><body><main>{_LONG_TEXT}</main></body></html>"
 
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
+    with mock.patch.object(requests, "get", return_value=FakeResponse(html)):
         assert extract_link_main_content("http://test.com") == _LONG_TEXT
 
 
@@ -147,21 +143,14 @@ def test_reads_a_content_section() -> None:
         "</section></body></html>"
     )
 
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
+    with mock.patch.object(requests, "get", return_value=FakeResponse(html)):
         assert extract_link_main_content("http://test.com") == _LONG_TEXT
 
 
 def test_ignores_a_div_without_a_content_class() -> None:
-    html = (
-        f'<html><body><div class="sidebar">{_LONG_TEXT}</div>'
-        "</body></html>"
-    )
+    html = f'<html><body><div class="sidebar">{_LONG_TEXT}</div></body></html>'
 
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
+    with mock.patch.object(requests, "get", return_value=FakeResponse(html)):
         found = extract_link_main_content("http://test.com")
 
     assert found == _LONG_TEXT
@@ -174,9 +163,7 @@ def test_separates_blocks_with_newlines_and_strips_them() -> None:
         "</article></body></html>"
     )
 
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
+    with mock.patch.object(requests, "get", return_value=FakeResponse(html)):
         found = extract_link_main_content("http://test.com")
 
     assert found == f"{filler}\ntail"

@@ -17,6 +17,11 @@ from tests.access_support import (
 )
 from tests.support import OTHER_USER_ID, authorization, in_memory_sessions
 
+_NOT_FOUND = 404
+_OK = 200
+_UNAUTHORIZED = 401
+_DEFAULT_PER_PAGE = 10
+
 
 @pytest.fixture
 def sessions() -> sessionmaker[Session]:
@@ -55,7 +60,7 @@ def test_another_users_test_items_cannot_be_read(
 ) -> None:
     code, body = _read_test_items(client, owned.test_id, intruder)
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_TEST
 
 
@@ -75,11 +80,9 @@ def test_a_test_that_was_never_created_opens_no_session(
 ) -> None:
     assert owned.test_id
 
-    code, body = _read_test_items(
-        client, str(uuid.uuid4()), authorization()
-    )
+    code, body = _read_test_items(client, str(uuid.uuid4()), authorization())
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_TEST
     assert opened_test_sessions(sessions) == 0
 
@@ -89,7 +92,7 @@ def test_reading_test_items_without_a_token_is_refused(
 ) -> None:
     code, body = _read_test_items(client, owned.test_id, {})
 
-    assert code == 401
+    assert code == _UNAUTHORIZED
     assert "test_items" not in body
     assert opened_test_sessions(sessions) == 0
 
@@ -100,10 +103,10 @@ def test_an_owner_still_reads_their_own_test_items(
     code, body = _read_test_items(client, owned.test_id, authorization())
     items = cast("list[dict[str, object]]", body["test_items"])
 
-    assert code == 200
+    assert code == _OK
     assert body["total_items"] == 1
     assert body["page"] == 1
-    assert body["per_page"] == 10
+    assert body["per_page"] == _DEFAULT_PER_PAGE
     assert items[0]["type"] == "mult_choice"
 
 
@@ -125,5 +128,5 @@ def test_folder_scoped_items_are_still_listed(
     )
     body = cast("dict[str, object]", response.json())
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
     assert body["total_items"] == 1

@@ -21,6 +21,10 @@ from tests.access_support import (
 )
 from tests.support import OTHER_USER_ID, authorization, in_memory_sessions
 
+_NOT_FOUND = 404
+_OK = 200
+_UNAUTHORIZED = 401
+
 
 @pytest.fixture
 def sessions() -> sessionmaker[Session]:
@@ -54,9 +58,7 @@ def _stored_document(directory: Path, file_id: str) -> Path:
 def _delete_file(
     client: TestClient, file_id: str, headers: dict[str, str], directory: Path
 ) -> tuple[int, dict[str, str]]:
-    with mock.patch.object(
-        file_storage, "_FILES_DIRECTORY", str(directory)
-    ):
+    with mock.patch.object(file_storage, "_FILES_DIRECTORY", str(directory)):
         response = client.request(
             "DELETE",
             "/delete-file/",
@@ -78,7 +80,7 @@ def test_another_users_file_cannot_be_deleted(
 
     code, body = _delete_file(client, owned.file_id, intruder, tmp_path)
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_FILE
     assert owned.file_id in surviving_ids(sessions, File)
 
@@ -106,7 +108,7 @@ def test_deleting_a_file_without_a_token_is_refused(
 
     code, _body = _delete_file(client, owned.file_id, {}, tmp_path)
 
-    assert code == 401
+    assert code == _UNAUTHORIZED
     assert document.exists()
     assert owned.file_id in surviving_ids(sessions, File)
 
@@ -119,11 +121,9 @@ def test_an_owner_still_deletes_their_own_file(
 ) -> None:
     document = _stored_document(tmp_path, owned.file_id)
 
-    code, body = _delete_file(
-        client, owned.file_id, authorization(), tmp_path
-    )
+    code, body = _delete_file(client, owned.file_id, authorization(), tmp_path)
 
-    assert code == 200
+    assert code == _OK
     assert body == {"msg": "File deleted!"}
     assert not document.exists()
     assert surviving_ids(sessions, File) == set()
@@ -138,5 +138,5 @@ def test_a_file_that_was_never_created_is_reported_as_missing(
         client, str(uuid.uuid4()), authorization(), tmp_path
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_FILE

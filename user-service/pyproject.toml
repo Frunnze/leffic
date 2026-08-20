@@ -29,9 +29,7 @@ ignore = [
     "CPY001",
     "D",
     "INP001",
-    "ISC003",
     "PERF401",
-    "PLR0913",
     "S602",
     "S603",
     "S607",
@@ -44,13 +42,9 @@ max-public-methods = 15
 "tests/**" = [
     "EM101",
     "EM102",
-    "PLR2004",
     "PT009",
     "S101",
     "SLF001",
-    "S108",
-    "TRY003",
-    "TRY004",
 ]
 
 [tool.mutmut]

@@ -47,7 +47,7 @@ def prepare_content(
     content: dict[str, object], item_type: str
 ) -> dict[str, object]:
     if item_type == _TRUE_OR_FALSE:
-        return _prepared_true_or_false(content)
+        return _prepared_true_false_content(content)
 
     if item_type == _SHORT_ANSWER:
         return {"question": content.get("question"), "shuffled_options": []}
@@ -55,7 +55,9 @@ def prepare_content(
     return _prepared_options(content)
 
 
-def _prepared_true_or_false(content: dict[str, object]) -> dict[str, object]:
+def _prepared_true_false_content(
+    content: dict[str, object],
+) -> dict[str, object]:
     is_true = bool(content.get("is_true"))
     correct = _TRUE_LABEL if is_true else _FALSE_LABEL
     wrong = _FALSE_LABEL if is_true else _TRUE_LABEL

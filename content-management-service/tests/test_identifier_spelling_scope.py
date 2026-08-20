@@ -27,19 +27,13 @@ from tests.access_support import (
 )
 from tests.support import OTHER_USER_ID, authorization, in_memory_sessions
 
+_NOT_FOUND = 404
+
 _SCOPED_ROUTES = (
-    ScopedRoute(
-        "DELETE", "/delete-deck/", "deck_id", "deck_id", MISSING_UNIT
-    ),
-    ScopedRoute(
-        "DELETE", "/delete-test/", "test_id", "test_id", MISSING_UNIT
-    ),
-    ScopedRoute(
-        "DELETE", "/delete-note/", "note_id", "note_id", MISSING_UNIT
-    ),
-    ScopedRoute(
-        "DELETE", "/delete-file/", "file_id", "file_id", MISSING_FILE
-    ),
+    ScopedRoute("DELETE", "/delete-deck/", "deck_id", "deck_id", MISSING_UNIT),
+    ScopedRoute("DELETE", "/delete-test/", "test_id", "test_id", MISSING_UNIT),
+    ScopedRoute("DELETE", "/delete-note/", "note_id", "note_id", MISSING_UNIT),
+    ScopedRoute("DELETE", "/delete-file/", "file_id", "file_id", MISSING_FILE),
     ScopedRoute(
         "DELETE",
         "/delete-folder/",
@@ -117,7 +111,7 @@ def test_no_spelling_of_a_foreign_id_is_ever_accepted(
             headers=intruder,
         )
 
-        assert response.status_code == 404
+        assert response.status_code == _NOT_FOUND
         assert response.json() == {"detail": route.detail}
 
 

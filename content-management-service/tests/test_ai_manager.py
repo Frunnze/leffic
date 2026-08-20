@@ -8,6 +8,7 @@ from shared.model_rates import GPT_4_1_NANO, MODEL_RATES
 
 _SYSTEM_PROMPT = "You are helpful"
 _USER_PROMPT = "Summarise this"
+_EXPECTED_RETRY_CALL_COUNT = 2
 
 
 class FakeUsageDetails:
@@ -89,7 +90,7 @@ def test_retries_once_after_a_provider_error() -> None:
     parsed, _ = manager.get_ai_res(_SYSTEM_PROMPT, _USER_PROMPT)
 
     assert parsed == {"ok": True}
-    assert len(client.responses.calls) == 2
+    assert len(client.responses.calls) == _EXPECTED_RETRY_CALL_COUNT
 
 
 def test_raises_when_every_attempt_fails() -> None:

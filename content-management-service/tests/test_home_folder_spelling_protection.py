@@ -17,6 +17,9 @@ from tests.access_support import (
 )
 from tests.support import OTHER_USER_ID, authorization, in_memory_sessions
 
+_NOT_FOUND = 404
+_UNPROCESSABLE_ENTITY = 422
+
 
 @pytest.fixture
 def sessions() -> sessionmaker[Session]:
@@ -59,7 +62,7 @@ def test_no_spelling_of_your_home_folder_can_delete_it(
     for spelling in identifier_spellings(owned.home_id):
         code, body = _delete_folder(client, spelling, authorization())
 
-        assert code == 422
+        assert code == _UNPROCESSABLE_ENTITY
         assert body == {"detail": PROTECTED_HOME}
 
     assert owned.home_id in surviving_folder_ids(sessions)
@@ -74,7 +77,7 @@ def test_no_spelling_of_a_foreign_home_folder_reports_protection(
     for spelling in identifier_spellings(owned.home_id):
         code, body = _delete_folder(client, spelling, intruder)
 
-        assert code == 404
+        assert code == _NOT_FOUND
         assert body == {"detail": MISSING_FOLDER}
 
     assert owned.home_id in surviving_folder_ids(sessions)

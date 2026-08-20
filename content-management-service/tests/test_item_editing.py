@@ -16,6 +16,9 @@ from tests.support import (
     in_memory_sessions,
 )
 
+_NOT_FOUND = 404
+_OK = 200
+
 HOME_ID = uuid.UUID(USER_ID)
 _OTHER_HOME_ID = uuid.UUID(OTHER_USER_ID)
 
@@ -74,7 +77,7 @@ def test_updating_a_test_item_replaces_its_content(
         headers=authorization(),
     )
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
 
     with sessions() as session:
         updated = session.query(TestItem).filter_by(id=item_id).one()
@@ -94,4 +97,4 @@ def test_updating_a_missing_test_item_is_not_found(
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND

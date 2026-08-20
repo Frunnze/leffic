@@ -16,6 +16,10 @@ from tests.access_support import (
 )
 from tests.support import OTHER_USER_ID, authorization, in_memory_sessions
 
+_NOT_FOUND = 404
+_OK = 200
+_UNAUTHORIZED = 401
+
 
 @pytest.fixture
 def sessions() -> sessionmaker[Session]:
@@ -54,7 +58,7 @@ def test_another_users_note_cannot_be_read(
 ) -> None:
     code, body = _read_note(client, owned.note_id, intruder)
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_NOTE
 
 
@@ -63,7 +67,7 @@ def test_reading_a_note_without_a_token_is_refused(
 ) -> None:
     code, body = _read_note(client, owned.note_id, {})
 
-    assert code == 401
+    assert code == _UNAUTHORIZED
     assert "content" not in body
 
 
@@ -72,7 +76,7 @@ def test_an_owner_still_reads_their_own_note(
 ) -> None:
     code, body = _read_note(client, owned.note_id, authorization())
 
-    assert code == 200
+    assert code == _OK
     assert body == {"content": "body", "name": "N", "read": False}
 
 
@@ -83,5 +87,5 @@ def test_a_note_that_was_never_created_is_reported_as_missing(
 
     code, body = _read_note(client, str(uuid.uuid4()), authorization())
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_NOTE

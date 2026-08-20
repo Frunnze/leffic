@@ -20,6 +20,8 @@ from tests.access_support import (
 from tests.hostile_identifiers import HOSTILE_IDENTIFIERS
 from tests.support import authorization, in_memory_sessions
 
+_NOT_FOUND = 404
+
 _DELETE_ENDPOINTS = (
     ("/delete-deck/", "deck_id"),
     ("/delete-test/", "test_id"),
@@ -54,7 +56,7 @@ def test_a_hostile_deck_id_reads_as_a_missing_unit(
         client, "/delete-deck/", "deck_id", unit_id, authorization()
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_UNIT
 
 
@@ -68,7 +70,7 @@ def test_a_hostile_test_id_reads_as_a_missing_unit(
         client, "/delete-test/", "test_id", unit_id, authorization()
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_UNIT
 
 
@@ -82,7 +84,7 @@ def test_a_hostile_note_id_reads_as_a_missing_unit(
         client, "/delete-note/", "note_id", unit_id, authorization()
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_UNIT
 
 
@@ -96,7 +98,7 @@ def test_a_hostile_file_id_reads_as_a_missing_file(
         client, "/delete-file/", "file_id", unit_id, authorization()
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_FILE
 
 
@@ -110,7 +112,7 @@ def test_a_hostile_folder_id_reads_as_a_missing_folder(
         client, "/delete-folder/", "folder_id", unit_id, authorization()
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_FOLDER
 
 
@@ -122,7 +124,7 @@ def test_an_empty_id_is_never_a_server_error(
 
     code, _body = delete_unit(client, path, parameter, "", authorization())
 
-    assert code == 404
+    assert code == _NOT_FOUND
 
 
 def test_no_hostile_id_deletes_anything(
@@ -134,7 +136,7 @@ def test_no_hostile_id_deletes_anything(
                 client, path, parameter, unit_id, authorization()
             )
 
-            assert code == 404
+            assert code == _NOT_FOUND
 
     assert surviving_ids(sessions, FlashcardDeck) == {owned.deck_id}
     assert surviving_ids(sessions, Test) == {owned.test_id}

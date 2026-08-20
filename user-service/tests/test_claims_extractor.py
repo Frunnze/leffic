@@ -4,6 +4,8 @@ from fastapi import HTTPException
 
 from features.account.claims_extractor import get_user_id_from_jwt
 
+_UNAUTHORIZED = 401
+
 _USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"
 
 
@@ -27,7 +29,7 @@ def test_rejects_missing_header() -> None:
     with pytest.raises(HTTPException) as raised:
         _ = get_user_id_from_jwt(None)
 
-    assert raised.value.status_code == 401
+    assert raised.value.status_code == _UNAUTHORIZED
     assert raised.value.detail == "Invalid token: expected a bearer scheme"
 
 
@@ -35,7 +37,7 @@ def test_rejects_header_without_scheme() -> None:
     with pytest.raises(HTTPException) as raised:
         _ = get_user_id_from_jwt("just-a-token")
 
-    assert raised.value.status_code == 401
+    assert raised.value.status_code == _UNAUTHORIZED
     assert raised.value.detail == "Invalid token: expected a bearer scheme"
 
 
@@ -43,7 +45,7 @@ def test_rejects_wrong_scheme() -> None:
     with pytest.raises(HTTPException) as raised:
         _ = get_user_id_from_jwt("Basic abcdef")
 
-    assert raised.value.status_code == 401
+    assert raised.value.status_code == _UNAUTHORIZED
     assert raised.value.detail == "Invalid token: expected a bearer scheme"
 
 
@@ -51,7 +53,7 @@ def test_rejects_malformed_token() -> None:
     with pytest.raises(HTTPException) as raised:
         _ = get_user_id_from_jwt("Bearer not-a-jwt")
 
-    assert raised.value.status_code == 401
+    assert raised.value.status_code == _UNAUTHORIZED
     assert str(raised.value.detail).startswith("Invalid token: ")
 
 
@@ -59,7 +61,7 @@ def test_rejects_token_without_user_id() -> None:
     with pytest.raises(HTTPException) as raised:
         _ = get_user_id_from_jwt(_bearer({"sub": "nobody"}))
 
-    assert raised.value.status_code == 401
+    assert raised.value.status_code == _UNAUTHORIZED
     assert raised.value.detail == "Token carries no user_id"
 
 
@@ -67,7 +69,7 @@ def test_rejects_non_string_user_id() -> None:
     with pytest.raises(HTTPException) as raised:
         _ = get_user_id_from_jwt(_bearer({"user_id": 12345}))
 
-    assert raised.value.status_code == 401
+    assert raised.value.status_code == _UNAUTHORIZED
     assert raised.value.detail == "Token carries no user_id"
 
 
@@ -78,7 +80,7 @@ def test_rejects_user_id_that_is_not_a_uuid(claim: str) -> None:
     with pytest.raises(HTTPException) as raised:
         _ = get_user_id_from_jwt(_bearer({"user_id": claim}))
 
-    assert raised.value.status_code == 401
+    assert raised.value.status_code == _UNAUTHORIZED
     assert raised.value.detail == "Token carries an invalid user_id"
 
 

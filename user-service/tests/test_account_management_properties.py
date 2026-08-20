@@ -124,9 +124,8 @@ def test__announce_deletion_property_reports_an_unreachable_broker(
 ) -> None:
     with mock.patch.object(
         account_module, "publish", side_effect=BrokerUnavailableError
-    ):
-        with pytest.raises(HTTPException) as raised:
-            _announce_deletion(str(marker))
+    ), pytest.raises(HTTPException) as raised:
+        _announce_deletion(str(marker))
 
     assert raised.value.status_code == _UNAVAILABLE
 

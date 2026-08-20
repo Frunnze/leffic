@@ -8,14 +8,16 @@ from youtube_transcript_api import NoTranscriptFound
 from features.study_units_generation.link_extractor import (
     extract_link_main_content,
 )
+from tests.support import FakeHTTPError
+
+_BAD_REQUEST = 400
 
 _LONG_TEXT = "B" * 250
 _OTHER_TEXT = "E" * 260
 _HUGE_TEXT = "F" * 400
 _VIDEO_ID = "dQw4w9WgXcQ"
 _TRANSCRIPT_API_LIST = (
-    "features.study_units_generation.link_extractor"
-    ".YouTubeTranscriptApi.list"
+    "features.study_units_generation.link_extractor.YouTubeTranscriptApi.list"
 )
 
 
@@ -26,8 +28,8 @@ class FakeResponse:
         self.status_code: int = status_code
 
     def raise_for_status(self) -> None:
-        if self.status_code >= 400:
-            raise requests.HTTPError(f"status {self.status_code}")
+        if self.status_code >= _BAD_REQUEST:
+            raise FakeHTTPError(self.status_code)
 
 
 class FakeSnippet:
@@ -86,9 +88,7 @@ def test_a_content_span_is_not_mistaken_for_a_content_div() -> None:
         f'<div class="advert">{_HUGE_TEXT}</div></body></html>'
     )
 
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
+    with mock.patch.object(requests, "get", return_value=FakeResponse(html)):
         assert extract_link_main_content("http://test.com") == _OTHER_TEXT
 
 
@@ -98,9 +98,7 @@ def test_a_div_without_the_content_class_is_skipped() -> None:
         f'<div class="content">{_OTHER_TEXT}</div></body></html>'
     )
 
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
+    with mock.patch.object(requests, "get", return_value=FakeResponse(html)):
         assert extract_link_main_content("http://test.com") == _OTHER_TEXT
 
 
@@ -111,9 +109,7 @@ def test_a_content_span_is_not_mistaken_for_a_content_section() -> None:
         f'<div class="advert">{_HUGE_TEXT}</div></body></html>'
     )
 
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
+    with mock.patch.object(requests, "get", return_value=FakeResponse(html)):
         assert extract_link_main_content("http://test.com") == _OTHER_TEXT
 
 
@@ -136,7 +132,5 @@ def test_a_section_without_the_content_class_is_skipped() -> None:
         f'<div class="advert">{_HUGE_TEXT}</div></body></html>'
     )
 
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
+    with mock.patch.object(requests, "get", return_value=FakeResponse(html)):
         assert extract_link_main_content("http://test.com") == _OTHER_TEXT

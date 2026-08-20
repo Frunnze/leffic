@@ -51,9 +51,7 @@ def test_id(sessions: sessionmaker[Session]) -> str:
         folder = Folder(id=_HOME_ID, name="Home", user_id=_HOME_ID)
         session.add(folder)
         quiz = Test(folder_id=folder.id, name="Quiz")
-        quiz.test_items.append(
-            TestItem(content=_QUESTION, type="mult_choice")
-        )
+        quiz.test_items.append(TestItem(content=_QUESTION, type="mult_choice"))
         session.add(quiz)
         session.commit()
 
@@ -96,9 +94,9 @@ def test_answers_from_another_session_are_not_returned(
         params={"test_id": test_id, "test_session": str(other_session)},
         headers=authorization(),
     )
-    items = cast(
-        "dict[str, list[dict[str, object]]]", again.json()
-    )["test_items"]
+    items = cast("dict[str, list[dict[str, object]]]", again.json())[
+        "test_items"
+    ]
 
     assert items[0]["last_answers"] is None
 
@@ -127,9 +125,9 @@ def test_an_answer_for_another_item_is_not_returned(
         params={"test_id": test_id, "test_session": session_id},
         headers=authorization(),
     )
-    items = cast(
-        "dict[str, list[dict[str, object]]]", again.json()
-    )["test_items"]
+    items = cast("dict[str, list[dict[str, object]]]", again.json())[
+        "test_items"
+    ]
 
     assert items[0]["last_answers"] is None
 
@@ -138,9 +136,7 @@ def test_a_finished_session_is_not_reused(
     client: TestClient, sessions: sessionmaker[Session], test_id: str
 ) -> None:
     with sessions() as session:
-        session.add(
-            TestSession(origin_id=uuid.UUID(test_id), status="done")
-        )
+        session.add(TestSession(origin_id=uuid.UUID(test_id), status="done"))
         session.commit()
 
     response = client.get(
@@ -150,12 +146,13 @@ def test_a_finished_session_is_not_reused(
 
     with sessions() as session:
         statuses = {
-            str(row.id): row.status
-            for row in session.query(TestSession).all()
+            str(row.id): row.status for row in session.query(TestSession).all()
         }
 
+    total_session_count = 2
+
     assert statuses[opened] == "ongoing"
-    assert len(statuses) == 2
+    assert len(statuses) == total_session_count
 
 
 def test_a_session_for_another_origin_is_not_reused(
@@ -176,8 +173,10 @@ def test_a_session_for_another_origin_is_not_reused(
             for row in session.query(TestSession).all()
         }
 
+    total_session_count = 2
+
     assert origins[opened] == test_id
-    assert len(origins) == 2
+    assert len(origins) == total_session_count
 
 
 def test_items_under_a_folder_i_do_not_own_are_hidden(

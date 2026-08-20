@@ -17,6 +17,8 @@ from tests.support import (
     in_memory_sessions,
 )
 
+_NOT_FOUND = 404
+
 HOME_ID = uuid.UUID(USER_ID)
 _OTHER_HOME_ID = uuid.UUID(OTHER_USER_ID)
 
@@ -99,7 +101,7 @@ def test_another_users_folder_cannot_be_moved(
     )
     body = cast("dict[str, str]", response.json())
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
     assert body["detail"] == "Unit does not exist!"
 
 

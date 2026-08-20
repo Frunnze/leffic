@@ -1,18 +1,19 @@
 from collections.abc import Iterator
 
-import requests
 from youtube_transcript_api import NoTranscriptFound
 
 from features.study_units_generation.link_extractor import (
     extract_video_id,
     get_youtube_transcript_auto,
 )
+from tests.support import FakeHTTPError
+
+_BAD_REQUEST = 400
 
 _LONG_TEXT = "B" * 250
 _VIDEO_ID = "dQw4w9WgXcQ"
 _TRANSCRIPT_API_LIST = (
-    "features.study_units_generation.link_extractor"
-    ".YouTubeTranscriptApi.list"
+    "features.study_units_generation.link_extractor.YouTubeTranscriptApi.list"
 )
 
 
@@ -23,8 +24,8 @@ class FakeResponse:
         self.status_code: int = status_code
 
     def raise_for_status(self) -> None:
-        if self.status_code >= 400:
-            raise requests.HTTPError(f"status {self.status_code}")
+        if self.status_code >= _BAD_REQUEST:
+            raise FakeHTTPError(self.status_code)
 
 
 class FakeSnippet:

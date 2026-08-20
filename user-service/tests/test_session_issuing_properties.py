@@ -26,7 +26,7 @@ _NAMES = st.text(min_size=1, max_size=16)
 
 
 def _cookie_value(header: str) -> str:
-    return header.split(f"{_REFRESH_COOKIE}=")[1].split(";")[0]
+    return header.split(f"{_REFRESH_COOKIE}=")[1].split(";", maxsplit=1)[0]
 
 
 @settings(max_examples=50)

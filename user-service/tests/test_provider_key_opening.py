@@ -11,6 +11,11 @@ from app_factory import create_app
 from shared.database import Base, get_db
 from tests.support import Accounts, SessionProvider
 
+_CONFLICT = 409
+_NOT_FOUND = 404
+_OK = 200
+_UNAUTHORIZED = 401
+
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
@@ -33,6 +38,7 @@ def client() -> Iterator[TestClient]:
 def accounts(client: TestClient) -> Accounts:
     return Accounts(client)
 
+
 def test_a_sealed_key_opens_with_the_right_password(
     accounts: Accounts,
 ) -> None:
@@ -42,7 +48,7 @@ def test_a_sealed_key_opens_with_the_right_password(
     opened = accounts.open_key(headers)
     body = cast("dict[str, str]", opened["body"])
 
-    assert opened["status"] == 200
+    assert opened["status"] == _OK
     assert body["key"] == accounts.openai_key
 
 
@@ -52,13 +58,15 @@ def test_opening_a_key_needs_the_password(accounts: Accounts) -> None:
 
     opened = accounts.open_key(headers, password=accounts.wrong_phrase)
 
-    assert opened["status"] == 401
+    assert opened["status"] == _UNAUTHORIZED
 
 
 def test_opening_a_missing_key_is_not_found(accounts: Accounts) -> None:
     headers = accounts.sign_up()
 
-    assert accounts.open_key(headers, provider="gemini")["status"] == 404
+    assert (
+        accounts.open_key(headers, provider="gemini")["status"] == _NOT_FOUND
+    )
 
 
 def test_each_provider_keeps_its_own_key(accounts: Accounts) -> None:
@@ -109,7 +117,7 @@ def test_a_key_sealed_under_an_old_password_will_not_open(
     opened = accounts.open_key(headers, password=accounts.new_phrase)
     body = cast("dict[str, str]", opened["body"])
 
-    assert opened["status"] == 409
+    assert opened["status"] == _CONFLICT
     assert body["detail"] == "This key was sealed with an earlier password."
 
 
@@ -119,7 +127,9 @@ def test_a_provider_without_a_key_is_not_found_even_when_others_exist(
     headers = accounts.sign_up()
     accounts.save_key(headers)
 
-    assert accounts.open_key(headers, provider="gemini")["status"] == 404
+    assert (
+        accounts.open_key(headers, provider="gemini")["status"] == _NOT_FOUND
+    )
 
 
 def test_a_stranger_cannot_open_a_key_they_never_saved(
@@ -133,4 +143,4 @@ def test_a_stranger_cannot_open_a_key_they_never_saved(
 
     opened = accounts.open_key(stranger, password=accounts.other_phrase)
 
-    assert opened["status"] == 404
+    assert opened["status"] == _NOT_FOUND

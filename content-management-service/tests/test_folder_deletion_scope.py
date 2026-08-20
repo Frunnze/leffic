@@ -20,6 +20,11 @@ from tests.access_support import (
 )
 from tests.support import OTHER_USER_ID, authorization, in_memory_sessions
 
+_NOT_FOUND = 404
+_OK = 200
+_UNAUTHORIZED = 401
+_UNPROCESSABLE_ENTITY = 422
+
 
 @pytest.fixture
 def sessions() -> sessionmaker[Session]:
@@ -61,7 +66,7 @@ def test_another_users_folder_cannot_be_deleted(
         client, owned.folder_id, authorization(OTHER_USER_ID)
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_FOLDER
     assert owned.folder_id in surviving_folder_ids(sessions)
 
@@ -78,7 +83,7 @@ def test_another_users_home_folder_is_reported_as_missing(
         client, owned.home_id, authorization(OTHER_USER_ID)
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_FOLDER
     assert owned.home_id in surviving_folder_ids(sessions)
 
@@ -88,7 +93,7 @@ def test_your_own_home_folder_cannot_be_deleted(
 ) -> None:
     code, body = _delete_folder(client, owned.home_id, authorization())
 
-    assert code == 422
+    assert code == _UNPROCESSABLE_ENTITY
     assert body["detail"] == PROTECTED_HOME
     assert owned.home_id in surviving_folder_ids(sessions)
 
@@ -98,7 +103,7 @@ def test_deleting_a_folder_without_a_token_is_refused(
 ) -> None:
     code, _body = _delete_folder(client, owned.folder_id, {})
 
-    assert code == 401
+    assert code == _UNAUTHORIZED
     assert owned.folder_id in surviving_folder_ids(sessions)
 
 
@@ -107,7 +112,7 @@ def test_an_owner_still_deletes_their_own_subfolder(
 ) -> None:
     code, body = _delete_folder(client, owned.folder_id, authorization())
 
-    assert code == 200
+    assert code == _OK
     assert body == {"msg": "Folder deleted!"}
     assert surviving_folder_ids(sessions) == {owned.home_id}
 
@@ -122,12 +127,10 @@ def test_another_users_folder_keeps_its_files_in_storage(
     document = tmp_path / f"{owned.file_id}.pdf"
     _ = document.write_bytes(b"payload")
 
-    with mock.patch.object(
-        file_storage, "_FILES_DIRECTORY", str(tmp_path)
-    ):
+    with mock.patch.object(file_storage, "_FILES_DIRECTORY", str(tmp_path)):
         code, _body = _delete_folder(
             client, owned.folder_id, authorization(OTHER_USER_ID)
         )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert document.exists()

@@ -21,8 +21,8 @@ from features.user_events.user_cleanup import (
     remove_everything_owned_by,
 )
 from shared.models import Folder
-from tests.folder_seeding import seeded_folder
 from tests.amqp_fakes import FakeAmqpConnection
+from tests.folder_seeding import seeded_folder
 from tests.support import in_memory_sessions
 
 _BLOCKING_CONNECTION = "features.user_events.consumer.pika.BlockingConnection"
@@ -93,11 +93,13 @@ def test_handle_property_cleans_up_after_a_well_formed_event(
 ) -> None:
     body = json.dumps({"user_id": str(user_id)}).encode()
 
-    with mock.patch.object(consumer_module, "SessionLocal"):
-        with mock.patch.object(
+    with (
+        mock.patch.object(consumer_module, "SessionLocal"),
+        mock.patch.object(
             consumer_module, "remove_everything_owned_by"
-        ) as cleanup:
-            handle(body)
+        ) as cleanup,
+    ):
+        handle(body)
 
     assert cleanup.call_args.args[1] == str(user_id)
 

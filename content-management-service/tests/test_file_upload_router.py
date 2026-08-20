@@ -19,6 +19,10 @@ from tests.support import (
     in_memory_sessions,
 )
 
+_NOT_FOUND = 404
+_UNAUTHORIZED = 401
+_RANDOM_UUID_VERSION = 4
+
 HOME_ID = uuid.UUID(USER_ID)
 _FOLDER_ID = "6f1c7d4e-0000-4000-8000-000000000002"
 
@@ -77,7 +81,7 @@ def test_uploading_stores_the_bytes_and_records_the_file(
 
     assert stored["extension"] == "pdf"
     assert stored["name"] == "notes.pdf"
-    assert uuid.UUID(stored["file_id"]).version == 4
+    assert uuid.UUID(stored["file_id"]).version == _RANDOM_UUID_VERSION
     assert (tmp_path / f"{stored['file_id']}.pdf").read_bytes() == b"payload"
 
     with sessions() as session:
@@ -112,7 +116,7 @@ def test_uploading_into_a_missing_folder_is_refused(
 
     body = cast("dict[str, str]", response.json())
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
     assert body["detail"] == "Folder does not exist!"
 
 
@@ -124,7 +128,7 @@ def test_uploading_needs_a_token(client: TestClient, tmp_path: Path) -> None:
             data={"folder_id": "home"},
         )
 
-    assert response.status_code == 401
+    assert response.status_code == _UNAUTHORIZED
 
 
 def test_uploading_without_a_folder_is_refused(
@@ -138,5 +142,5 @@ def test_uploading_without_a_folder_is_refused(
         )
     body = cast("dict[str, str]", response.json())
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
     assert body["detail"] == "Folder does not exist!"

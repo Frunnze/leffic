@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -34,22 +35,25 @@ _MISSING_ORIGIN = "Test or folder is required!"
 _UNKNOWN_ITEM_ACCURACY = 0
 
 
+class TestItemsQuery(BaseModel):
+    test_id: str | None = None
+    folder_id: str | None = None
+    per_page: int = _DEFAULT_PER_PAGE
+    page: int = _FIRST_PAGE
+    test_session: str | None = None
+
+
 @assessment_router.get("/test-items")
 async def get_test_items(
     user_id: AuthenticatedUserId,
     db: DatabaseSession,
-    *,
-    test_id: str | None = None,
-    folder_id: str | None = None,
-    per_page: int = _DEFAULT_PER_PAGE,
-    page: int = _FIRST_PAGE,
-    test_session: str | None = None,
+    query: Annotated[TestItemsQuery, Depends()],
 ) -> JSONResponse:
-    if test_id:
-        _ = owned_content(db, user_id, Test, test_id, MISSING_TEST)
+    if query.test_id:
+        _ = owned_content(db, user_id, Test, query.test_id, MISSING_TEST)
 
-    resolved_folder_id = owned_scope(user_id, folder_id)
-    origin_id = test_id or resolved_folder_id
+    resolved_folder_id = owned_scope(user_id, query.folder_id)
+    origin_id = query.test_id or resolved_folder_id
 
     if origin_id is None:
         raise HTTPException(
@@ -57,14 +61,17 @@ async def get_test_items(
         )
 
     # Check if this origin has any unfinished test session
+    test_session = query.test_session
     if not test_session:
         test_session = ongoing_session(db, origin_id)
 
     matching_items = items_query(
-        db, test_id, resolved_folder_id or origin_id, user_id
+        db, query.test_id, resolved_folder_id or origin_id, user_id
     )
     test_items = (
-        matching_items.offset((page - 1) * per_page).limit(per_page).all()
+        matching_items.offset((query.page - 1) * query.per_page)
+        .limit(query.per_page)
+        .all()
     )
 
     return JSONResponse(
@@ -85,8 +92,8 @@ async def get_test_items(
             ],
             "total_items": matching_items.count(),
             "test_session": test_session,
-            "page": page,
-            "per_page": per_page,
+            "page": query.page,
+            "per_page": query.per_page,
         }
     )
 

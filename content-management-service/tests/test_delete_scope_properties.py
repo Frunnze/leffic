@@ -17,6 +17,8 @@ from tests.access_support import (
 from tests.scope_world import World, foreign_pairs, seeded_world
 from tests.support import authorization, in_memory_sessions
 
+_NOT_FOUND = 404
+
 
 @pytest.fixture
 def sessions() -> sessionmaker[Session]:
@@ -45,7 +47,7 @@ def test_no_user_can_delete_another_users_deck(
             authorization(str(caller)),
         )
 
-        assert code == 404
+        assert code == _NOT_FOUND
         assert body["detail"] == MISSING_UNIT
 
     assert surviving_ids(sessions, FlashcardDeck) == {
@@ -65,7 +67,7 @@ def test_no_user_can_delete_another_users_test(
             authorization(str(caller)),
         )
 
-        assert code == 404
+        assert code == _NOT_FOUND
         assert body["detail"] == MISSING_UNIT
 
     assert surviving_ids(sessions, Test) == {
@@ -85,7 +87,7 @@ def test_no_user_can_delete_another_users_note(
             authorization(str(caller)),
         )
 
-        assert code == 404
+        assert code == _NOT_FOUND
         assert body["detail"] == MISSING_UNIT
 
     assert surviving_ids(sessions, Note) == {
@@ -105,7 +107,7 @@ def test_no_user_can_delete_another_users_file(
             authorization(str(caller)),
         )
 
-        assert code == 404
+        assert code == _NOT_FOUND
         assert body["detail"] == MISSING_FILE
 
     assert surviving_ids(sessions, File) == {
@@ -125,7 +127,7 @@ def test_no_user_can_delete_another_users_folder(
             authorization(str(caller)),
         )
 
-        assert code == 404
+        assert code == _NOT_FOUND
         assert body["detail"] == MISSING_FOLDER
 
     assert {content.folder_id for content in world.values()} <= (

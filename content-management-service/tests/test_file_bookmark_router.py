@@ -17,6 +17,11 @@ from tests.support import (
     in_memory_sessions,
 )
 
+_NOT_FOUND = 404
+_OK = 200
+_UNAUTHORIZED = 401
+_UNPROCESSABLE_ENTITY = 422
+
 _HOME_ID = uuid.UUID(USER_ID)
 _STRANGER_ID = uuid.UUID(OTHER_USER_ID)
 _FILE_ID = "6f1c7d4e-0000-4000-8000-0000000000a1"
@@ -31,9 +36,7 @@ def sessions() -> sessionmaker[Session]:
         session.add_all(
             [
                 Folder(id=_HOME_ID, name="Home", user_id=_HOME_ID),
-                Folder(
-                    id=_STRANGER_ID, name="Home", user_id=_STRANGER_ID
-                ),
+                Folder(id=_STRANGER_ID, name="Home", user_id=_STRANGER_ID),
                 File(
                     id=uuid.UUID(_FILE_ID),
                     folder_id=_HOME_ID,
@@ -79,12 +82,12 @@ def test_a_file_starts_without_a_bookmark(client: TestClient) -> None:
         headers=authorization(),
     )
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
     assert cast("dict[str, object]", response.json()) == {"page": None}
 
 
 def test_a_bookmarked_page_is_read_back(client: TestClient) -> None:
-    assert _bookmark(client, _FILE_ID, 12) == 200
+    assert _bookmark(client, _FILE_ID, 12) == _OK
 
     response = client.get(
         "/file-bookmark",
@@ -117,14 +120,14 @@ def test_a_bookmark_can_be_removed(client: TestClient) -> None:
         headers=authorization(),
     )
 
-    assert removal.status_code == 200
+    assert removal.status_code == _OK
     assert cast("dict[str, object]", removal.json()) == {"page": None}
 
 
 def test_another_learner_file_cannot_be_bookmarked(
     client: TestClient,
 ) -> None:
-    assert _bookmark(client, _STRANGER_FILE_ID, 3) == 404
+    assert _bookmark(client, _STRANGER_FILE_ID, 3) == _NOT_FOUND
 
 
 def test_another_learner_bookmark_cannot_be_read(
@@ -136,7 +139,7 @@ def test_another_learner_bookmark_cannot_be_read(
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
     assert cast("dict[str, str]", response.json())["detail"] == (
         "File does not exist!"
     )
@@ -145,8 +148,8 @@ def test_another_learner_bookmark_cannot_be_read(
 def test_a_bookmark_needs_a_token(client: TestClient) -> None:
     response = client.get("/file-bookmark", params={"file_id": _FILE_ID})
 
-    assert response.status_code == 401
+    assert response.status_code == _UNAUTHORIZED
 
 
 def test_a_page_before_the_first_is_refused(client: TestClient) -> None:
-    assert _bookmark(client, _FILE_ID, 0) == 422
+    assert _bookmark(client, _FILE_ID, 0) == _UNPROCESSABLE_ENTITY

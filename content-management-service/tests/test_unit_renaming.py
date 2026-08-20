@@ -17,6 +17,8 @@ from tests.support import (
     in_memory_sessions,
 )
 
+_OK = 200
+
 HOME_ID = uuid.UUID(USER_ID)
 _OTHER_HOME_ID = uuid.UUID(OTHER_USER_ID)
 
@@ -72,7 +74,7 @@ def test_renaming_a_deck_stores_the_new_name(
 
     code, _ = rename(client, deck_id, "flashcard_deck", "Action potentials")
 
-    assert code == 200
+    assert code == _OK
 
     with sessions() as session:
         renamed = session.query(FlashcardDeck).filter_by(id=deck_id).one()
@@ -92,7 +94,7 @@ def test_renaming_a_folder_stores_the_new_name(
 
     code, _ = rename(client, folder_id, "folder", "Neuroscience")
 
-    assert code == 200
+    assert code == _OK
 
     with sessions() as session:
         renamed = session.query(Folder).filter_by(id=folder_id).one()

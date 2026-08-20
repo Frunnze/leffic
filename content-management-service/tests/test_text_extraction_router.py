@@ -12,6 +12,11 @@ from features.study_units_generation import (
 )
 from features.study_units_generation.pdf_pages import PageSelectionError
 
+_BAD_REQUEST = 400
+_OK = 200
+_UNAUTHORIZED = 401
+_UNPROCESSABLE_ENTITY = 422
+
 if TYPE_CHECKING:
     from features.study_units_generation.text_sources import (
         FileMetadata,
@@ -49,7 +54,7 @@ def test_a_topic_is_not_extracted_but_written_into_a_note(
 ) -> None:
     code, body = _extract(client, {"topic_metadata": "photosynthesis"})
 
-    assert code == 400
+    assert code == _BAD_REQUEST
     assert body["msg"] == "A topic is written into a note, not extracted."
 
 
@@ -61,7 +66,7 @@ def test_a_link_is_read_into_text(client: TestClient) -> None:
             client, {"link_metadata": "https://example.com/neurons"}
         )
 
-    assert code == 200
+    assert code == _OK
     assert body == {"text": _PAGE_TEXT}
     assert from_link.call_args.args[0] == "https://example.com/neurons"
 
@@ -83,7 +88,7 @@ def test_a_file_is_read_into_text(client: TestClient) -> None:
             },
         )
 
-    assert code == 200
+    assert code == _OK
     assert body == {"text": _PAGE_TEXT}
     requested = cast("list[FileMetadata]", from_files.call_args.args[0])
 
@@ -95,7 +100,7 @@ def test_a_source_that_yields_nothing_is_rejected(
 ) -> None:
     code, _ = _extract(client, {})
 
-    assert code == 400
+    assert code == _BAD_REQUEST
 
 
 def test_extraction_needs_a_token(client: TestClient) -> None:
@@ -103,7 +108,7 @@ def test_extraction_needs_a_token(client: TestClient) -> None:
         "/extract-text", json={"topic_metadata": "photosynthesis"}
     )
 
-    assert response.status_code == 401
+    assert response.status_code == _UNAUTHORIZED
 
 
 def test_a_page_range_that_the_document_cannot_serve_is_refused(
@@ -128,7 +133,7 @@ def test_a_page_range_that_the_document_cannot_serve_is_refused(
             headers=_authorization(),
         )
 
-    assert response.status_code == 400
+    assert response.status_code == _BAD_REQUEST
     assert cast("dict[str, str]", response.json())["msg"] == _TOO_FEW_PAGES
 
 
@@ -147,4 +152,4 @@ def test_a_backwards_page_range_is_rejected(client: TestClient) -> None:
         headers=_authorization(),
     )
 
-    assert response.status_code == 422
+    assert response.status_code == _UNPROCESSABLE_ENTITY

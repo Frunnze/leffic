@@ -14,6 +14,8 @@ from tests.access_support import (
 )
 from tests.support import OTHER_USER_ID, USER_ID, in_memory_sessions
 
+_NOT_FOUND = 404
+
 _CUSTOM_DETAIL = "Deck does not exist!"
 
 
@@ -84,7 +86,7 @@ def test_a_deck_owned_by_another_user_is_hidden(
             session, USER_ID, FlashcardDeck, theirs.deck_id, MISSING_UNIT
         )
 
-    assert raised.value.status_code == 404
+    assert raised.value.status_code == _NOT_FOUND
     assert raised.value.detail == MISSING_UNIT
 
 
@@ -98,7 +100,7 @@ def test_a_unit_that_was_never_created_is_reported_as_missing(
             session, USER_ID, FlashcardDeck, str(uuid.uuid4()), MISSING_UNIT
         )
 
-    assert raised.value.status_code == 404
+    assert raised.value.status_code == _NOT_FOUND
     assert raised.value.detail == MISSING_UNIT
 
 
@@ -112,7 +114,7 @@ def test_a_malformed_unit_id_is_reported_as_missing(
             session, USER_ID, FlashcardDeck, "not-a-uuid", MISSING_UNIT
         )
 
-    assert raised.value.status_code == 404
+    assert raised.value.status_code == _NOT_FOUND
     assert raised.value.detail == MISSING_UNIT
 
 
@@ -139,7 +141,7 @@ def test_a_note_id_never_resolves_to_a_deck(
             session, USER_ID, FlashcardDeck, owned.note_id, MISSING_UNIT
         )
 
-    assert raised.value.status_code == 404
+    assert raised.value.status_code == _NOT_FOUND
 
 
 def test_an_owned_deck_is_found_among_other_owners_decks(
@@ -171,4 +173,4 @@ def test_a_neighbours_deck_stays_hidden_from_the_other_owner(
             MISSING_UNIT,
         )
 
-    assert raised.value.status_code == 404
+    assert raised.value.status_code == _NOT_FOUND

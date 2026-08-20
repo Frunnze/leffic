@@ -6,6 +6,7 @@ from hypothesis import strategies as st
 
 from features.study_units_generation import generation_tasks
 from features.study_units_generation.generation_tasks import (
+    FlashcardGenerationSettings,
     _generate_flashcards_of_type_task,
     _generate_note_task,
     _generate_test_items_of_type_task,
@@ -65,9 +66,9 @@ def test__generate_flashcards_of_type_task_property_reports_its_type(
             extracted_text="text",
             deck_id=str(deck_id),
             flashcard_type=flashcard_type,
-            comprehensiveness="medium",
-            verbosity="low",
-            amount=None,
+            settings=FlashcardGenerationSettings(
+                comprehensiveness="medium", verbosity="low", amount=None
+            ),
         )
 
     assert reported == {

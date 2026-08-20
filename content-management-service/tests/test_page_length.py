@@ -7,14 +7,17 @@ from youtube_transcript_api import NoTranscriptFound
 from features.study_units_generation.link_extractor import (
     extract_link_main_content,
 )
+from tests.support import FakeHTTPError
+
+_BAD_REQUEST = 400
+_REQUEST_TIMEOUT_SECONDS = 10
 
 _LONG_TEXT = "B" * 250
 _OTHER_TEXT = "E" * 260
 _HUGE_TEXT = "F" * 400
 _VIDEO_ID = "dQw4w9WgXcQ"
 _TRANSCRIPT_API_LIST = (
-    "features.study_units_generation.link_extractor"
-    ".YouTubeTranscriptApi.list"
+    "features.study_units_generation.link_extractor.YouTubeTranscriptApi.list"
 )
 
 
@@ -25,8 +28,8 @@ class FakeResponse:
         self.status_code: int = status_code
 
     def raise_for_status(self) -> None:
-        if self.status_code >= 400:
-            raise requests.HTTPError(f"status {self.status_code}")
+        if self.status_code >= _BAD_REQUEST:
+            raise FakeHTTPError(self.status_code)
 
 
 class FakeSnippet:
@@ -81,9 +84,7 @@ class FakeTranscriptList:
 def test_a_page_of_exactly_the_minimum_length_is_too_short() -> None:
     html = f"<html><body><article>{'D' * 200}</article></body></html>"
 
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
+    with mock.patch.object(requests, "get", return_value=FakeResponse(html)):
         assert extract_link_main_content("http://test.com") is None
 
 
@@ -91,9 +92,7 @@ def test_one_character_over_the_minimum_is_long_enough() -> None:
     body = "D" * 201
     html = f"<html><body><article>{body}</article></body></html>"
 
-    with mock.patch.object(
-        requests, "get", return_value=FakeResponse(html)
-    ):
+    with mock.patch.object(requests, "get", return_value=FakeResponse(html)):
         assert extract_link_main_content("http://test.com") == body
 
 
@@ -106,4 +105,4 @@ def test_the_page_is_fetched_from_the_given_url_with_a_timeout() -> None:
         _ = extract_link_main_content("http://test.com/page")
 
     assert fetch.call_args.args[0] == "http://test.com/page"
-    assert fetch.call_args.kwargs["timeout"] == 10
+    assert fetch.call_args.kwargs["timeout"] == _REQUEST_TIMEOUT_SECONDS

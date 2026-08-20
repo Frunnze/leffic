@@ -1,3 +1,5 @@
+from typing import TypedDict
+
 from features.study_units_generation.assessment_writer import (
     append_test_items,
     name_test_once,
@@ -31,22 +33,30 @@ NOTE_TASK = "generate_note"
 TEST_TASK = "generate_test_items_of_type"
 
 
+class FlashcardGenerationSettings(TypedDict):
+    comprehensiveness: str
+    verbosity: str
+    amount: int | None
+
+
 def _generate_flashcards_of_type_task(
     *,
     ai_model: str | None,
     extracted_text: str,
     deck_id: str,
     flashcard_type: str,
-    comprehensiveness: str,
-    verbosity: str,
-    amount: int | None,
+    settings: FlashcardGenerationSettings,
 ) -> dict[str, object]:
     unit_type = study_unit_type(flashcard_type)
     ai = ai_factory.get_ai(ai_model)
     generated, _unused = ai.get_ai_res(
         system_prompt=rendered_prompt(
             unit_type.prompt_file,
-            flashcard_values(comprehensiveness, verbosity, amount),
+            flashcard_values(
+                settings["comprehensiveness"],
+                settings["verbosity"],
+                settings["amount"],
+            ),
         ),
         user_prompt=extracted_text,
     )

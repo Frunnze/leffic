@@ -1,14 +1,16 @@
 from types import TracebackType
-from typing import final
+from typing import TYPE_CHECKING, final
 from unittest import mock
 
 import pytest
-from fastapi import FastAPI
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from app_factory import create_app
 from shared import database
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
 _CONNECT = "shared.database.psycopg2.connect"
 _EXISTENCE_QUERY_ONLY = 1

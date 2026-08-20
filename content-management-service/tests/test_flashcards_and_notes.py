@@ -3,7 +3,6 @@ from collections.abc import Iterator
 from typing import cast
 
 import pytest
-import requests
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -12,10 +11,16 @@ from shared.database import get_db
 from shared.models import Flashcard, FlashcardDeck, Folder
 from tests.support import (
     USER_ID,
+    FakeHTTPError,
     SessionProvider,
     authorization,
     in_memory_sessions,
 )
+
+_BAD_REQUEST = 400
+_NOT_FOUND = 404
+_OK = 200
+_SUBMITTED_RATING = 3
 
 _HOME_ID = uuid.UUID(USER_ID)
 
@@ -29,8 +34,8 @@ class FakeResponse:
         self.status_code: int = status_code
 
     def raise_for_status(self) -> None:
-        if self.status_code >= 400:
-            raise requests.HTTPError(f"status {self.status_code}")
+        if self.status_code >= _BAD_REQUEST:
+            raise FakeHTTPError(self.status_code)
 
     def json(self) -> dict[str, object]:
         return self.payload
@@ -63,9 +68,7 @@ def deck_id(sessions: sessionmaker[Session]) -> str:
         return str(deck.id)
 
 
-def test_due_flashcards_from_a_deck(
-    client: TestClient, deck_id: str
-) -> None:
+def test_due_flashcards_from_a_deck(client: TestClient, deck_id: str) -> None:
     response = client.get(
         "/flashcards",
         params={"flashcard_deck_id": deck_id},
@@ -95,7 +98,7 @@ def test_due_flashcards_from_a_folder(
 def test_flashcards_need_a_deck_or_folder(client: TestClient) -> None:
     response = client.get("/flashcards", headers=authorization())
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
 
 
 def test_reviewing_a_flashcard_stores_the_schedule(
@@ -108,7 +111,7 @@ def test_reviewing_a_flashcard_stores_the_schedule(
 
     response = client.post(
         "/review-flashcard",
-        json={"flashcard_id": card_id, "rating": 3},
+        json={"flashcard_id": card_id, "rating": _SUBMITTED_RATING},
         headers=authorization(),
     )
     body = cast("dict[str, object]", response.json())
@@ -119,13 +122,13 @@ def test_reviewing_a_flashcard_stores_the_schedule(
 
         stored_review = reviewed.flashcard_reviews[0].fsrs_review
 
-        assert response.status_code == 200
+        assert response.status_code == _OK
         assert body["due_date"]
         assert body["new_fsrs_card"] == stored_card
         assert reviewed.next_review is not None
         assert stored_card["due"]
         assert len(reviewed.flashcard_reviews) == 1
-        assert stored_review["rating"] == 3
+        assert stored_review["rating"] == _SUBMITTED_RATING
 
 
 def test_reviewing_a_missing_flashcard_is_not_found(
@@ -139,7 +142,7 @@ def test_reviewing_a_missing_flashcard_is_not_found(
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
 
 
 def test_an_easier_rating_schedules_further_out(
@@ -171,4 +174,3 @@ def test_an_easier_rating_schedules_further_out(
     assert after_again is not None
     assert after_easy is not None
     assert after_easy > after_again
-

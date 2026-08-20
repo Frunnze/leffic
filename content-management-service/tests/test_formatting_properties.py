@@ -31,7 +31,9 @@ _CONTENTS = st.fixed_dictionaries(
 )
 
 
-def _flashcard(created_at: datetime, next_review: datetime | None) -> Flashcard:
+def _flashcard(
+    created_at: datetime, next_review: datetime | None
+) -> Flashcard:
     return Flashcard(
         id=1,
         deck_id=uuid.uuid4(),
@@ -72,7 +74,9 @@ def test__is_object_list_property_admits_exactly_the_lists(
 
 
 @settings(max_examples=50)
-@given(st.lists(st.tuples(_MOMENTS, st.one_of(st.none(), _MOMENTS)), max_size=5))
+@given(
+    st.lists(st.tuples(_MOMENTS, st.one_of(st.none(), _MOMENTS)), max_size=5)
+)
 def test_flashcard_results_property_keeps_every_card_in_order(
     moments: list[tuple[datetime, datetime | None]],
 ) -> None:

@@ -72,9 +72,11 @@ def test__extracted_text_property_reads_whichever_source_was_given(
         link_metadata="https://example.com" if source == "link" else None,
     )
 
-    with mock.patch(_TEXT_FROM_FILES, return_value=body):
-        with mock.patch(_TEXT_FROM_LINK, return_value=body):
-            extracted = _extracted_text(request)
+    with (
+        mock.patch(_TEXT_FROM_FILES, return_value=body),
+        mock.patch(_TEXT_FROM_LINK, return_value=body),
+    ):
+        extracted = _extracted_text(request)
 
     assert extracted == ("" if source == "neither" else body)
 

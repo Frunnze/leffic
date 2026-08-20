@@ -9,6 +9,8 @@ from app_factory import create_app
 from features.study_units_generation import task_status_router
 from features.study_units_generation.celery_app import celery_app
 
+_OK = 200
+
 _USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"
 _FOLDER_ID = "6f1c7d4e-0000-4000-8000-000000000002"
 
@@ -143,5 +145,5 @@ def test_a_failed_task_reports_its_failure(
     ):
         response = client.get(f"{path}/task-1")
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
     assert response.json() == {"status": "FAILURE"}

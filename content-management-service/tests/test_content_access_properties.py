@@ -11,6 +11,7 @@ from fastapi import HTTPException
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
+from features.file_system.file_access import owned_file
 from features.scheduling.rating_intervals_router import (
     RatingIntervalsRequest,
     rating_intervals,
@@ -18,7 +19,6 @@ from features.scheduling.rating_intervals_router import (
 from features.study_units.flashcard_stats_router import _due_condition
 from shared import file_storage
 from shared.content_access import owned_content
-from features.file_system.file_access import owned_file
 from shared.file_storage import delete_file_from_storage
 from shared.models import File
 from tests.property_support import property_world, seeded_file
@@ -36,9 +36,7 @@ def test_owned_content_property_never_reaches_a_strangers_unit(
 ) -> None:
     with _SESSIONS() as session:
         file_id = seeded_file(session, owner)
-        mine = owned_content(
-            session, str(owner), File, str(file_id), _MISSING
-        )
+        mine = owned_content(session, str(owner), File, str(file_id), _MISSING)
 
         assert mine.id == file_id
 
@@ -67,9 +65,9 @@ def test_owned_file_property_never_reaches_a_strangers_file(
 
 
 @settings(max_examples=25, deadline=None)
-@given(_FILENAMES, st.booleans())
+@given(filename=_FILENAMES, create_it=st.booleans())
 def test_delete_file_from_storage_property_is_safe_to_repeat(
-    filename: str, create_it: bool
+    *, filename: str, create_it: bool
 ) -> None:
     with tempfile.TemporaryDirectory() as storage:
         stored = Path(storage) / filename
@@ -77,9 +75,7 @@ def test_delete_file_from_storage_property_is_safe_to_repeat(
         if create_it:
             _ = stored.write_bytes(b"content")
 
-        with mock.patch.object(
-            file_storage, "_FILES_DIRECTORY", storage
-        ):
+        with mock.patch.object(file_storage, "_FILES_DIRECTORY", storage):
             delete_file_from_storage(filename)
             delete_file_from_storage(filename)
 
@@ -105,9 +101,7 @@ def test_rating_intervals_property_answers_with_every_rating(
     response = asyncio.run(
         rating_intervals(RatingIntervalsRequest(card=None), str(user_id))
     )
-    intervals = cast(
-        "dict[str, int]", json.loads(bytes(response.body))
-    )
+    intervals = cast("dict[str, int]", json.loads(bytes(response.body)))
 
     assert sorted(int(rating) for rating in intervals) == [1, 2, 3, 4]
     assert all(seconds >= 0 for seconds in intervals.values())

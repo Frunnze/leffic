@@ -45,8 +45,11 @@ def test_a_page_range_on_a_docx_slices_the_converted_pdf(
     tmp_path: Path,
 ) -> None:
     recorder = _extraction_of_a_ranged_docx(tmp_path, LibreOfficeStub(6))
+    expected_page_count = 2
 
-    assert PdfDocuments.page_count(recorder.documents[0]) == 2
+    assert (
+        PdfDocuments.page_count(recorder.documents[0]) == expected_page_count
+    )
 
 
 def test_a_sliced_docx_is_extracted_as_a_pdf(tmp_path: Path) -> None:
@@ -97,6 +100,7 @@ def test_every_paged_format_accepts_a_range(
         file_id=_FILE_ID, extension=extension, pages=PageRange(first=1, last=2)
     )
     recorder = DocumentRecorder([])
+    expected_page_count = 2
 
     with (
         mock.patch.object(text_sources, "_FILES_DIRECTORY", str(tmp_path)),
@@ -105,4 +109,6 @@ def test_every_paged_format_accepts_a_range(
     ):
         _ = text_from_files([ranged])
 
-    assert PdfDocuments.page_count(recorder.documents[0]) == 2
+    assert (
+        PdfDocuments.page_count(recorder.documents[0]) == expected_page_count
+    )

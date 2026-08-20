@@ -11,6 +11,8 @@ from features.study_units_generation import (
     extraction_router as router_module,
 )
 
+_OK = 200
+
 if TYPE_CHECKING:
     from features.study_units_generation.text_sources import (
         FileMetadata,
@@ -63,7 +65,7 @@ def test_a_range_without_an_end_reads_on_to_the_last_page(
 
     requested = cast("list[FileMetadata]", from_files.call_args.args[0])
 
-    assert code == 200
+    assert code == _OK
     assert requested[0].pages is not None
     assert requested[0].pages.last is None
 
@@ -89,6 +91,6 @@ def test_a_range_without_a_start_begins_at_the_first_page(
 
     requested = cast("list[FileMetadata]", from_files.call_args.args[0])
 
-    assert code == 200
+    assert code == _OK
     assert requested[0].pages is not None
     assert requested[0].pages.first == 1

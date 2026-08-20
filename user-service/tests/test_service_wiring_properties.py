@@ -30,9 +30,7 @@ class RecordingCursor:
         self.existing_row: tuple[int] | None = existing_row
         self.statements: list[object] = []
 
-    def execute(
-        self, statement: object, parameters: object = None
-    ) -> None:
+    def execute(self, statement: object, parameters: object = None) -> None:
         _ = parameters
         self.statements.append(statement)
 
@@ -98,9 +96,7 @@ def test_get_db_property_always_closes_the_session_it_opened(
     for _ in range(count):
         session = RecordingSession()
 
-        with mock.patch.object(
-            database, "SessionLocal", return_value=session
-        ):
+        with mock.patch.object(database, "SessionLocal", return_value=session):
             opened = database.get_db()
 
             assert next(opened) is session
@@ -113,8 +109,9 @@ def test_get_db_property_always_closes_the_session_it_opened(
 
 
 @settings(max_examples=25)
-@given(st.booleans())
+@given(already_there=st.booleans())
 def test_create_database_if_not_exists_property_creates_only_when_absent(
+    *,
     already_there: bool,
 ) -> None:
     connection = RecordingConnection((1,) if already_there else None)

@@ -18,6 +18,8 @@ from tests.access_support import (
 from tests.hostile_identifiers import HOSTILE_IDENTIFIERS
 from tests.support import authorization, in_memory_sessions
 
+_NOT_FOUND = 404
+
 _READ_ENDPOINTS = (
     ("/note", "note_id"),
     ("/flashcards", "flashcard_deck_id"),
@@ -50,7 +52,7 @@ def test_a_hostile_note_id_reads_as_a_missing_note(
         client, "/note", "note_id", unit_id, authorization()
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_NOTE
 
 
@@ -68,7 +70,7 @@ def test_a_hostile_deck_id_reads_as_a_missing_deck(
         authorization(),
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_DECK
 
 
@@ -82,7 +84,7 @@ def test_a_hostile_test_id_reads_as_a_missing_test(
         client, "/test-items", "test_id", unit_id, authorization()
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_TEST
 
 
@@ -94,7 +96,7 @@ def test_an_empty_id_is_never_a_server_error(
 
     code, _body = read_unit(client, path, parameter, "", authorization())
 
-    assert code == 404
+    assert code == _NOT_FOUND
 
 
 def test_no_hostile_test_id_opens_a_session(
@@ -107,7 +109,7 @@ def test_no_hostile_test_id_opens_a_session(
             client, "/test-items", "test_id", unit_id, authorization()
         )
 
-        assert code == 404
+        assert code == _NOT_FOUND
 
     assert opened_test_sessions(sessions) == 0
 
@@ -121,5 +123,5 @@ def test_an_empty_test_id_opens_no_session(
         client, "/test-items", "test_id", "", authorization()
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert opened_test_sessions(sessions) == 0

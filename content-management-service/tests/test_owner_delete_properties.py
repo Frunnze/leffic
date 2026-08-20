@@ -15,6 +15,9 @@ from tests.access_support import (
 from tests.scope_world import World, foreign_pairs, seeded_world
 from tests.support import authorization, in_memory_sessions
 
+_NOT_FOUND = 404
+_OK = 200
+
 
 @pytest.fixture
 def sessions() -> sessionmaker[Session]:
@@ -43,7 +46,7 @@ def test_no_user_can_delete_another_users_home_folder(
             authorization(str(caller)),
         )
 
-        assert code == 404
+        assert code == _NOT_FOUND
         assert body["detail"] == MISSING_FOLDER
 
     assert {content.home_id for content in world.values()} <= (
@@ -63,7 +66,7 @@ def test_every_owner_still_deletes_their_own_deck(
             authorization(str(owner)),
         )
 
-        assert code == 200
+        assert code == _OK
         assert body == {"msg": "Deck deleted!"}
 
     assert surviving_ids(sessions, FlashcardDeck) == set()
@@ -81,7 +84,7 @@ def test_every_owner_still_deletes_their_own_subfolder(
             authorization(str(owner)),
         )
 
-        assert code == 200
+        assert code == _OK
         assert body == {"msg": "Folder deleted!"}
 
     assert surviving_folder_ids(sessions) == {
@@ -110,6 +113,6 @@ def test_a_refused_delete_leaves_the_owner_free_to_delete(
             authorization(str(owner)),
         )
 
-        assert code == 200
+        assert code == _OK
 
     assert surviving_ids(sessions, Note) == set()

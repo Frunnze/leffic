@@ -9,6 +9,7 @@ from features.study_units_generation.flashcard_deck_writer import (
     create_flashcard_deck,
 )
 from features.study_units_generation.generation_tasks import (
+    FlashcardGenerationSettings,
     generate_flashcards_of_type_task,
     generate_note_task,
     generate_test_items_of_type_task,
@@ -135,9 +136,11 @@ def _queued_flashcards(
                 extracted_text=request_data.text,
                 deck_id=deck_id,
                 flashcard_type=flashcard_type,
-                comprehensiveness=wanted.comprehensiveness or "medium",
-                verbosity=wanted.verbosity or "low",
-                amount=wanted.amount,
+                settings=FlashcardGenerationSettings(
+                    comprehensiveness=wanted.comprehensiveness or "medium",
+                    verbosity=wanted.verbosity or "low",
+                    amount=wanted.amount,
+                ),
             ).id
         )
 

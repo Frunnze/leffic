@@ -11,6 +11,11 @@ from app_factory import create_app
 from shared.database import Base, get_db
 from tests.support import Accounts, SessionProvider
 
+_NOT_FOUND = 404
+_OK = 200
+_UNAUTHORIZED = 401
+_UNPROCESSABLE_ENTITY = 422
+
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
@@ -32,6 +37,7 @@ def client() -> Iterator[TestClient]:
 @pytest.fixture
 def accounts(client: TestClient) -> Accounts:
     return Accounts(client)
+
 
 def _change(
     client: TestClient,
@@ -55,14 +61,14 @@ def test_changing_the_password_allows_the_new_one(
 
     code, _ = _change(client, headers, accounts.phrase, accounts.new_phrase)
 
-    assert code == 200
+    assert code == _OK
 
     login = client.post(
         "/login",
         json={"email": accounts.email, "password": accounts.new_phrase},
     )
 
-    assert login.status_code == 200
+    assert login.status_code == _OK
 
 
 def test_the_old_password_stops_working(
@@ -75,7 +81,7 @@ def test_the_old_password_stops_working(
         "/login", json={"email": accounts.email, "password": accounts.phrase}
     )
 
-    assert login.status_code == 404
+    assert login.status_code == _NOT_FOUND
 
 
 def test_a_wrong_current_password_is_refused(
@@ -87,7 +93,7 @@ def test_a_wrong_current_password_is_refused(
         client, headers, accounts.wrong_phrase, accounts.new_phrase
     )
 
-    assert code == 401
+    assert code == _UNAUTHORIZED
     assert body["detail"] == "That password is not right."
 
 
@@ -103,7 +109,7 @@ def test_another_accounts_password_does_not_authorize(
         client, owner, accounts.other_phrase, accounts.new_phrase
     )
 
-    assert code == 401
+    assert code == _UNAUTHORIZED
 
 
 def test_a_short_new_password_is_rejected(
@@ -113,5 +119,5 @@ def test_a_short_new_password_is_rejected(
 
     code, body = _change(client, headers, accounts.phrase, "ab")
 
-    assert code == 422
+    assert code == _UNPROCESSABLE_ENTITY
     assert body["detail"] == "The new password is too short."

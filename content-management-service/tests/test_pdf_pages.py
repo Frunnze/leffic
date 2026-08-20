@@ -27,8 +27,9 @@ def _page_count(document: bytes) -> int:
 
 def test_only_the_asked_pages_survive() -> None:
     selected = PdfPageSelection.sliced(_document(10), 3, 5)
+    expected_page_count = 3
 
-    assert _page_count(selected) == 3
+    assert _page_count(selected) == expected_page_count
 
 
 def test_a_single_page_can_be_selected() -> None:
@@ -39,8 +40,9 @@ def test_a_single_page_can_be_selected() -> None:
 
 def test_an_end_past_the_document_stops_at_the_last_page() -> None:
     selected = PdfPageSelection.sliced(_document(4), 3, 99)
+    expected_page_count = 2
 
-    assert _page_count(selected) == 2
+    assert _page_count(selected) == expected_page_count
 
 
 def test_a_start_past_the_document_is_refused() -> None:
@@ -58,5 +60,6 @@ def test_the_final_page_can_be_selected() -> None:
 
 def test_no_end_reads_on_to_the_last_page() -> None:
     selected = PdfPageSelection.sliced(_document(10), 8, None)
+    expected_page_count = 3
 
-    assert _page_count(selected) == 3
+    assert _page_count(selected) == expected_page_count

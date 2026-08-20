@@ -22,17 +22,14 @@ from tests.access_support import (
 )
 from tests.support import authorization, in_memory_sessions
 
+_NOT_FOUND = 404
+_OK = 200
+
 _TWIN_ID = uuid.UUID(int=0x5EED)
 _FOREIGN_ROUTES = (
-    ScopedRoute(
-        "DELETE", "/delete-deck/", "deck_id", "deck_id", MISSING_UNIT
-    ),
-    ScopedRoute(
-        "DELETE", "/delete-test/", "test_id", "test_id", MISSING_UNIT
-    ),
-    ScopedRoute(
-        "DELETE", "/delete-file/", "file_id", "file_id", MISSING_FILE
-    ),
+    ScopedRoute("DELETE", "/delete-deck/", "deck_id", "deck_id", MISSING_UNIT),
+    ScopedRoute("DELETE", "/delete-test/", "test_id", "test_id", MISSING_UNIT),
+    ScopedRoute("DELETE", "/delete-file/", "file_id", "file_id", MISSING_FILE),
     ScopedRoute(
         "GET", "/flashcards", "flashcard_deck_id", "deck_id", MISSING_DECK
     ),
@@ -104,7 +101,7 @@ def test_a_twin_id_you_own_elsewhere_unlocks_nothing(
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
     assert response.json() == {"detail": route.detail}
 
 
@@ -136,7 +133,7 @@ def test_a_twin_id_still_resolves_to_the_unit_you_own(
         headers=authorization(),
     )
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
     assert response.json() == {
         "content": "mine",
         "name": "Mine",
@@ -170,6 +167,6 @@ def test_a_folder_you_own_is_never_a_deck_you_do_not(
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
     assert str(twin) in surviving_ids(sessions, FlashcardDeck)
     assert owned.deck_id in surviving_ids(sessions, FlashcardDeck)

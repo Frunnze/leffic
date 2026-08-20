@@ -20,6 +20,10 @@ from tests.support import (
     in_memory_sessions,
 )
 
+_NOT_FOUND = 404
+_OK = 200
+_EXPECTED_FOREIGN_FOLDER_COUNT = 2
+
 
 @pytest.fixture
 def sessions() -> sessionmaker[Session]:
@@ -65,7 +69,7 @@ def test_a_folder_cannot_be_planted_in_another_users_folder(
 ) -> None:
     code, body = _create_folder(client, foreign_folder_id, USER_ID)
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_FOLDER
 
 
@@ -77,9 +81,7 @@ def test_planting_a_foreign_folder_creates_no_row(
     _ = _create_folder(client, foreign_folder_id, USER_ID)
 
     with sessions() as session:
-        planted = (
-            session.query(Folder).filter_by(user_id=HOME_ID).count()
-        )
+        planted = session.query(Folder).filter_by(user_id=HOME_ID).count()
 
     assert planted == 1
 
@@ -91,14 +93,14 @@ def test_a_folder_cannot_be_planted_in_another_users_home(
 
     code, body = _create_folder(client, OTHER_USER_ID, USER_ID)
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_FOLDER
 
 
 def test_a_missing_parent_folder_is_reported(client: TestClient) -> None:
     code, body = _create_folder(client, str(uuid.uuid4()), USER_ID)
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_FOLDER
 
 
@@ -115,7 +117,7 @@ def test_a_folder_is_created_in_a_folder_you_own(
 
     code, body = _create_folder(client, owned_id, USER_ID)
 
-    assert code == 200
+    assert code == _OK
     assert body["parent_folder_id"] == owned_id
 
 
@@ -124,7 +126,7 @@ def test_a_folder_is_created_under_home_when_home_is_missing(
 ) -> None:
     code, body = _create_folder(client, "home", USER_ID)
 
-    assert code == 200
+    assert code == _OK
     assert body["parent_folder_id"] == USER_ID
 
 
@@ -167,7 +169,7 @@ def test_deleting_your_folder_cannot_cascade_into_foreign_content(
             session.query(Folder).filter_by(user_id=OTHER_HOME_ID).count()
         )
 
-    assert planted == 404
-    assert removed.status_code == 200
+    assert planted == _NOT_FOUND
+    assert removed.status_code == _OK
     assert foreign_notes == 1
-    assert foreign_folders == 2
+    assert foreign_folders == _EXPECTED_FOREIGN_FOLDER_COUNT

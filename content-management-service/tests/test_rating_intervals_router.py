@@ -7,6 +7,8 @@ from fastapi.testclient import TestClient
 from app_factory import create_app
 from tests.support import authorization
 
+_UNAUTHORIZED = 401
+
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
@@ -48,4 +50,4 @@ def test_the_intervals_are_never_negative(client: TestClient) -> None:
 def test_rating_intervals_need_a_token(client: TestClient) -> None:
     response = client.post("/rating-intervals", json={})
 
-    assert response.status_code == 401
+    assert response.status_code == _UNAUTHORIZED

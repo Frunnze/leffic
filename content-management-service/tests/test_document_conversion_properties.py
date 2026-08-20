@@ -1,13 +1,12 @@
 import subprocess
 import uuid
 from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from unittest import mock
 
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
-from sqlalchemy import Dialect
 
 from features.study_units_generation.pdf_pages import (
     PageSelectionError,
@@ -16,6 +15,9 @@ from features.study_units_generation.pdf_pages import (
 from shared.models.columns import FlexibleUuid
 from shared.pdf_conversion import ConversionError, PdfConversion
 from tests.pdf_support import LibreOfficeStub, PdfDocuments
+
+if TYPE_CHECKING:
+    from sqlalchemy import Dialect
 
 _EXTENSIONS = st.sampled_from(["docx", "odt", "pptx", "rtf"])
 _PAGE_COUNTS = st.integers(min_value=1, max_value=6)
@@ -76,9 +78,11 @@ def test__written_pdf_property_reports_whatever_libreoffice_complained(
         args=[], returncode=return_code, stderr=b"it went wrong"
     )
 
-    with mock.patch(_SUBPROCESS_RUN, return_value=failure):
-        with pytest.raises(ConversionError, match="it went wrong"):
-            _ = PdfConversion.converted(b"anything", "docx")
+    with (
+        mock.patch(_SUBPROCESS_RUN, return_value=failure),
+        pytest.raises(ConversionError, match="it went wrong"),
+    ):
+        _ = PdfConversion.converted(b"anything", "docx")
 
 
 @settings(max_examples=25, deadline=None)

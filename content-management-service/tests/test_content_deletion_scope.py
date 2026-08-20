@@ -17,6 +17,10 @@ from tests.access_support import (
 )
 from tests.support import OTHER_USER_ID, authorization, in_memory_sessions
 
+_NOT_FOUND = 404
+_OK = 200
+_UNAUTHORIZED = 401
+
 
 @pytest.fixture
 def sessions() -> sessionmaker[Session]:
@@ -50,7 +54,7 @@ def test_another_users_deck_cannot_be_deleted(
         client, "/delete-deck/", "deck_id", owned.deck_id, intruder
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_UNIT
     assert owned.deck_id in surviving_ids(sessions, FlashcardDeck)
 
@@ -65,7 +69,7 @@ def test_another_users_test_cannot_be_deleted(
         client, "/delete-test/", "test_id", owned.test_id, intruder
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_UNIT
     assert owned.test_id in surviving_ids(sessions, Test)
 
@@ -80,7 +84,7 @@ def test_another_users_note_cannot_be_deleted(
         client, "/delete-note/", "note_id", owned.note_id, intruder
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_UNIT
     assert owned.note_id in surviving_ids(sessions, Note)
 
@@ -92,7 +96,7 @@ def test_deleting_a_deck_without_a_token_is_refused(
         client, "/delete-deck/", "deck_id", owned.deck_id, {}
     )
 
-    assert code == 401
+    assert code == _UNAUTHORIZED
     assert owned.deck_id in surviving_ids(sessions, FlashcardDeck)
 
 
@@ -103,7 +107,7 @@ def test_deleting_a_test_without_a_token_is_refused(
         client, "/delete-test/", "test_id", owned.test_id, {}
     )
 
-    assert code == 401
+    assert code == _UNAUTHORIZED
     assert owned.test_id in surviving_ids(sessions, Test)
 
 
@@ -114,7 +118,7 @@ def test_deleting_a_note_without_a_token_is_refused(
         client, "/delete-note/", "note_id", owned.note_id, {}
     )
 
-    assert code == 401
+    assert code == _UNAUTHORIZED
     assert owned.note_id in surviving_ids(sessions, Note)
 
 
@@ -125,7 +129,7 @@ def test_an_owner_still_deletes_their_own_deck(
         client, "/delete-deck/", "deck_id", owned.deck_id, authorization()
     )
 
-    assert code == 200
+    assert code == _OK
     assert body == {"msg": "Deck deleted!"}
     assert surviving_ids(sessions, FlashcardDeck) == set()
 
@@ -137,7 +141,7 @@ def test_an_owner_still_deletes_their_own_test(
         client, "/delete-test/", "test_id", owned.test_id, authorization()
     )
 
-    assert code == 200
+    assert code == _OK
     assert body == {"msg": "Test deleted!"}
     assert surviving_ids(sessions, Test) == set()
 
@@ -149,6 +153,6 @@ def test_an_owner_still_deletes_their_own_note(
         client, "/delete-note/", "note_id", owned.note_id, authorization()
     )
 
-    assert code == 200
+    assert code == _OK
     assert body == {"msg": "Note deleted!"}
     assert surviving_ids(sessions, Note) == set()

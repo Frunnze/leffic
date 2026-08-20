@@ -11,6 +11,12 @@ from app_factory import create_app
 from shared.database import Base, get_db
 from tests.support import Accounts, SessionProvider
 
+_NOT_FOUND = 404
+_OK = 200
+_UNAUTHORIZED = 401
+_UNPROCESSABLE_ENTITY = 422
+_MONTHLY_LIMIT_CENTS = 2000
+
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
@@ -33,6 +39,7 @@ def client() -> Iterator[TestClient]:
 def accounts(client: TestClient) -> Accounts:
     return Accounts(client)
 
+
 def test_provider_keys_start_empty(accounts: Accounts) -> None:
     assert accounts.keys(accounts.sign_up()) == []
 
@@ -48,7 +55,7 @@ def test_saving_a_key_returns_only_its_hint(
             "provider": "openai",
             "key": accounts.openai_key,
             "password": accounts.phrase,
-            "monthly_limit_cents": 2000,
+            "monthly_limit_cents": _MONTHLY_LIMIT_CENTS,
         },
         headers=headers,
     )
@@ -68,7 +75,7 @@ def test_a_saved_key_is_listed_with_its_limit(
             "provider": "openai",
             "key": accounts.openai_key,
             "password": accounts.phrase,
-            "monthly_limit_cents": 2000,
+            "monthly_limit_cents": _MONTHLY_LIMIT_CENTS,
         },
         headers=headers,
     )
@@ -76,7 +83,7 @@ def test_a_saved_key_is_listed_with_its_limit(
     listed = accounts.keys(headers)
 
     assert listed[0]["provider"] == "openai"
-    assert listed[0]["monthly_limit_cents"] == 2000
+    assert listed[0]["monthly_limit_cents"] == _MONTHLY_LIMIT_CENTS
     assert listed[0]["spent_cents"] == 0
 
 
@@ -106,7 +113,7 @@ def test_saving_a_key_needs_the_password(
         headers=headers,
     )
 
-    assert response.status_code == 401
+    assert response.status_code == _UNAUTHORIZED
 
 
 def test_an_unknown_provider_is_rejected(
@@ -125,7 +132,7 @@ def test_an_unknown_provider_is_rejected(
     )
     body = cast("dict[str, str]", response.json())
 
-    assert response.status_code == 422
+    assert response.status_code == _UNPROCESSABLE_ENTITY
     assert body["detail"] == "That AI provider is not supported."
 
 
@@ -145,7 +152,7 @@ def test_a_blank_key_is_rejected(
     )
     body = cast("dict[str, str]", response.json())
 
-    assert response.status_code == 422
+    assert response.status_code == _UNPROCESSABLE_ENTITY
     assert body["detail"] == "The key cannot be blank."
 
 
@@ -155,11 +162,9 @@ def test_removing_a_key_empties_the_list(
     headers = accounts.sign_up()
     accounts.save_key(headers)
 
-    response = client.delete(
-        "/account/provider-keys/openai", headers=headers
-    )
+    response = client.delete("/account/provider-keys/openai", headers=headers)
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
     assert accounts.keys(headers) == []
 
 
@@ -168,12 +173,10 @@ def test_removing_a_missing_key_is_not_found(
 ) -> None:
     headers = accounts.sign_up()
 
-    response = client.delete(
-        "/account/provider-keys/gemini", headers=headers
-    )
+    response = client.delete("/account/provider-keys/gemini", headers=headers)
     body = cast("dict[str, str]", response.json())
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
     assert body["detail"] == "No key is saved for that provider."
 
 

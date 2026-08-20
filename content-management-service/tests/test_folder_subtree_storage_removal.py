@@ -21,6 +21,7 @@ from tests.access_support import (
 from tests.support import authorization, in_memory_sessions
 
 _EXTENSION = "pdf"
+_OK = 200
 
 
 class NestedTree(NamedTuple):
@@ -45,9 +46,7 @@ def owned(sessions: sessionmaker[Session]) -> OwnedContent:
 
 
 @pytest.fixture
-def tree(
-    sessions: sessionmaker[Session], owned: OwnedContent
-) -> NestedTree:
+def tree(sessions: sessionmaker[Session], owned: OwnedContent) -> NestedTree:
     with sessions() as session:
         middle = Folder(
             parent_id=uuid.UUID(owned.folder_id),
@@ -62,9 +61,7 @@ def tree(
         session.add_all([middle, sibling])
         session.commit()
 
-        deepest = Folder(
-            parent_id=middle.id, name="Deepest", user_id=HOME_ID
-        )
+        deepest = Folder(parent_id=middle.id, name="Deepest", user_id=HOME_ID)
         session.add(deepest)
         session.commit()
 
@@ -91,12 +88,8 @@ def _stored(directory: Path, file_id: str) -> Path:
     return document
 
 
-def _delete_folder(
-    client: TestClient, folder_id: str, directory: Path
-) -> int:
-    with mock.patch.object(
-        file_storage, "_FILES_DIRECTORY", str(directory)
-    ):
+def _delete_folder(client: TestClient, folder_id: str, directory: Path) -> int:
+    with mock.patch.object(file_storage, "_FILES_DIRECTORY", str(directory)):
         response = client.request(
             "DELETE",
             "/delete-folder/",
@@ -115,7 +108,7 @@ def test_a_file_buried_two_levels_down_leaves_storage(
 ) -> None:
     buried = _stored(tmp_path, tree.buried_file_id)
 
-    assert _delete_folder(client, owned.folder_id, tmp_path) == 200
+    assert _delete_folder(client, owned.folder_id, tmp_path) == _OK
     assert not buried.exists()
 
 
@@ -127,7 +120,7 @@ def test_a_file_outside_the_deleted_subtree_stays_in_storage(
 ) -> None:
     outside = _stored(tmp_path, tree.sibling_file_id)
 
-    assert _delete_folder(client, owned.folder_id, tmp_path) == 200
+    assert _delete_folder(client, owned.folder_id, tmp_path) == _OK
     assert outside.exists()
 
 
@@ -138,7 +131,7 @@ def test_a_folder_outside_the_deleted_subtree_survives(
     tree: NestedTree,
     tmp_path: Path,
 ) -> None:
-    assert _delete_folder(client, owned.folder_id, tmp_path) == 200
+    assert _delete_folder(client, owned.folder_id, tmp_path) == _OK
     assert surviving_folder_ids(sessions) == {
         owned.home_id,
         tree.sibling_folder_id,

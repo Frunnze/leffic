@@ -17,6 +17,11 @@ _SCOPED_ROUTES = (
 )
 
 
+class _UnregisteredRouteError(AssertionError):
+    def __init__(self, method: str, path: str) -> None:
+        super().__init__(f"{method} {path} is not registered")
+
+
 def _dependencies_of(path: str, method: str) -> set[object]:
     matching = [
         route
@@ -27,7 +32,7 @@ def _dependencies_of(path: str, method: str) -> set[object]:
     ]
 
     if not matching:
-        raise AssertionError(f"{method} {path} is not registered")
+        raise _UnregisteredRouteError(method, path)
 
     return {
         dependency.call

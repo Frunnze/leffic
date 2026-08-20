@@ -9,6 +9,9 @@ from sqlalchemy.orm import Session, sessionmaker
 from tests.access_support import crashless_client
 from tests.support import in_memory_sessions
 
+_INTERNAL_SERVER_ERROR = 500
+_UNAUTHORIZED = 401
+
 _SCOPED_REQUESTS: tuple[tuple[str, str, str], ...] = (
     ("GET", "/note", "note_id"),
     ("DELETE", "/delete-deck/", "deck_id"),
@@ -61,7 +64,7 @@ def test_a_principal_that_is_not_a_uuid_is_rejected(
         headers=_headers(claim),
     )
 
-    assert response.status_code == 401
+    assert response.status_code == _UNAUTHORIZED
 
 
 @pytest.mark.parametrize(("method", "path", "parameter"), _SCOPED_REQUESTS)
@@ -75,4 +78,4 @@ def test_a_principal_that_is_not_a_uuid_never_crashes(
         headers=_headers("hello"),
     )
 
-    assert response.status_code != 500
+    assert response.status_code != _INTERNAL_SERVER_ERROR

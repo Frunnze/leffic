@@ -52,9 +52,7 @@ def test_get_file_from_storage_property_round_trips_the_stored_bytes(
     with tempfile.TemporaryDirectory() as storage:
         _ = (Path(storage) / storage_name).write_bytes(content)
 
-        with mock.patch.object(
-            text_sources, "_FILES_DIRECTORY", storage
-        ):
+        with mock.patch.object(text_sources, "_FILES_DIRECTORY", storage):
             assert get_file_from_storage(storage_name) == content
 
 
@@ -63,14 +61,13 @@ def test_get_file_from_storage_property_round_trips_the_stored_bytes(
 def test_text_from_files_property_joins_one_chunk_per_file(
     names: list[str],
 ) -> None:
-    metadata = [
-        FileMetadata(file_id=name, extension="txt") for name in names
-    ]
+    metadata = [FileMetadata(file_id=name, extension="txt") for name in names]
 
-    with mock.patch.object(
-        text_sources, "get_file_from_storage", return_value=b""
-    ), mock.patch.object(
-        text_sources, "_text_from_bytes", _chunk_for
+    with (
+        mock.patch.object(
+            text_sources, "get_file_from_storage", return_value=b""
+        ),
+        mock.patch.object(text_sources, "_text_from_bytes", _chunk_for),
     ):
         joined = text_from_files(metadata)
 
@@ -101,9 +98,9 @@ def test__text_from_bytes_property_stays_empty_without_an_extractor(
 
 
 @settings(max_examples=25, deadline=None)
-@given(st.text(max_size=20), st.booleans())
+@given(body=st.text(max_size=20), from_youtube=st.booleans())
 def test_text_from_link_property_never_answers_with_none(
-    body: str, from_youtube: bool
+    *, body: str, from_youtube: bool
 ) -> None:
     link = (
         "https://www.youtube.com/watch?v=abc"
@@ -111,12 +108,15 @@ def test_text_from_link_property_never_answers_with_none(
         else "https://example.com/a"
     )
 
-    with mock.patch.object(
-        text_sources, "get_youtube_transcript_auto", return_value=None
-    ), mock.patch.object(
-        text_sources,
-        "extract_link_main_content",
-        return_value=body or None,
+    with (
+        mock.patch.object(
+            text_sources, "get_youtube_transcript_auto", return_value=None
+        ),
+        mock.patch.object(
+            text_sources,
+            "extract_link_main_content",
+            return_value=body or None,
+        ),
     ):
         extracted = text_from_link(link)
 

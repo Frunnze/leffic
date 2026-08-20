@@ -20,6 +20,10 @@ from tests.support import (
     in_memory_sessions,
 )
 
+_BAD_REQUEST = 400
+_OK = 200
+_UNAUTHORIZED = 401
+
 HOME_ID = uuid.UUID(USER_ID)
 _FOLDER_ID = "6f1c7d4e-0000-4000-8000-000000000002"
 _TEXT = "A neuron at rest sits near -70 mV."
@@ -99,7 +103,7 @@ def test_a_note_is_queued_with_the_reviewed_text(
             },
         )
 
-    assert code == 200
+    assert code == _OK
     assert body == {"note_task_id": "note-1"}
     assert note_task.calls[0] == {
         "ai_model": "gpt-4.1-nano",
@@ -132,9 +136,7 @@ def test_home_resolves_to_the_callers_own_folder(
     note_task = FakeTask("note-1")
 
     with mock.patch.object(router_module, "generate_note_task", note_task):
-        _ = _generate(
-            client, {"text": _TEXT, "folder_id": "home", "note": {}}
-        )
+        _ = _generate(client, {"text": _TEXT, "folder_id": "home", "note": {}})
 
     assert note_task.calls[0]["folder_id"] == USER_ID
 
@@ -144,7 +146,7 @@ def test_generation_without_text_is_refused(client: TestClient) -> None:
         client, {"text": "   ", "folder_id": _FOLDER_ID, "note": {}}
     )
 
-    assert code == 400
+    assert code == _BAD_REQUEST
     assert body["msg"] == "There is no text to generate from!"
 
 
@@ -153,15 +155,13 @@ def test_generation_without_a_folder_is_refused(
 ) -> None:
     code, _body = _generate(client, {"text": _TEXT, "note": {}})
 
-    assert code == 400
+    assert code == _BAD_REQUEST
 
 
 def test_asking_for_nothing_queues_nothing(client: TestClient) -> None:
-    code, body = _generate(
-        client, {"text": _TEXT, "folder_id": _FOLDER_ID}
-    )
+    code, body = _generate(client, {"text": _TEXT, "folder_id": _FOLDER_ID})
 
-    assert code == 200
+    assert code == _OK
     assert body == {}
 
 
@@ -171,5 +171,4 @@ def test_generation_needs_a_token(client: TestClient) -> None:
         json={"text": _TEXT, "folder_id": _FOLDER_ID, "note": {}},
     )
 
-    assert response.status_code == 401
-
+    assert response.status_code == _UNAUTHORIZED

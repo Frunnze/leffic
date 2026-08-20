@@ -113,9 +113,7 @@ def test_a_test_without_asked_types_queues_the_default(
     with mock.patch.object(
         router_module, "generate_test_items_of_type_task", test_task
     ):
-        _generate(
-            client, {"text": _TEXT, "folder_id": _FOLDER_ID, "test": {}}
-        )
+        _generate(client, {"text": _TEXT, "folder_id": _FOLDER_ID, "test": {}})
 
     assert test_task.calls[0]["item_type"] == "multiple_choice"
 
@@ -148,6 +146,8 @@ def test_flashcards_queue_one_job_for_every_asked_type(
 ) -> None:
     flashcards_task = FakeTask("cards-1")
 
+    requested_amount = 5
+
     with mock.patch.object(
         router_module,
         "generate_flashcards_of_type_task",
@@ -160,7 +160,7 @@ def test_flashcards_queue_one_job_for_every_asked_type(
                 "folder_id": _FOLDER_ID,
                 "flashcards": {
                     "types": ["cloze", "feynman"],
-                    "amount": 5,
+                    "amount": requested_amount,
                 },
             },
         )
@@ -170,8 +170,10 @@ def test_flashcards_queue_one_job_for_every_asked_type(
     assert body["flashcard_task_ids"] == ["cards-1", "cards-1"]
     assert body["flashcard_deck_id"]
     assert queued == ["cloze", "feynman"]
-    assert flashcards_task.calls[0]["amount"] == 5
-    assert flashcards_task.calls[0]["extracted_text"] == _TEXT
-    assert (
-        flashcards_task.calls[0]["deck_id"] == body["flashcard_deck_id"]
+    settings = cast(
+        "dict[str, object]", flashcards_task.calls[0]["settings"]
     )
+
+    assert settings["amount"] == requested_amount
+    assert flashcards_task.calls[0]["extracted_text"] == _TEXT
+    assert flashcards_task.calls[0]["deck_id"] == body["flashcard_deck_id"]

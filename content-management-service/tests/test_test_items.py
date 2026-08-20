@@ -21,6 +21,8 @@ from tests.support import (
     in_memory_sessions,
 )
 
+_NOT_FOUND = 404
+
 _HOME_ID = uuid.UUID(USER_ID)
 _QUESTION: dict[str, object] = {
     "question": "Which is a mammal?",
@@ -49,9 +51,7 @@ def test_id(sessions: sessionmaker[Session]) -> str:
         folder = Folder(id=_HOME_ID, name="Home", user_id=_HOME_ID)
         session.add(folder)
         quiz = Test(folder_id=folder.id, name="Quiz")
-        quiz.test_items.append(
-            TestItem(content=_QUESTION, type="mult_choice")
-        )
+        quiz.test_items.append(TestItem(content=_QUESTION, type="mult_choice"))
         session.add(quiz)
         session.commit()
 
@@ -86,9 +86,7 @@ def test_fetching_items_reuses_an_open_session(
     assert cast("dict[str, str]", second.json())["test_session"] == session_id
 
 
-def test_fetching_items_by_folder(
-    client: TestClient, test_id: str
-) -> None:
+def test_fetching_items_by_folder(client: TestClient, test_id: str) -> None:
     assert test_id
 
     response = client.get(
@@ -103,7 +101,7 @@ def test_fetching_items_by_folder(
 def test_fetching_items_needs_a_test_or_folder(client: TestClient) -> None:
     response = client.get("/test-items", headers=authorization())
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
 
 
 def test_reviewing_an_item_records_the_answer(
@@ -183,8 +181,8 @@ def test_previous_answers_come_back_with_the_items(
         params={"test_id": test_id, "test_session": session_id},
         headers=authorization(),
     )
-    items = cast(
-        "dict[str, list[dict[str, object]]]", again.json()
-    )["test_items"]
+    items = cast("dict[str, list[dict[str, object]]]", again.json())[
+        "test_items"
+    ]
 
     assert items[0]["last_answers"] == [0]

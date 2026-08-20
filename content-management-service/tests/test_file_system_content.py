@@ -25,6 +25,8 @@ from tests.support import (
     in_memory_sessions,
 )
 
+_NOT_FOUND = 404
+
 _HOME_ID = uuid.UUID(USER_ID)
 
 
@@ -96,9 +98,7 @@ def test_deleting_a_note(
 ) -> None:
     with sessions() as session:
         folder = _home_folder(session)
-        note = Note(
-            folder_id=folder.id, name="N", content="c", type="general"
-        )
+        note = Note(folder_id=folder.id, name="N", content="c", type="general")
         session.add(note)
         session.commit()
         note_id = str(note.id)
@@ -145,4 +145,4 @@ def test_deleting_an_unknown_file_is_not_found(client: TestClient) -> None:
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND

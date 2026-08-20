@@ -100,6 +100,8 @@ def test_publish_property_sends_the_event_and_closes_the_connection(
 def test_publish_property_reports_a_broker_it_cannot_reach(
     routing_key: str, event: dict[str, str]
 ) -> None:
-    with mock.patch(_BLOCKING_CONNECTION, side_effect=AMQPError):
-        with pytest.raises(BrokerUnavailableError):
-            publish(routing_key, event)
+    with (
+        mock.patch(_BLOCKING_CONNECTION, side_effect=AMQPError),
+        pytest.raises(BrokerUnavailableError),
+    ):
+        publish(routing_key, event)

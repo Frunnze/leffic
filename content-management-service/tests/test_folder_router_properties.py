@@ -39,7 +39,9 @@ def test__available_folder_name_property_numbers_each_repeat_in_turn(
 
     assert chosen[0] == folder_name
     assert chosen[-1] == (
-        folder_name if sibling_count == 0 else f"{folder_name} {sibling_count + 1}"
+        folder_name
+        if sibling_count == 0
+        else f"{folder_name} {sibling_count + 1}"
     )
 
 

@@ -14,6 +14,8 @@ from tests.access_support import (
 )
 from tests.support import authorization, in_memory_sessions
 
+_NOT_FOUND = 404
+
 _MALFORMED = ("not-a-uuid", "' OR 1=1 --")
 
 
@@ -61,7 +63,7 @@ def _generate(client: TestClient, folder_id: str) -> int:
 def test_units_cannot_be_generated_into_another_users_folder(
     client: TestClient, foreign_folder_id: str
 ) -> None:
-    assert _generate(client, foreign_folder_id) == 404
+    assert _generate(client, foreign_folder_id) == _NOT_FOUND
 
 
 def test_generating_into_a_foreign_folder_writes_nothing(
@@ -82,7 +84,7 @@ def test_units_cannot_be_generated_into_a_missing_folder(
         session.add(Folder(id=HOME_ID, name="Home", user_id=HOME_ID))
         session.commit()
 
-    assert _generate(client, str(OTHER_HOME_ID)) == 404
+    assert _generate(client, str(OTHER_HOME_ID)) == _NOT_FOUND
 
 
 @pytest.mark.parametrize("folder_id", _MALFORMED)
@@ -93,7 +95,7 @@ def test_units_cannot_be_generated_into_a_malformed_folder(
         session.add(Folder(id=HOME_ID, name="Home", user_id=HOME_ID))
         session.commit()
 
-    assert _generate(client, folder_id) == 404
+    assert _generate(client, folder_id) == _NOT_FOUND
 
 
 @pytest.mark.parametrize("note_id", _MALFORMED)
@@ -106,7 +108,7 @@ def test_reviewing_a_malformed_note_is_not_found(
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
     assert response.json()["detail"] == MISSING_NOTE
 
 
@@ -137,12 +139,12 @@ def test_reviewing_another_users_note_is_not_found(
     with sessions() as session:
         still_unread = session.query(Note).one().read
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
     assert still_unread is False
 
 
 def test_a_missing_parent_folder_is_reported_for_generation(
     client: TestClient,
 ) -> None:
-    assert _generate(client, str(OTHER_HOME_ID)) == 404
+    assert _generate(client, str(OTHER_HOME_ID)) == _NOT_FOUND
     assert MISSING_FOLDER

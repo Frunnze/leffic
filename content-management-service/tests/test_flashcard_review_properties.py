@@ -16,6 +16,7 @@ from tests.support import authorization
 
 _OK = 200
 _NOT_FOUND = 404
+_REVIEW_SUBMISSION_COUNT = 2
 _RATINGS = st.integers(min_value=1, max_value=4)
 _CARD_COUNTS = st.integers(min_value=0, max_value=4)
 _CLIENT, _SESSIONS = property_world()
@@ -54,12 +55,8 @@ def test__due_flashcards_property_narrows_to_the_deck_when_one_is_named(
 ) -> None:
     with _SESSIONS() as session:
         folder_id, deck_id, _ = seeded_deck(session, owner, due_count)
-        by_deck = _due_flashcards(
-            session, str(owner), str(deck_id), None
-        )
-        by_folder = _due_flashcards(
-            session, str(owner), None, str(folder_id)
-        )
+        by_deck = _due_flashcards(session, str(owner), str(deck_id), None)
+        by_folder = _due_flashcards(session, str(owner), None, str(folder_id))
 
         assert by_deck.count() == due_count
         assert by_folder.count() == due_count
@@ -118,7 +115,7 @@ def test__recorded_review_property_keeps_one_review_row_per_rating(
     with _SESSIONS() as session:
         _, _, card_ids = seeded_deck(session, owner, 1)
 
-    for _ in range(2):
+    for _ in range(_REVIEW_SUBMISSION_COUNT):
         _ = _CLIENT.post(
             "/review-flashcard",
             json={"flashcard_id": card_ids[0], "rating": rating},
@@ -132,7 +129,7 @@ def test__recorded_review_property_keeps_one_review_row_per_rating(
             .count()
         )
 
-    assert recorded == 2
+    assert recorded == _REVIEW_SUBMISSION_COUNT
 
 
 @settings(max_examples=25, deadline=None)

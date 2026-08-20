@@ -13,6 +13,8 @@ from tests.access_support import (
 from tests.scope_world import World, foreign_pairs, seeded_world
 from tests.support import authorization, in_memory_sessions
 
+_NOT_FOUND = 404
+
 
 @pytest.fixture
 def sessions() -> sessionmaker[Session]:
@@ -99,5 +101,5 @@ def test_every_intruder_meets_the_same_refusal(
         ]
 
         assert refusals.count(refusals[0]) == len(refusals)
-        assert refusals[0][0] == 404
+        assert refusals[0][0] == _NOT_FOUND
         assert refusals[0][1]["detail"] == MISSING_NOTE

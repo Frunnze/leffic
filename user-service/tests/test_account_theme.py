@@ -11,6 +11,10 @@ from app_factory import create_app
 from shared.database import Base, get_db
 from tests.support import Accounts, SessionProvider
 
+_OK = 200
+_UNAUTHORIZED = 401
+_UNPROCESSABLE_ENTITY = 422
+
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
@@ -57,7 +61,7 @@ def test_a_chosen_theme_is_remembered(
         "/account/theme", json={"theme": "dark"}, headers=headers
     )
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
     assert cast("dict[str, str]", response.json())["theme"] == "dark"
     assert _theme_of(client, headers) == "dark"
 
@@ -82,10 +86,10 @@ def test_an_unknown_theme_is_refused(
         "/account/theme", json={"theme": "neon"}, headers=accounts.sign_up()
     )
 
-    assert response.status_code == 422
+    assert response.status_code == _UNPROCESSABLE_ENTITY
 
 
 def test_choosing_a_theme_needs_a_token(client: TestClient) -> None:
     response = client.patch("/account/theme", json={"theme": "dark"})
 
-    assert response.status_code == 401
+    assert response.status_code == _UNAUTHORIZED

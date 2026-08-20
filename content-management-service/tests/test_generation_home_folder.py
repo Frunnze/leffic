@@ -20,6 +20,8 @@ from tests.support import (
     in_memory_sessions,
 )
 
+_OK = 200
+
 HOME_ID = uuid.UUID(USER_ID)
 _TEXT = "A neuron at rest sits near -70 mV."
 
@@ -71,7 +73,7 @@ def test_generating_into_home_creates_it_when_it_is_missing(
     with sessions() as session:
         home = session.query(Folder).filter_by(id=HOME_ID).one()
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
     assert cast("dict[str, str]", response.json()) == {
         "note_task_id": "note-1"
     }

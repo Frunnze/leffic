@@ -12,6 +12,12 @@ from app_factory import create_app
 from shared.database import Base, get_db
 from tests.support import Accounts, SessionProvider
 
+_CONFLICT = 409
+_NOT_FOUND = 404
+_OK = 200
+_UNAUTHORIZED = 401
+_UNPROCESSABLE_ENTITY = 422
+
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
@@ -34,6 +40,7 @@ def client() -> Iterator[TestClient]:
 def accounts(client: TestClient) -> Accounts:
     return Accounts(client)
 
+
 _STRANGER_ID = "6f1c7d4e-0000-4000-8000-0000000000ff"
 
 
@@ -53,7 +60,7 @@ def test_the_account_reports_the_signed_in_identity(
 
 
 def test_the_account_needs_a_token(client: TestClient) -> None:
-    assert client.get("/account").status_code == 401
+    assert client.get("/account").status_code == _UNAUTHORIZED
 
 
 def test_an_unknown_account_is_not_found(client: TestClient) -> None:
@@ -64,7 +71,7 @@ def test_an_unknown_account_is_not_found(client: TestClient) -> None:
     )
     body = cast("dict[str, str]", response.json())
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
     assert body["detail"] == "Account does not exist!"
 
 
@@ -89,7 +96,7 @@ def test_changing_the_username_stores_it(
         "/account/username", json={"username": "vlad"}, headers=headers
     )
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
     assert _account(client, headers)["username"] == "vlad"
 
 
@@ -103,7 +110,7 @@ def test_a_blank_username_is_rejected(
     )
     body = cast("dict[str, str]", response.json())
 
-    assert response.status_code == 422
+    assert response.status_code == _UNPROCESSABLE_ENTITY
     assert body["detail"] == "Username cannot be blank."
 
 
@@ -118,5 +125,5 @@ def test_a_taken_username_is_rejected(
     )
     body = cast("dict[str, str]", response.json())
 
-    assert response.status_code == 409
+    assert response.status_code == _CONFLICT
     assert body["detail"] == "That username is taken."

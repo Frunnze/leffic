@@ -17,6 +17,10 @@ from tests.access_support import (
 )
 from tests.support import OTHER_USER_ID, authorization, in_memory_sessions
 
+_NOT_FOUND = 404
+_OK = 200
+_UNAUTHORIZED = 401
+
 
 @pytest.fixture
 def sessions() -> sessionmaker[Session]:
@@ -57,7 +61,7 @@ def test_another_users_deck_cards_cannot_be_read(
 ) -> None:
     code, body = _read_deck_cards(client, owned.deck_id, intruder)
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_DECK
 
 
@@ -77,7 +81,7 @@ def test_another_users_empty_deck_is_not_an_empty_list(
 
     code, body = _read_deck_cards(client, cardless_id, intruder)
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert "total_flashcards" not in body
 
 
@@ -86,7 +90,7 @@ def test_reading_deck_cards_without_a_token_is_refused(
 ) -> None:
     code, body = _read_deck_cards(client, owned.deck_id, {})
 
-    assert code == 401
+    assert code == _UNAUTHORIZED
     assert "flashcards" not in body
 
 
@@ -96,7 +100,7 @@ def test_an_owner_still_reads_their_own_deck_cards(
     code, body = _read_deck_cards(client, owned.deck_id, authorization())
     cards = cast("list[dict[str, object]]", body["flashcards"])
 
-    assert code == 200
+    assert code == _OK
     assert body["total_flashcards"] == 1
     assert cards[0]["content"] == {"q": "a"}
 
@@ -106,11 +110,9 @@ def test_a_deck_that_was_never_created_is_reported_as_missing(
 ) -> None:
     assert owned.deck_id
 
-    code, body = _read_deck_cards(
-        client, str(uuid.uuid4()), authorization()
-    )
+    code, body = _read_deck_cards(client, str(uuid.uuid4()), authorization())
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_DECK
 
 
@@ -123,5 +125,5 @@ def test_folder_scoped_cards_are_still_listed(
     )
     body = cast("dict[str, object]", response.json())
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
     assert body["total_flashcards"] == 1

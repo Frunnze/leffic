@@ -15,6 +15,9 @@ from tests.access_support import (
 from tests.scope_world import World, foreign_pairs, seeded_world
 from tests.support import authorization, in_memory_sessions
 
+_NOT_FOUND = 404
+_OK = 200
+
 
 @pytest.fixture
 def sessions() -> sessionmaker[Session]:
@@ -43,7 +46,7 @@ def test_no_user_can_read_another_users_note(
             authorization(str(caller)),
         )
 
-        assert code == 404
+        assert code == _NOT_FOUND
         assert body["detail"] == MISSING_NOTE
 
 
@@ -59,7 +62,7 @@ def test_no_user_can_read_another_users_deck_cards(
             authorization(str(caller)),
         )
 
-        assert code == 404
+        assert code == _NOT_FOUND
         assert body["detail"] == MISSING_DECK
 
 
@@ -75,7 +78,7 @@ def test_no_user_can_read_another_users_test_items(
             authorization(str(caller)),
         )
 
-        assert code == 404
+        assert code == _NOT_FOUND
         assert body["detail"] == MISSING_TEST
 
 
@@ -106,7 +109,7 @@ def test_every_owner_still_reads_their_own_note(
             authorization(str(owner)),
         )
 
-        assert code == 200
+        assert code == _OK
         assert body == {"content": "body", "name": "N", "read": False}
 
 
@@ -122,7 +125,7 @@ def test_every_owner_still_reads_their_own_deck_cards(
             authorization(str(owner)),
         )
 
-        assert code == 200
+        assert code == _OK
         assert body["total_flashcards"] == 1
 
 
@@ -138,5 +141,5 @@ def test_every_owner_still_reads_their_own_test_items(
             authorization(str(owner)),
         )
 
-        assert code == 200
+        assert code == _OK
         assert body["total_items"] == 1

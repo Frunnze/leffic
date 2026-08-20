@@ -17,6 +17,9 @@ from tests.support import (
     in_memory_sessions,
 )
 
+_NOT_FOUND = 404
+_UNPROCESSABLE_ENTITY = 422
+
 HOME_ID = uuid.UUID(USER_ID)
 _OTHER_HOME_ID = uuid.UUID(OTHER_USER_ID)
 
@@ -72,7 +75,7 @@ def test_a_blank_name_is_refused_with_a_reason(
 
     code, body = rename(client, deck_id, "flashcard_deck", "   ")
 
-    assert code == 422
+    assert code == _UNPROCESSABLE_ENTITY
     assert body["detail"] == "Name cannot be blank!"
 
 
@@ -85,7 +88,7 @@ def test_an_unknown_unit_type_is_refused_with_a_reason(
 
     code, body = rename(client, deck_id, "recipe", "Nope")
 
-    assert code == 422
+    assert code == _UNPROCESSABLE_ENTITY
     assert body["detail"] == "Unknown unit type!"
 
 
@@ -97,7 +100,7 @@ def test_a_malformed_id_reads_as_a_missing_unit(
 
     code, body = rename(client, "not-a-uuid", "flashcard_deck", "Nope")
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == "Unit does not exist!"
 
 
@@ -109,7 +112,7 @@ def test_a_missing_folder_reads_as_a_missing_unit(
 
     code, body = rename(client, str(uuid.uuid4()), "folder", "Ghost")
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == "Unit does not exist!"
 
 
@@ -126,7 +129,7 @@ def test_another_users_deck_cannot_be_renamed(
 
     code, body = rename(client, deck_id, "flashcard_deck", "Mine now")
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == "Unit does not exist!"
 
 
@@ -145,5 +148,5 @@ def test_another_users_folder_cannot_be_renamed(
 
     code, body = rename(client, folder_id, "folder", "Mine now")
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == "Unit does not exist!"

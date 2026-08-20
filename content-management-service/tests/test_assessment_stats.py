@@ -21,6 +21,8 @@ from tests.support import (
     in_memory_sessions,
 )
 
+_NOT_FOUND = 404
+
 _HOME_ID = uuid.UUID(USER_ID)
 _QUESTION: dict[str, object] = {
     "question": "Which is a mammal?",
@@ -49,9 +51,7 @@ def test_id(sessions: sessionmaker[Session]) -> str:
         folder = Folder(id=_HOME_ID, name="Home", user_id=_HOME_ID)
         session.add(folder)
         quiz = Test(folder_id=folder.id, name="Quiz")
-        quiz.test_items.append(
-            TestItem(content=_QUESTION, type="mult_choice")
-        )
+        quiz.test_items.append(TestItem(content=_QUESTION, type="mult_choice"))
         session.add(quiz)
         session.commit()
 
@@ -103,7 +103,7 @@ def test_item_stats_report_nothing_without_items(
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
 
 
 def test_session_results_close_the_session(
@@ -142,7 +142,7 @@ def test_session_results_for_an_unknown_session(client: TestClient) -> None:
         "/test-session-results", params={"test_session": str(uuid.uuid4())}
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND
 
 
 def test_session_results_with_nothing_correct(
@@ -169,4 +169,4 @@ def test_session_results_with_nothing_correct(
         "/test-session-results", params={"test_session": session_id}
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND

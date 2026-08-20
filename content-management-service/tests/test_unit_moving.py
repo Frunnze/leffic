@@ -16,6 +16,10 @@ from tests.support import (
     in_memory_sessions,
 )
 
+_NOT_FOUND = 404
+_OK = 200
+_UNPROCESSABLE_ENTITY = 422
+
 HOME_ID = uuid.UUID(USER_ID)
 _OTHER_HOME_ID = uuid.UUID(OTHER_USER_ID)
 
@@ -79,7 +83,7 @@ def test_moving_a_note_changes_its_folder(
         headers=authorization(),
     )
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
 
     with sessions() as session:
         moved = session.query(Note).filter_by(id=note_id).one()
@@ -106,7 +110,7 @@ def test_moving_a_unit_home_resolves_the_root_folder(
         headers=authorization(),
     )
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
 
     with sessions() as session:
         moved = session.query(Test).filter_by(id=test_id).one()
@@ -138,7 +142,7 @@ def test_moving_a_folder_changes_its_parent(
         headers=authorization(),
     )
 
-    assert response.status_code == 200
+    assert response.status_code == _OK
 
     with sessions() as session:
         moved = session.query(Folder).filter_by(id=moving_id).one()
@@ -166,7 +170,7 @@ def test_a_folder_cannot_be_moved_into_itself(
         headers=authorization(),
     )
 
-    assert response.status_code == 422
+    assert response.status_code == _UNPROCESSABLE_ENTITY
 
 
 def test_moving_into_another_users_folder_is_not_found(
@@ -187,4 +191,4 @@ def test_moving_into_another_users_folder_is_not_found(
         headers=authorization(),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == _NOT_FOUND

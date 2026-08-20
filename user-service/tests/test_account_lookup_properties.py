@@ -26,9 +26,11 @@ def test_account_property_finds_the_user_it_was_asked_for(
 def test_account_property_reports_an_unknown_user_as_missing(
     identifier: uuid.UUID, stranger: uuid.UUID
 ) -> None:
-    with seeded_user(identifier) as session:
-        with pytest.raises(HTTPException) as raised:
-            _ = account(session, str(stranger))
+    with (
+        seeded_user(identifier) as session,
+        pytest.raises(HTTPException) as raised,
+    ):
+        _ = account(session, str(stranger))
 
     assert raised.value.status_code == _NOT_FOUND
 

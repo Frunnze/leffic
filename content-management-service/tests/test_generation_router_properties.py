@@ -93,9 +93,11 @@ def test__queued_flashcards_property_queues_one_job_for_every_type(
             "extracted_text": "material",
             "deck_id": queued["flashcard_deck_id"],
             "flashcard_type": call["flashcard_type"],
-            "comprehensiveness": "high",
-            "verbosity": "high",
-            "amount": 7,
+            "settings": {
+                "comprehensiveness": "high",
+                "verbosity": "high",
+                "amount": 7,
+            },
         }
         for call in queued_task.calls
     )

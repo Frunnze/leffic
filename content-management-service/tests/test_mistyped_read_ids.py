@@ -17,6 +17,8 @@ from tests.access_support import (
 )
 from tests.support import authorization, in_memory_sessions
 
+_NOT_FOUND = 404
+
 
 @pytest.fixture
 def sessions() -> sessionmaker[Session]:
@@ -40,7 +42,7 @@ def test_a_folder_id_is_never_a_note_id(
         client, "/note", "note_id", owned.folder_id, authorization()
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_NOTE
 
 
@@ -51,7 +53,7 @@ def test_a_home_folder_id_is_never_a_note_id(
         client, "/note", "note_id", owned.home_id, authorization()
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_NOTE
 
 
@@ -66,7 +68,7 @@ def test_a_note_id_is_never_a_deck_id(
         authorization(),
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_DECK
 
 
@@ -81,7 +83,7 @@ def test_a_folder_id_is_never_a_deck_id(
         authorization(),
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_DECK
 
 
@@ -92,7 +94,7 @@ def test_a_deck_id_is_never_a_test_id(
         client, "/test-items", "test_id", owned.deck_id, authorization()
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_TEST
     assert opened_test_sessions(sessions) == 0
 
@@ -104,7 +106,7 @@ def test_a_file_id_is_never_a_test_id(
         client, "/test-items", "test_id", owned.file_id, authorization()
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_TEST
     assert opened_test_sessions(sessions) == 0
 
@@ -116,5 +118,5 @@ def test_a_test_id_is_never_a_note_id(
         client, "/note", "note_id", owned.test_id, authorization()
     )
 
-    assert code == 404
+    assert code == _NOT_FOUND
     assert body["detail"] == MISSING_NOTE
