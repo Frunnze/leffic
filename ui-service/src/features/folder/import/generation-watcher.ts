@@ -13,7 +13,7 @@ export class GenerationWatcher {
   ): Promise<GenerationOutcome> {
     return new Promise((resolve) => {
       if (taskId === null) {
-        resolve({ kind, succeeded: false, unit: null });
+        resolve({ kind, succeeded: false, units: [] });
         return;
       }
 
@@ -75,7 +75,7 @@ export class GenerationWatcher {
 
     if (progress === null) {
       window.clearInterval(timer);
-      onOutcome({ kind, succeeded: false, unit: null });
+      onOutcome({ kind, succeeded: false, units: [] });
       return;
     }
 
@@ -85,7 +85,7 @@ export class GenerationWatcher {
     onOutcome({
       kind,
       succeeded: progress.status === "SUCCESS",
-      unit: progress.unit,
+      units: progress.unit === null ? [] : [progress.unit],
     });
   }
 }

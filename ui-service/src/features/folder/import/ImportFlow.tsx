@@ -54,8 +54,8 @@ export function ImportFlow(props: ImportFlowProps): JSX.Element {
     const stop = GenerationWatcher.watch(tasks, (outcome) => {
       toasts.dismiss(progressToast);
 
-      if (outcome.unit !== null) {
-        props.onUnitsAdded([outcome.unit], targetFolderId);
+      if (outcome.units.length > 0) {
+        props.onUnitsAdded(outcome.units, targetFolderId);
       }
 
       toasts.show(
@@ -133,8 +133,9 @@ export function ImportFlow(props: ImportFlowProps): JSX.Element {
       },
     );
     const outcome = await GenerationWatcher.awaitOne("note", tasks.noteTaskId);
+    const writtenUnit = outcome.units[0];
 
-    if (!outcome.succeeded || outcome.unit === null) {
+    if (!outcome.succeeded || writtenUnit === undefined) {
       toasts.show({
         tone: "failure",
         title: "Couldn't write the note",
@@ -144,8 +145,8 @@ export function ImportFlow(props: ImportFlowProps): JSX.Element {
       return { text: "", isNoteAlreadyMade: false };
     }
 
-    props.onUnitsAdded([outcome.unit], props.folderId);
-    const note = await NotesApi.note(outcome.unit.id);
+    props.onUnitsAdded(outcome.units, props.folderId);
+    const note = await NotesApi.note(writtenUnit.id);
 
     return { text: NotesApi.asPlainText(note.content), isNoteAlreadyMade: true };
   };

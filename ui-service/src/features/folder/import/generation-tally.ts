@@ -4,7 +4,7 @@ import type { Unit } from "../../../shared/models/units";
 export type GenerationOutcome = {
   readonly kind: GeneratedKind;
   readonly succeeded: boolean;
-  readonly unit: Unit | null;
+  readonly units: readonly Unit[];
 };
 
 export class GenerationTally {
@@ -12,7 +12,7 @@ export class GenerationTally {
   private readonly report: (outcome: GenerationOutcome) => void;
   private awaited: number;
   private succeeded = true;
-  private unit: Unit | null = null;
+  private readonly units: Unit[] = [];
 
   constructor(
     kind: GeneratedKind,
@@ -28,14 +28,14 @@ export class GenerationTally {
     this.awaited -= 1;
 
     if (!outcome.succeeded) this.succeeded = false;
-    if (outcome.unit !== null) this.unit = outcome.unit;
+    this.units.push(...outcome.units);
 
     if (this.awaited > 0) return;
 
     this.report({
       kind: this.kind,
       succeeded: this.succeeded,
-      unit: this.unit,
+      units: this.units,
     });
   }
 }
