@@ -1,6 +1,7 @@
-import { Show, onCleanup, type JSX } from "solid-js";
-import { GenerationApi, type GenerationWish } from "./generation-api";
+import { Show, type JSX } from "solid-js";
+import { GenerationApi } from "./generation-api";
 import { GenerationWatcher } from "./generation-watcher";
+import { useGenerations } from "./GenerationContext";
 import {
   ImportDialog,
   type ExtractedSource,
@@ -9,18 +10,8 @@ import {
 import { ImportSources } from "./import-sources";
 import { NotesApi } from "../../notes/notes-api";
 import { useToasts } from "../../notifications/ToastContext";
-import type {
-  GenerationOrigin,
-  GenerationSource,
-  UploadedFile,
-} from "./generation-models";
+import type { UploadedFile } from "./generation-models";
 import type { Unit } from "../../../shared/models/units";
-
-const KIND_LABELS = {
-  flashcards: "Flashcards",
-  note: "Note",
-  test: "Test",
-} as const;
 
 export type ImportFlowProps = {
   readonly folderId: string;
@@ -32,45 +23,7 @@ export type ImportFlowProps = {
 
 export function ImportFlow(props: ImportFlowProps): JSX.Element {
   const toasts = useToasts();
-
-  const startGeneration = async (
-    source: GenerationSource,
-    origin: GenerationOrigin,
-    sourceLabel: string,
-    wanted: GenerationWish,
-  ): Promise<void> => {
-    const targetFolderId = props.folderId;
-    const progressToast = toasts.show({
-      tone: "progress",
-      title: `Generating from ${sourceLabel}`,
-    });
-    const tasks = await GenerationApi.start(
-      source,
-      origin,
-      targetFolderId,
-      wanted,
-    );
-
-    const stop = GenerationWatcher.watch(tasks, (outcome) => {
-      toasts.dismiss(progressToast);
-
-      if (outcome.units.length > 0) {
-        props.onUnitsAdded(outcome.units, targetFolderId);
-      }
-
-      toasts.show(
-        outcome.succeeded
-          ? { tone: "success", title: `${KIND_LABELS[outcome.kind]} ready` }
-          : {
-              tone: "failure",
-              title: `Couldn't generate the ${outcome.kind}`,
-              detail: "The source could not be processed. Try again.",
-            },
-      );
-    });
-
-    onCleanup(stop);
-  };
+  const generations = useGenerations();
 
   const uploadIntoFolder = async (
     chosen: File,
@@ -170,12 +123,13 @@ export function ImportFlow(props: ImportFlowProps): JSX.Element {
 
   const generate = (request: ImportRequest, reviewedText: string): void => {
     props.onClose();
-    void startGeneration(
-      { kind: "topic", topic: reviewedText },
-      ImportSources.originOf(request),
-      ImportSources.labelFor(request),
-      ImportSources.wishFrom(request),
-    );
+    void generations.start({
+      source: { kind: "topic", topic: reviewedText },
+      origin: ImportSources.originOf(request),
+      folderId: props.folderId,
+      sourceLabel: ImportSources.labelFor(request),
+      wanted: ImportSources.wishFrom(request),
+    });
   };
 
   return (
