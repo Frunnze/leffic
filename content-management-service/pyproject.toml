@@ -61,7 +61,12 @@ pytest_add_cli_args_test_selection = [
 ]
 
 [tool.deptry.per_rule_ignores]
-DEP002 = ["uvicorn", "python-multipart", "setuptools"]
+DEP002 = [
+    "alembic",
+    "uvicorn",
+    "python-multipart",
+    "setuptools",
+]
 
 [tool.deptry]
 known_first_party = ["src", "run", "app_factory", "features", "shared"]

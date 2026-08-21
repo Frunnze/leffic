@@ -34,7 +34,6 @@ from features.study_units_generation.generation_router import (
 from features.study_units_generation.task_status_router import (
     task_status_router,
 )
-from shared.database import Base, engine
 
 
 def create_app() -> FastAPI:
@@ -64,7 +63,5 @@ def create_app() -> FastAPI:
     app.include_router(extraction_router)
     app.include_router(generation_router)
     app.include_router(task_status_router)
-
-    Base.metadata.create_all(bind=engine)
 
     return app
