@@ -37,14 +37,7 @@ export function FlashcardPrompt(props: FlashcardPromptProps): JSX.Element {
       </Match>
 
       <Match when={props.face.kind === "feynman" && props.face}>
-        {(face) => (
-          <>
-            <p class="flashcard-prompt">{face().prompt}</p>
-            <p class="flashcard-hint">
-              Explain it out loud in plain language before you flip.
-            </p>
-          </>
-        )}
+        {(face) => <p class="flashcard-prompt">{face().prompt}</p>}
       </Match>
     </Switch>
   );
