@@ -1,7 +1,19 @@
+import { createSignal } from "solid-js";
+
 export type ThemeChoice = "system" | "light" | "dark";
 
 const REMEMBERED_THEME = "leffic-theme";
 const SYSTEM_THEME: ThemeChoice = "system";
+
+export function asThemeChoice(value: unknown): ThemeChoice {
+  if (value === "light" || value === "dark") return value;
+
+  return SYSTEM_THEME;
+}
+
+const [paintedTheme, setPaintedTheme] = createSignal<ThemeChoice>(
+  asThemeChoice(localStorage.getItem(REMEMBERED_THEME)),
+);
 
 export class Theme {
   private static pulledFromAccount: Promise<void> | null = null;
@@ -18,19 +30,10 @@ export class Theme {
     }
 
     localStorage.setItem(REMEMBERED_THEME, choice);
+    setPaintedTheme(choice);
   }
 
   static lastPainted(): ThemeChoice {
-    const remembered = localStorage.getItem(REMEMBERED_THEME);
-
-    if (remembered === "light" || remembered === "dark") return remembered;
-
-    return SYSTEM_THEME;
-  }
-
-  static asChoice(value: unknown): ThemeChoice {
-    if (value === "light" || value === "dark") return value;
-
-    return SYSTEM_THEME;
+    return paintedTheme();
   }
 }

@@ -1,6 +1,6 @@
 import { HttpClient } from "../../shared/api/http";
 import { Json, type JsonObject } from "../../shared/api/json";
-import { Theme, type ThemeChoice } from "../../shared/ui/theme";
+import { asThemeChoice, type ThemeChoice } from "../../shared/ui/theme";
 
 const ACCOUNT_ENDPOINT = "/api/user/account";
 const PROVIDER_KEYS_ENDPOINT = "/api/user/account/provider-keys";
@@ -33,7 +33,7 @@ export class AccountApi {
     return {
       username: Json.string(account.username, "account.username"),
       email: Json.string(account.email, "account.email"),
-      theme: Theme.asChoice(account.theme),
+      theme: asThemeChoice(account.theme),
     };
   }
 
@@ -44,7 +44,7 @@ export class AccountApi {
       body: { theme },
     });
 
-    return Theme.asChoice(Json.object(payload, "theme").theme);
+    return asThemeChoice(Json.object(payload, "theme").theme);
   }
 
   static async changeUsername(username: string): Promise<void> {
