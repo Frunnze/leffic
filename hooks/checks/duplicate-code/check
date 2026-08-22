@@ -7,19 +7,6 @@ import_statement='import[^;]*;'
 echo "pre-commit: duplicate code (write it once)"
 echo "pre-commit: follow DRY - extract the repeat, do not copy it"
 
-if [ -n "$services" ]; then
-    require_binary "$pylint_binary" pylint
-
-    for service in $services; do
-        if ! python_files_in "$service/src" \
-            | xargs "$pylint_binary" --disable=all --enable=duplicate-code; then
-            echo "pre-commit: duplicated code in $service - reuse it," >&2
-            echo "pre-commit: do not copy it" >&2
-            exit 1
-        fi
-    done
-fi
-
 if [ -n "$node_packages" ]; then
     require_binary "$jscpd_binary" jscpd
 

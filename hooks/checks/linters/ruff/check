@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/../../../_env.sh"
+
+require_binary "$ruff_binary" ruff
+
+for service in $services; do
+    (cd "$service" && "$ruff_binary" check src run.py)
+done

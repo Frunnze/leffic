@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/../../../_env.sh"
+
+rules=$(paste -sd, "$(dirname "$0")/rules.txt")
+
+require_binary "$pylint_binary" pylint
+
+for service in $services; do
+    if ! python_files_in "$service/src" \
+        | xargs "$pylint_binary" --disable=all --enable="$rules"; then
+        echo "pre-commit: $service violates a rule pylint has and ruff" >&2
+        echo "pre-commit: does not - see hooks/checks/linters/pylint/rules.txt" >&2
+        exit 1
+    fi
+done

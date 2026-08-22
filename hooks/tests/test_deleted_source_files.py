@@ -69,12 +69,12 @@ def test_property_tests_survives_a_deleted_source_file(
     assert "Traceback" not in finished.stderr
 
 
-def test_duplicate_code_survives_a_deleted_source_file(
+def test_linters_pylint_survives_a_deleted_source_file(
     tmp_path: Path,
 ) -> None:
     _committed_repository(tmp_path)
     stub_binary(tmp_path, "pylint", 'exit 0\n')
-    finished = run_check(tmp_path, "duplicate-code")
+    finished = run_check(tmp_path, "linters/pylint")
 
     assert finished.returncode == 0
     assert "fatal" not in finished.stdout

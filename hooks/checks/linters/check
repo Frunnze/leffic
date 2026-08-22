@@ -2,16 +2,13 @@
 set -e
 . "$(dirname "$0")/../../_env.sh"
 
-echo "pre-commit: linters (ruff for python, eslint for typescript)"
+echo "pre-commit: linters (ruff+pylint for python, eslint for typescript)"
 echo "pre-commit: write for the reader - code is read far more than written"
 echo "pre-commit: avoid astonishment - behave as the call site expects"
 
 if [ -n "$services" ]; then
-    require_binary "$ruff_binary" ruff
-
-    for service in $services; do
-        (cd "$service" && "$ruff_binary" check src run.py)
-    done
+    "$(dirname "$0")/ruff/check"
+    "$(dirname "$0")/pylint/check"
 fi
 
 if [ -n "$node_packages" ]; then
