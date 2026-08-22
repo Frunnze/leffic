@@ -9,12 +9,9 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app_factory import create_app
-from features.authentication.access import (
-    ALGORITHM,
-    SECRET_KEY,
-    create_refresh_token,
-)
+from features.authentication.access import create_refresh_token
 from shared.database import Base, get_db
+from shared.jwt_secret import ALGORITHM, SECRET_KEY
 
 _OK = 200
 _UNAUTHORIZED = 401

@@ -26,6 +26,7 @@ vulture_binary="$repository_root/.venv/bin/vulture"
 deptry_binary="$repository_root/.venv/bin/deptry"
 python_binary="$repository_root/.venv/bin/python"
 pip_audit_binary="$repository_root/.venv/bin/pip-audit"
+semgrep_binary="$repository_root/.venv/bin/semgrep"
 
 node_binary=$(command -v node || true)
 eslint_binary="$repository_root/hooks/node_modules/.bin/eslint"

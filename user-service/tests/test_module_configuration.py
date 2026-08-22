@@ -5,8 +5,7 @@ from unittest import mock
 
 import pytest
 
-from features.authentication import access
-from shared import database
+from shared import database, jwt_secret
 
 
 def test_a_missing_jwt_secret_stops_the_service_from_starting() -> None:
@@ -14,9 +13,9 @@ def test_a_missing_jwt_secret_stops_the_service_from_starting() -> None:
         mock.patch.dict(os.environ, {"JWT_SECRET_KEY": ""}),
         pytest.raises(RuntimeError, match="JWT_SECRET_KEY"),
     ):
-        _ = importlib.reload(access)
+        _ = importlib.reload(jwt_secret)
 
-    _ = importlib.reload(access)
+    _ = importlib.reload(jwt_secret)
 
 
 def test_a_postgres_url_bootstraps_the_database() -> None:

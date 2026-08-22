@@ -4,6 +4,8 @@ from typing import Annotated
 import jwt
 from fastapi import Header, HTTPException, status
 
+from shared.jwt_secret import ALGORITHM, SECRET_KEY
+
 _BEARER_SCHEME = "bearer"
 _BEARER_HEADER_PARTS = 2
 _MISSING_USER_ID = "Token carries no user_id"
@@ -42,7 +44,7 @@ def _decode_claims(authorization: str | None) -> dict[str, object]:
     token = _bearer_token(authorization)
 
     try:
-        return jwt.decode(token, options={"verify_signature": False})
+        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except jwt.PyJWTError as error:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

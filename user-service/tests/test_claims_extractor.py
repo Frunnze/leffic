@@ -3,6 +3,7 @@ import pytest
 from fastapi import HTTPException
 
 from features.account.claims_extractor import get_user_id_from_jwt
+from shared.jwt_secret import ALGORITHM, SECRET_KEY
 
 _UNAUTHORIZED = 401
 
@@ -10,7 +11,7 @@ _USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"
 
 
 def _bearer(claims: dict[str, object]) -> str:
-    return f"Bearer {jwt.encode(claims, 'secret', algorithm='HS256')}"
+    return f"Bearer {jwt.encode(claims, SECRET_KEY, algorithm=ALGORITHM)}"
 
 
 def test_returns_user_id_from_bearer_token() -> None:
@@ -52,6 +53,18 @@ def test_rejects_wrong_scheme() -> None:
 def test_rejects_malformed_token() -> None:
     with pytest.raises(HTTPException) as raised:
         _ = get_user_id_from_jwt("Bearer not-a-jwt")
+
+    assert raised.value.status_code == _UNAUTHORIZED
+    assert str(raised.value.detail).startswith("Invalid token: ")
+
+
+def test_rejects_a_token_signed_with_the_wrong_key() -> None:
+    forged = jwt.encode(
+        {"user_id": _USER_ID}, "a-forged-key", algorithm=ALGORITHM
+    )
+
+    with pytest.raises(HTTPException) as raised:
+        _ = get_user_id_from_jwt(f"Bearer {forged}")
 
     assert raised.value.status_code == _UNAUTHORIZED
     assert str(raised.value.detail).startswith("Invalid token: ")

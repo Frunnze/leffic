@@ -10,6 +10,7 @@ from app_factory import create_app
 from features.study_units_generation import (
     extraction_router as router_module,
 )
+from shared.jwt_secret import ALGORITHM, SECRET_KEY
 
 _OK = 200
 
@@ -29,7 +30,9 @@ def client() -> Iterator[TestClient]:
 
 
 def _authorization() -> dict[str, str]:
-    token = jwt.encode({"user_id": _USER_ID}, "secret", algorithm="HS256")
+    token = jwt.encode(
+        {"user_id": _USER_ID}, SECRET_KEY, algorithm=ALGORITHM
+    )
 
     return {"Authorization": f"Bearer {token}"}
 

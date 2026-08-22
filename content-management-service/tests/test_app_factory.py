@@ -4,14 +4,15 @@ from fastapi.testclient import TestClient
 from app_factory import create_app
 
 _ORIGIN = "http://localhost:3009"
+_OTHER_ORIGIN = "http://attacker.example"
 
 
-def _preflight() -> dict[str, str]:
+def _preflight(origin: str = _ORIGIN) -> dict[str, str]:
     with TestClient(create_app()) as client:
         response = client.options(
             "/save-note",
             headers={
-                "Origin": _ORIGIN,
+                "Origin": origin,
                 "Access-Control-Request-Method": "POST",
                 "Access-Control-Request-Headers": "X-Custom",
             },
@@ -20,8 +21,12 @@ def _preflight() -> dict[str, str]:
     return dict(response.headers)
 
 
-def test_any_origin_is_allowed() -> None:
+def test_the_frontend_origin_is_allowed() -> None:
     assert _preflight()["access-control-allow-origin"] == _ORIGIN
+
+
+def test_a_different_origin_is_not_allowed() -> None:
+    assert "access-control-allow-origin" not in _preflight(_OTHER_ORIGIN)
 
 
 def test_credentials_are_allowed() -> None:

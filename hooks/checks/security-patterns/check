@@ -1,0 +1,30 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/../../_env.sh"
+
+echo "pre-commit: security patterns (semgrep - dataflow the other"
+echo "pre-commit: linters cannot see)"
+echo "pre-commit: fail fast - refuse bad input at the edge, not deeper in"
+
+require_binary "$semgrep_binary" semgrep
+
+config_flags=""
+
+for ruleset in $(cat "$(dirname "$0")/rulesets.txt"); do
+    config_flags="$config_flags --config $ruleset"
+done
+
+dockerfiles=$(find . \
+    -name node_modules -prune -o \
+    -name .venv -prune -o \
+    -name .git -prune -o \
+    -type f -iname 'Dockerfile*' -print \
+    | sed 's|^\./||' | sort)
+
+targets="$source_directories $node_source_directories $dockerfiles"
+
+if ! "$semgrep_binary" $config_flags $targets; then
+    echo "pre-commit: semgrep found a pattern the other checks miss -" >&2
+    echo "pre-commit: fix it" >&2
+    exit 1
+fi

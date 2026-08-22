@@ -11,6 +11,7 @@ from features.study_units_generation import (
     extraction_router as router_module,
 )
 from features.study_units_generation.pdf_pages import PageSelectionError
+from shared.jwt_secret import ALGORITHM, SECRET_KEY
 
 _BAD_REQUEST = 400
 _OK = 200
@@ -34,7 +35,9 @@ def client() -> Iterator[TestClient]:
 
 
 def _authorization() -> dict[str, str]:
-    token = jwt.encode({"user_id": _USER_ID}, "secret", algorithm="HS256")
+    token = jwt.encode(
+        {"user_id": _USER_ID}, SECRET_KEY, algorithm=ALGORITHM
+    )
 
     return {"Authorization": f"Bearer {token}"}
 

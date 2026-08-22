@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app_factory import create_app
-from features.authentication.access import ALGORITHM, SECRET_KEY
 from shared.database import Base, get_db
+from shared.jwt_secret import ALGORITHM, SECRET_KEY
 
 _CONFLICT = 409
 _NOT_FOUND = 404

@@ -6,17 +6,14 @@ from fastapi import HTTPException, Response
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from features.authentication.access import (
-    ALGORITHM,
-    SECRET_KEY,
-    create_refresh_token,
-)
+from features.authentication.access import create_refresh_token
 from features.authentication.authentication_router import (
     _issue_refresh_cookie,
     _refreshed_user_id,
     _session_payload,
     logout_user,
 )
+from shared.jwt_secret import ALGORITHM, SECRET_KEY
 from shared.models import User
 
 _OK = 200

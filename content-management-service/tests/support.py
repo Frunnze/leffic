@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from shared.database import Base
+from shared.jwt_secret import ALGORITHM, SECRET_KEY
 
 USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"
 OTHER_USER_ID = "6f1c7d4e-0000-4000-8000-0000000000ff"
@@ -43,7 +44,7 @@ def in_memory_sessions() -> sessionmaker[Session]:
 
 
 def authorization(user_id: str = USER_ID) -> dict[str, str]:
-    token = jwt.encode({"user_id": user_id}, "secret", algorithm="HS256")
+    token = jwt.encode({"user_id": user_id}, SECRET_KEY, algorithm=ALGORITHM)
 
     return {"Authorization": f"Bearer {token}"}
 

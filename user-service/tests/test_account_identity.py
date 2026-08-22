@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 
 from app_factory import create_app
 from shared.database import Base, get_db
+from shared.jwt_secret import ALGORITHM, SECRET_KEY
 from tests.support import Accounts, SessionProvider
 
 _CONFLICT = 409
@@ -64,7 +65,9 @@ def test_the_account_needs_a_token(client: TestClient) -> None:
 
 
 def test_an_unknown_account_is_not_found(client: TestClient) -> None:
-    token = jwt.encode({"user_id": _STRANGER_ID}, "secret", algorithm="HS256")
+    token = jwt.encode(
+        {"user_id": _STRANGER_ID}, SECRET_KEY, algorithm=ALGORITHM
+    )
 
     response = client.get(
         "/account", headers={"Authorization": f"Bearer {token}"}

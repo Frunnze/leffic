@@ -1,14 +1,9 @@
-import os
 from datetime import UTC, datetime, timedelta
 
 import jwt
 
-_configured_key = os.getenv("JWT_SECRET_KEY")
-if not _configured_key:
-    _UNSET_ENVIRONMENT = "JWT_SECRET_KEY environment variable is not set"
-    raise RuntimeError(_UNSET_ENVIRONMENT)
-SECRET_KEY: str = _configured_key
-ALGORITHM = "HS256"
+from shared.jwt_secret import SECRET_KEY
+
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 

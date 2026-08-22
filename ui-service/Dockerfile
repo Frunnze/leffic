@@ -11,13 +11,16 @@ ARG VITE_GATEWAY_URL
 ENV VITE_GATEWAY_URL=$VITE_GATEWAY_URL
 RUN npm run build
 
-FROM nginx:alpine
+FROM nginxinc/nginx-unprivileged:alpine
 
+USER root
 RUN rm -rf /usr/share/nginx/html/*
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
+RUN chown -R nginx /usr/share/nginx/html
 
-EXPOSE 80
+USER nginx
+EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]

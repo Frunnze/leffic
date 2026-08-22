@@ -4,12 +4,11 @@ import jwt
 
 from features.authentication.access import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
-    ALGORITHM,
     REFRESH_TOKEN_EXPIRE_DAYS,
-    SECRET_KEY,
     create_access_token,
     create_refresh_token,
 )
+from shared.jwt_secret import ALGORITHM, SECRET_KEY
 from shared.password_hashing import hash_password, verify_password
 
 _USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"

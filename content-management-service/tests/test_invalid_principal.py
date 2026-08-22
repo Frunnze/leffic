@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
+from shared.jwt_secret import ALGORITHM, SECRET_KEY
 from tests.access_support import crashless_client
 from tests.support import in_memory_sessions
 
@@ -43,7 +44,7 @@ def client(sessions: sessionmaker[Session]) -> Iterator[TestClient]:
 
 
 def _headers(user_id: str) -> dict[str, str]:
-    token = jwt.encode({"user_id": user_id}, "secret", algorithm="HS256")
+    token = jwt.encode({"user_id": user_id}, SECRET_KEY, algorithm=ALGORITHM)
 
     return {"Authorization": f"Bearer {token}"}
 

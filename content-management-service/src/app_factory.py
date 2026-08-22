@@ -36,12 +36,14 @@ from features.study_units_generation.task_status_router import (
 )
 from shared.database import Base, engine
 
+_ALLOWED_ORIGIN = "http://localhost:3009"
+
 
 def create_app() -> FastAPI:
     app = FastAPI()
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=[_ALLOWED_ORIGIN],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

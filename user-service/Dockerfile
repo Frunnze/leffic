@@ -10,5 +10,8 @@ COPY . /app
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+RUN useradd --system --create-home appuser && chown -R appuser /app
+USER appuser
+
 # Run app.py when the container launches
 CMD ["uvicorn", "run:app", "--host", "0.0.0.0", "--port", "8000"]

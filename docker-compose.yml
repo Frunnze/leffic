@@ -14,6 +14,7 @@ x-content-service: &content-service
     - REDIS_HOST=redis:6379
     - OPENAI_API_KEY=${OPENAI_API_KEY}
     - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    - JWT_SECRET_KEY=${JWT_SECRET_KEY}
   depends_on:
     postgres:
       condition: service_healthy
@@ -30,13 +31,13 @@ services:
       args:
         - VITE_GATEWAY_URL=${VITE_GATEWAY_URL:-http://localhost:8888}
     ports:
-      - "3009:80"
+      - "3009:8080"
     restart: unless-stopped
 
   api-gateway:
     build: ./api-gateway
     ports:
-      - 8888:80
+      - 8888:8080
     environment:
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
     depends_on:

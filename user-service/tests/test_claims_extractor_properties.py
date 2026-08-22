@@ -12,9 +12,9 @@ from features.account.claims_extractor import (
     _validated_user_id,
     get_user_id_from_jwt,
 )
+from shared.jwt_secret import SECRET_KEY
 
 _UNAUTHORIZED = 401
-_SIGNING_KEY = "a" * 32
 _SCHEMES = st.sampled_from(["Bearer", "bearer", "BEARER", "BeArEr"])
 _TOKEN_TEXT = st.text(
     alphabet=st.characters(min_codepoint=33, max_codepoint=126),
@@ -24,7 +24,7 @@ _TOKEN_TEXT = st.text(
 
 
 def _bearer_header(user_id: str) -> str:
-    return f"Bearer {jwt.encode({'user_id': user_id}, _SIGNING_KEY)}"
+    return f"Bearer {jwt.encode({'user_id': user_id}, SECRET_KEY)}"
 
 
 @settings(max_examples=50)
@@ -51,7 +51,7 @@ def test__bearer_token_property_rejects_anything_but_two_parts(
 def test__decode_claims_property_returns_every_claim_it_was_given(
     claims: dict[str, str],
 ) -> None:
-    token = jwt.encode(claims, _SIGNING_KEY)
+    token = jwt.encode(claims, SECRET_KEY)
 
     assert _decode_claims(f"Bearer {token}") == claims
 

@@ -8,13 +8,15 @@ RUN npm install
 COPY src ./src
 RUN npm run build
 
-FROM nginx:alpine
+FROM nginxinc/nginx-unprivileged:alpine
 
+USER root
 RUN apk add --no-cache nginx-module-njs
 
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY --from=builder /build/dist/jwt.js /etc/nginx/njs/jwt.js
 
-EXPOSE 80
+USER nginx
+EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]

@@ -24,6 +24,7 @@ linters
 unused-deps
 property-tests
 vulnerable-deps
+security-patterns
 strict-typing
 api-contract
 coverage

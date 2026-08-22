@@ -7,11 +7,10 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from features.authentication.access import (
-    ALGORITHM,
-    SECRET_KEY,
     create_access_token,
     create_refresh_token,
 )
+from shared.jwt_secret import ALGORITHM, SECRET_KEY
 from shared.password_hashing import (
     hash_password,
     storable_password,

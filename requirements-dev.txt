@@ -7,4 +7,5 @@ pytest-cov==7.1.0
 pytest-randomly==4.1.0
 ruff==0.16.2
 schemathesis==4.24.3
+semgrep==1.174.0
 vulture==2.16
