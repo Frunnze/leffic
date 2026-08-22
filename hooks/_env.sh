@@ -21,7 +21,6 @@ done
 
 ruff_binary="$repository_root/.venv/bin/ruff"
 basedpyright_binary="$repository_root/.venv/bin/basedpyright"
-mutmut_binary="$repository_root/.venv/bin/mutmut"
 pylint_binary="$repository_root/.venv/bin/pylint"
 vulture_binary="$repository_root/.venv/bin/vulture"
 deptry_binary="$repository_root/.venv/bin/deptry"
@@ -29,14 +28,10 @@ python_binary="$repository_root/.venv/bin/python"
 pip_audit_binary="$repository_root/.venv/bin/pip-audit"
 
 node_binary=$(command -v node || true)
-eslint_binary="$repository_root/node_modules/.bin/eslint"
-jscpd_binary="$repository_root/node_modules/.bin/jscpd"
-knip_binary="$repository_root/node_modules/.bin/knip"
-typescript_module="$repository_root/node_modules/typescript"
-
-stryker_binary_in() {
-    echo "$repository_root/$1/node_modules/.bin/stryker"
-}
+eslint_binary="$repository_root/hooks/node_modules/.bin/eslint"
+jscpd_binary="$repository_root/hooks/node_modules/.bin/jscpd"
+knip_binary="$repository_root/hooks/node_modules/.bin/knip"
+typescript_module="$repository_root/hooks/node_modules/typescript"
 
 source_directories=""
 test_directories=""
@@ -69,7 +64,7 @@ require_node_modules() {
 python_files_in() {
     find "$@" \
         -name __pycache__ -prune -o \
-        -name mutants -prune -o \
+        -name node_modules -prune -o \
         -type f -name '*.py' -print \
         | sed 's|^\./||' \
         | sort
@@ -79,8 +74,6 @@ typescript_files_in() {
     find "$@" \
         -name node_modules -prune -o \
         -name dist -prune -o \
-        -name .stryker-tmp -prune -o \
-        -name reports -prune -o \
         -type f \( -name '*.ts' -o -name '*.tsx' \) -print \
         | sed 's|^\./||' \
         | sort

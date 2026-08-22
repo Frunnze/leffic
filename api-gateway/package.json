@@ -10,8 +10,6 @@
     "coverage": "vitest run --coverage"
   },
   "devDependencies": {
-    "@stryker-mutator/core": "^10.0.0",
-    "@stryker-mutator/vitest-runner": "^10.0.0",
     "@vitest/coverage-v8": "^4.1.11",
     "fast-check": "^4.9.0",
     "njs-types": "^0.9.1",

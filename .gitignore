@@ -16,7 +16,6 @@ ISO-690-UTM.csl
 .gitignore
 test.ipynb
 /to-dos.md
-mutants/
 .mutmut-cache
 .claude/
 docs/design/
@@ -28,5 +27,4 @@ htmlcov/
 .ruff_cache/
 .hypothesis/
 .venv
-.stryker-tmp/
-reports/
+package-lock.json

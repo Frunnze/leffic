@@ -5,8 +5,5 @@
   ],
   "project": [
     "**/*.ts"
-  ],
-  "ignoreDependencies": [
-    "@stryker-mutator/.*"
   ]
 }

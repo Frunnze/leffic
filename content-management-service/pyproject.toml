@@ -50,16 +50,6 @@ max-public-methods = 15
 "tests/scope_world.py" = ["S311"]
 "tests/test_formatting_properties.py" = ["DTZ001", "DTZ007"]
 
-[tool.mutmut]
-source_paths = ["src"]
-also_copy = ["pytest.ini"]
-pytest_add_cli_args_test_selection = [
-    "tests",
-    "-p",
-    "no:randomly",
-    "--ignore=tests/test_api_contract.py",
-]
-
 [tool.deptry.per_rule_ignores]
 DEP002 = ["uvicorn", "python-multipart", "setuptools"]
 

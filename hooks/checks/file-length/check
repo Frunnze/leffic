@@ -11,9 +11,6 @@ source_files=$(
     find . \
         -name __pycache__ -prune -o \
         -name node_modules -prune -o \
-        -name .stryker-tmp -prune -o \
-        -name reports -prune -o \
-        -name mutants -prune -o \
         -name .git -prune -o \
         -name .venv -prune -o \
         -name dist -prune -o \

@@ -29,11 +29,7 @@ api-contract
 coverage
 "
 
-checks_skipped="
-mutation
-"
-
-run_order=" $(echo $checks_cheapest_first $checks_skipped) "
+run_order=" $(echo $checks_cheapest_first) "
 
 for check_directory in hooks/checks/*/; do
     check_name=$(basename "$check_directory")

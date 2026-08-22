@@ -47,16 +47,6 @@ max-public-methods = 15
     "SLF001",
 ]
 
-[tool.mutmut]
-source_paths = ["src"]
-also_copy = ["pytest.ini"]
-pytest_add_cli_args_test_selection = [
-    "tests",
-    "-p",
-    "no:randomly",
-    "--ignore=tests/test_api_contract.py",
-]
-
 [tool.deptry.per_rule_ignores]
 DEP002 = ["uvicorn", "bcrypt"]
 

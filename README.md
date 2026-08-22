@@ -103,7 +103,7 @@ migrations. A user's root folder is the folder whose id equals their user id.
 ## Tech stack
 
 - SolidJS, TypeScript, Vite
-- Vitest, fast-check, Stryker
+- Vitest, fast-check
 - FastAPI, SQLAlchemy, Pydantic
 - nginx with njs
 - Celery, Redis
