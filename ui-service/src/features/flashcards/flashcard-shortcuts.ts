@@ -8,7 +8,7 @@ const RATING_KEYS: Readonly<Record<string, FlashcardRating>> = {
   "4": 4,
 };
 
-export type FlashcardShortcutHandlers = {
+type FlashcardShortcutHandlers = {
   readonly isAnswerShown: () => boolean;
   readonly onReveal: () => void;
   readonly onRate: (rating: FlashcardRating) => void;
@@ -32,8 +32,8 @@ export class FlashcardShortcuts {
       handlers.onRate(rating);
     };
 
-    onMount(() => document.addEventListener("keydown", handleKeyDown));
-    onCleanup(() => document.removeEventListener("keydown", handleKeyDown));
+    onMount(() => { document.addEventListener("keydown", handleKeyDown); });
+    onCleanup(() => { document.removeEventListener("keydown", handleKeyDown); });
   }
 
   private static isTypingTarget(target: EventTarget | null): boolean {

@@ -35,6 +35,7 @@ def _check_with(
     tmp_path: Path, output: str, status: int
 ) -> subprocess.CompletedProcess[str]:
     repository(tmp_path)
+    (tmp_path / "user-service" / "src").mkdir(parents=True)
     stub_binary(
         tmp_path, "pip-audit", _pip_audit_reporting(output, status)
     )

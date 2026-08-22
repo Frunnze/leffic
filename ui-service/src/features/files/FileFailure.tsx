@@ -1,7 +1,7 @@
 import type { JSX } from "solid-js";
 import { Icon } from "../../shared/ui/icons/Icon";
 
-export type FileFailureProps = {
+type FileFailureProps = {
   readonly fileName: string;
   readonly reason: string;
 };
@@ -15,7 +15,7 @@ export function FileFailure(props: FileFailureProps): JSX.Element {
       <button
         class="btn"
         type="button"
-        onClick={() => window.location.reload()}
+        onClick={() => { window.location.reload(); }}
       >
         Try again
       </button>

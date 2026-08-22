@@ -2,7 +2,7 @@ import { FlashcardWording } from "./flashcard-wording";
 import { MnemonicPrompt } from "./mnemonic-prompt";
 import type { Flashcard } from "./flashcard-models";
 
-export type MnemonicAsk = {
+type MnemonicAsk = {
   readonly question: string;
   readonly shownAs: string;
 };

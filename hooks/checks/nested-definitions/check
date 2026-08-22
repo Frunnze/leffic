@@ -2,21 +2,35 @@
 set -e
 . "$(dirname "$0")/../../_env.sh"
 
-require_binary "$python_binary" python
-
 finder="$(dirname "$0")/nested_definitions.py"
+typescript_finder="$(dirname "$0")/nested_definitions.js"
 
 echo "pre-commit: nested definitions (no def inside a def)"
 echo "pre-commit: follow SRP - lift a nested def out, it is a unit of its own"
 echo "pre-commit: keep it testable - nothing can reach a def hidden in a def"
 
-nested_definitions=$(
-    python_files_in $source_directories $test_directories hooks \
-        | "$python_binary" "$finder"
-)
+nested_definitions=""
 
-if [ -n "$nested_definitions" ]; then
+if [ -n "$source_directories" ]; then
+    require_binary "$python_binary" python
+
+    nested_definitions=$(
+        python_files_in $source_directories $test_directories hooks \
+            | "$python_binary" "$finder"
+    )
+fi
+
+if [ -n "$node_source_directories" ]; then
+    require_binary "$node_binary" node
+    require_binary "$typescript_module" typescript
+
+    nested_definitions="$nested_definitions
+$(typescript_files_in $node_source_directories \
+    | "$node_binary" "$typescript_finder" "$typescript_module")"
+fi
+
+if [ -n "$(echo "$nested_definitions" | tr -d '\n ')" ]; then
     echo "pre-commit: these definitions are nested - lift them out:" >&2
-    echo "$nested_definitions" >&2
+    echo "$nested_definitions" | grep . >&2
     exit 1
 fi

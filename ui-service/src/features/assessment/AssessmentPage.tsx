@@ -4,7 +4,7 @@ import { AppShell } from "../../shared/ui/AppShell";
 import { ReviewBar } from "../../shared/ui/ReviewBar";
 import { AssessmentReview } from "./AssessmentReview";
 
-export type AssessmentPageProps = {
+type AssessmentPageProps = {
   readonly scope: "test" | "folder";
 };
 
@@ -17,7 +17,7 @@ export default function AssessmentPage(
   return (
     <AppShell fillsViewport>
       <div class="review-page">
-        <ReviewBar title="Test" onClose={() => navigate(-1)} />
+        <ReviewBar title="Test" onClose={() => { navigate(-1); }} />
         <div class="test-stage">
           <AssessmentReview scope={props.scope} scopeId={params.id} />
         </div>

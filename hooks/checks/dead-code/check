@@ -2,19 +2,38 @@
 set -e
 . "$(dirname "$0")/../../_env.sh"
 
-require_binary "$vulture_binary" vulture
-
 whitelist="$repository_root/hooks/checks/dead-code/vulture_whitelist.py"
 
 echo "pre-commit: dead code (delete what nothing reaches)"
 echo "pre-commit: follow YAGNI - delete what nothing reaches, do not keep it"
 
-for service in $services; do
-    if ! (cd "$service" && "$vulture_binary" src run.py "$whitelist" \
-        --min-confidence 60); then
-        echo "pre-commit: nothing reaches this code in $service -" >&2
-        echo "pre-commit: delete it, or add it to $whitelist" >&2
-        echo "pre-commit: when a framework calls it" >&2
-        exit 1
-    fi
-done
+if [ -n "$services" ]; then
+    require_binary "$vulture_binary" vulture
+
+    for service in $services; do
+        if ! (cd "$service" && "$vulture_binary" src run.py "$whitelist" \
+            --min-confidence 60); then
+            echo "pre-commit: nothing reaches this code in $service -" >&2
+            echo "pre-commit: delete it, or add it to $whitelist" >&2
+            echo "pre-commit: when a framework calls it" >&2
+            exit 1
+        fi
+    done
+fi
+
+if [ -n "$node_packages" ]; then
+    require_binary "$knip_binary" knip
+
+    for node_package in $node_packages; do
+        require_node_modules "$node_package"
+
+        if ! (cd "$node_package" && "$knip_binary" \
+            --include files,exports,types,duplicates); then
+            echo "pre-commit: nothing reaches this code in" >&2
+            echo "pre-commit: $node_package - delete it, or name the entry" >&2
+            echo "pre-commit: point in $node_package/knip.json when the" >&2
+            echo "pre-commit: runtime loads it" >&2
+            exit 1
+        fi
+    done
+fi

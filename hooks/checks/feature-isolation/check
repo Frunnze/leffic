@@ -2,21 +2,36 @@
 set -e
 . "$(dirname "$0")/../../_env.sh"
 
-require_binary "$python_binary" python
-
 crossing_finder="$(dirname "$0")/feature_imports.py"
 usage_finder="$(dirname "$0")/shared_usage.py"
+typescript_crossing_finder="$(dirname "$0")/feature_imports.js"
+typescript_usage_finder="$(dirname "$0")/shared_usage.js"
 
 echo "pre-commit: feature isolation (siblings meet only in shared)"
 echo "pre-commit: keep coupling low - reach a sibling only through shared"
 
-crossings=$(python_files_in $source_directories \
-    | "$python_binary" "$crossing_finder")
+crossings=""
 
-if [ -n "$crossings" ]; then
+if [ -n "$source_directories" ]; then
+    require_binary "$python_binary" python
+
+    crossings=$(python_files_in $source_directories \
+        | "$python_binary" "$crossing_finder")
+fi
+
+if [ -n "$node_source_directories" ]; then
+    require_binary "$node_binary" node
+    require_binary "$typescript_module" typescript
+
+    crossings="$crossings
+$(typescript_files_in $node_source_directories \
+    | "$node_binary" "$typescript_crossing_finder" "$typescript_module")"
+fi
+
+if [ -n "$(echo "$crossings" | tr -d '\n ')" ]; then
     echo "pre-commit: these features reach into a sibling - move what" >&2
     echo "pre-commit: they share into shared/ and depend on that:" >&2
-    echo "$crossings" >&2
+    echo "$crossings" | grep . >&2
     exit 1
 fi
 
@@ -26,13 +41,14 @@ echo "pre-commit: follow YAGNI - move it into the one feature that needs it"
 lonely=""
 
 for service in $services; do
-    found=$(python_files_in "$service/src" \
-        | "$python_binary" "$usage_finder")
+    lonely="$lonely
+$(python_files_in "$service/src" | "$python_binary" "$usage_finder")"
+done
 
-    if [ -n "$found" ]; then
-        lonely="$lonely$found
-"
-    fi
+for node_package in $node_packages; do
+    lonely="$lonely
+$(typescript_files_in "$node_package/src" \
+    | "$node_binary" "$typescript_usage_finder" "$typescript_module")"
 done
 
 if [ -n "$(echo "$lonely" | tr -d '\n ')" ]; then

@@ -5,9 +5,9 @@ import { Icon } from "../../shared/ui/icons/Icon";
 import { MoveUnitDialog, type MoveDestination } from "./MoveUnitDialog";
 import { PromptDialog } from "../../shared/ui/PromptDialog";
 import { UnitPresentation } from "./unit-presentation";
-import type { Unit } from "../../shared/models/units";
+import type { Unit } from "./unit-models";
 
-export type UnitRowProps = {
+type UnitRowProps = {
   readonly unit: Unit;
   readonly onDelete: (unit: Unit) => void;
   readonly onRename: (unit: Unit, name: string) => void;

@@ -2,7 +2,7 @@ import { Show, type JSX } from "solid-js";
 import { Icon } from "../../../shared/ui/icons/Icon";
 import { ImportSpinner } from "./ImportSpinner";
 
-export type ImportWaitProps = {
+type ImportWaitProps = {
   readonly isWritingNote: boolean;
   readonly sourceName: string;
 };
@@ -26,7 +26,7 @@ export function ImportWait(props: ImportWaitProps): JSX.Element {
   );
 }
 
-export type ImportReviewProps = {
+type ImportReviewProps = {
   readonly sourceName: string;
   readonly isNoteAlreadyMade: boolean;
   readonly text: string;
@@ -50,7 +50,7 @@ export function ImportReview(props: ImportReviewProps): JSX.Element {
           class="input input-tall"
           id="review-text"
           value={props.text}
-          onInput={(event) => props.onTextChange(event.currentTarget.value)}
+          onInput={(event) => { props.onTextChange(event.currentTarget.value); }}
         />
         <span class="field-hint">
           <Show

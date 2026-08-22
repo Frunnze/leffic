@@ -2,16 +2,16 @@ import { HttpClient } from "../../shared/api/http";
 import { Json } from "../../shared/api/json";
 import { Session } from "../../shared/api/session";
 
-export type Credentials = {
+type Credentials = {
   readonly email: string;
   readonly password: string;
 };
 
-export type Registration = Credentials & {
+type Registration = Credentials & {
   readonly username: string;
 };
 
-export type AuthOutcome =
+type AuthOutcome =
   | { readonly ok: true }
   | { readonly ok: false; readonly field: "username" | "email" | "form"; readonly message: string };
 
@@ -33,7 +33,7 @@ export class AuthApi {
     }
 
     const payload: unknown = await response.json();
-    Session.store(Json.stringOrNull(Json.object(payload, "login").access_token));
+    Session.store(Json.optionalString(Json.object(payload, "login").access_token));
 
     return { ok: true };
   }
@@ -56,7 +56,7 @@ export class AuthApi {
       return AuthApi.toSignUpFailure(payload);
     }
 
-    Session.store(Json.stringOrNull(Json.object(payload, "signUp").access_token));
+    Session.store(Json.optionalString(Json.object(payload, "signUp").access_token));
 
     return { ok: true };
   }

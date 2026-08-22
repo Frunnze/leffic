@@ -11,7 +11,7 @@ import { UnitListSkeleton } from "./UnitListSkeleton";
 import { UnitPresentation } from "./unit-presentation";
 import { UnitRow } from "./UnitRow";
 import { UnitsApi } from "./units-api";
-import type { Unit } from "../../shared/models/units";
+import type { FolderContent, Unit } from "./unit-models";
 
 export default function FolderPage(): JSX.Element {
   const params = useParams<{ id: string }>();
@@ -25,6 +25,8 @@ export default function FolderPage(): JSX.Element {
     StatsApi.dueBreakdown,
   );
   const [isImportOpen, setImportOpen] = createSignal(false);
+
+  const folderName = (): string => folder()?.parentFolderName ?? "Home";
 
   const addUnits = (added: readonly Unit[], targetFolderId: string): void => {
     if (targetFolderId !== params.id) return;
@@ -40,10 +42,11 @@ export default function FolderPage(): JSX.Element {
     void refetchBreakdown();
   };
 
-  const renameUnit = async (unit: Unit, name: string): Promise<void> => {
-    const current = folder();
-    if (current === undefined) return;
-
+  const renameUnit = async (
+    current: FolderContent,
+    unit: Unit,
+    name: string,
+  ): Promise<void> => {
     await UnitsApi.rename(unit.id, unit.type, name);
     setFolder({
       ...current,
@@ -53,10 +56,11 @@ export default function FolderPage(): JSX.Element {
     });
   };
 
-  const moveUnit = async (unit: Unit, folderId: string): Promise<void> => {
-    const current = folder();
-    if (current === undefined) return;
-
+  const moveUnit = async (
+    current: FolderContent,
+    unit: Unit,
+    folderId: string,
+  ): Promise<void> => {
     await UnitsApi.move(unit.id, unit.type, folderId);
     setFolder({
       ...current,
@@ -66,10 +70,10 @@ export default function FolderPage(): JSX.Element {
     void refetchBreakdown();
   };
 
-  const deleteUnit = async (unit: Unit): Promise<void> => {
-    const current = folder();
-    if (current === undefined) return;
-
+  const deleteUnit = async (
+    current: FolderContent,
+    unit: Unit,
+  ): Promise<void> => {
     await UnitsApi.remove(unit.id, unit.type);
     setFolder({
       ...current,
@@ -85,11 +89,11 @@ export default function FolderPage(): JSX.Element {
         <div class="folder">
           <header class="folder-head">
             <div class="folder-title-row">
-              <h1 class="folder-name">{folder()?.parentFolderName ?? "Home"}</h1>
+              <h1 class="folder-name">{folderName()}</h1>
               <div class="folder-actions">
                 <NewFolderButton
                   folderId={params.id}
-                  onFolderCreated={(created) => addUnits(created, params.id)}
+                  onFolderCreated={(created) => { addUnits(created, params.id); }}
                 />
                 <Show when={(folder()?.units.length ?? 0) > 0}>
                   <ImportButton
@@ -106,9 +110,9 @@ export default function FolderPage(): JSX.Element {
               <DueSection
                 breakdown={due()}
                 onReviewFlashcards={() =>
-                  navigate(`/folder/${params.id}/flashcards`)
+                  { navigate(`/folder/${params.id}/flashcards`); }
                 }
-                onReviewTest={() => navigate(`/folder/${params.id}/test`)}
+                onReviewTest={() => { navigate(`/folder/${params.id}/test`); }}
               />
             )}
           </Show>
@@ -145,15 +149,17 @@ export default function FolderPage(): JSX.Element {
                       {(unit) => (
                         <UnitRow
                           unit={unit}
-                          onDelete={(target) => void deleteUnit(target)}
+                          onDelete={(target) =>
+                            void deleteUnit(loaded(), target)
+                          }
                           onRename={(target, name) =>
-                            void renameUnit(target, name)
+                            void renameUnit(loaded(), target, name)
                           }
                           onMove={(target, folderId) =>
-                            void moveUnit(target, folderId)
+                            void moveUnit(loaded(), target, folderId)
                           }
                           destinations={UnitPresentation.moveDestinations(
-                            folder()?.units ?? [],
+                            loaded().units,
                             unit,
                           )}
                         />
@@ -167,10 +173,9 @@ export default function FolderPage(): JSX.Element {
         </div>
       </div>
 
-
       <ImportFlow
         folderId={params.id}
-        folderName={folder()?.parentFolderName ?? "Home"}
+        folderName={folderName()}
         isOpen={isImportOpen()}
         onClose={() => setImportOpen(false)}
         onUnitsAdded={addUnits}

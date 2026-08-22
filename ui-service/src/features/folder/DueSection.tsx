@@ -2,9 +2,9 @@ import { Show, createSignal, type JSX } from "solid-js";
 import { Dropdown } from "../../shared/ui/Dropdown";
 import { Icon } from "../../shared/ui/icons/Icon";
 import { Meter } from "../../shared/ui/Meter";
-import type { DueBreakdown } from "../../shared/models/units";
+import type { DueBreakdown } from "./unit-models";
 
-export type DueSectionProps = {
+type DueSectionProps = {
   readonly breakdown: DueBreakdown;
   readonly onReviewFlashcards: () => void;
   readonly onReviewTest: () => void;
@@ -73,13 +73,13 @@ export function DueSection(props: DueSectionProps): JSX.Element {
                   label: "Flashcards",
                   icon: "flashcards",
                   hint: `${props.breakdown.flashcardsDue} due`,
-                  onSelect: () => choose(props.onReviewFlashcards),
+                  onSelect: () => { choose(props.onReviewFlashcards); },
                 },
                 {
                   label: "Test",
                   icon: "test",
                   hint: `${props.breakdown.testItemsDue} due`,
-                  onSelect: () => choose(props.onReviewTest),
+                  onSelect: () => { choose(props.onReviewTest); },
                 },
               ]}
             />

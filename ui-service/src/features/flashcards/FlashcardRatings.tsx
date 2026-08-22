@@ -15,7 +15,7 @@ const RATING_CHOICES: readonly RatingChoice[] = [
   { rating: 4, label: "Easy", toneClass: "rating-hit" },
 ];
 
-export type FlashcardRatingsProps = {
+type FlashcardRatingsProps = {
   readonly intervals: RatingIntervals | null;
   readonly onRate: (rating: FlashcardRating) => void;
 };
@@ -36,7 +36,7 @@ export function FlashcardRatings(props: FlashcardRatingsProps): JSX.Element {
           <button
             class={`rating ${choice.toneClass}`}
             type="button"
-            onClick={() => props.onRate(choice.rating)}
+            onClick={() => { props.onRate(choice.rating); }}
           >
             <kbd class="kbd">{choice.rating}</kbd>
             <span class="rating-label">{choice.label}</span>

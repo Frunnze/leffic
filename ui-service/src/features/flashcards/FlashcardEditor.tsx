@@ -1,19 +1,21 @@
-import { createSignal, onCleanup, onMount, type JSX } from "solid-js";
-import { Icon } from "../../shared/ui/icons/Icon";
+import { createSignal, untrack, type JSX } from "solid-js";
 import { FlashcardFields } from "./FlashcardFields";
 import { FlashcardWording } from "./flashcard-wording";
 import type { Flashcard, FlashcardFace } from "./flashcard-models";
+import { ModalBackdrop } from "../../shared/ui/ModalBackdrop";
+import { DIALOG_TITLE_ID, ModalHead } from "../../shared/ui/ModalHead";
+import { ModalFoot } from "../../shared/ui/ModalFoot";
 
-const ESCAPE_KEY = "Escape";
-
-export type FlashcardEditorProps = {
+type FlashcardEditorProps = {
   readonly card: Flashcard;
   readonly onSave: (face: FlashcardFace) => void;
   readonly onCancel: () => void;
 };
 
 export function FlashcardEditor(props: FlashcardEditorProps): JSX.Element {
-  const [face, setFace] = createSignal<FlashcardFace>(props.card.face);
+  const [face, setFace] = createSignal<FlashcardFace>(
+    untrack(() => props.card.face),
+  );
 
   const isEmpty = (): boolean => {
     const words = FlashcardWording.of(face());
@@ -30,47 +32,20 @@ export function FlashcardEditor(props: FlashcardEditorProps): JSX.Element {
     props.onSave(face());
   };
 
-  onMount(() => {
-    const dismissOnEscape = (event: KeyboardEvent): void => {
-      if (event.key === ESCAPE_KEY) props.onCancel();
-    };
-
-    document.addEventListener("keydown", dismissOnEscape);
-    onCleanup(() => document.removeEventListener("keydown", dismissOnEscape));
-  });
-
   return (
-    <div
-      class="modal-backdrop"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) props.onCancel();
-      }}
-    >
+    <ModalBackdrop onDismiss={props.onCancel}>
       <form
         class="modal modal-wide"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="dialog-title"
+        aria-labelledby={DIALOG_TITLE_ID}
         onSubmit={save}
       >
-        <div class="modal-head">
-          <div class="modal-heading">
-            <h2 class="modal-title" id="dialog-title">
-              Edit card
-            </h2>
-            <span class="modal-text">
-              Changes apply the next time this card comes up.
-            </span>
-          </div>
-          <button
-            class="btn btn-quiet btn-icon"
-            type="button"
-            aria-label="Close dialog"
-            onClick={() => props.onCancel()}
-          >
-            <Icon name="closePlain" size="sm" />
-          </button>
-        </div>
+        <ModalHead
+          title="Edit card"
+          description="Changes apply the next time this card comes up."
+          onClose={props.onCancel}
+        />
 
         <div class="modal-body">
           <div class="edit-fields">
@@ -78,15 +53,12 @@ export function FlashcardEditor(props: FlashcardEditorProps): JSX.Element {
           </div>
         </div>
 
-        <div class="modal-foot">
-          <button class="btn" type="button" onClick={() => props.onCancel()}>
-            Cancel
-          </button>
-          <button class="btn btn-primary" type="submit" disabled={isEmpty()}>
-            Save card
-          </button>
-        </div>
+        <ModalFoot
+          confirmLabel="Save card"
+          isConfirmBlocked={isEmpty()}
+          onCancel={props.onCancel}
+        />
       </form>
-    </div>
+    </ModalBackdrop>
   );
 }

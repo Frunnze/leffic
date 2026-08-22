@@ -1,12 +1,13 @@
 import { Match, Show, Switch, createSignal, type JSX } from "solid-js";
 import { GenerationChoices } from "./GenerationChoices";
-import { Icon } from "../../../shared/ui/icons/Icon";
 import { ImportOptions } from "./import-options";
 import { ImportRequestReading } from "./import-request";
 import { ImportFooter } from "./ImportFooter";
 import { ImportSource } from "./ImportSource";
 import { ImportReview, ImportWait } from "./ImportReview";
 import type { SourceKind, UnitChoice } from "./import-options";
+import { ModalBackdrop } from "../../../shared/ui/ModalBackdrop";
+import { DIALOG_TITLE_ID, ModalHead } from "../../../shared/ui/ModalHead";
 
 export type ImportRequest = {
   readonly kind: SourceKind;
@@ -26,11 +27,11 @@ export type ExtractedSource = {
   readonly isNoteAlreadyMade: boolean;
 };
 
-export type ImportDialogProps = {
+type ImportDialogProps = {
   readonly folderName: string;
   readonly onExtract: (request: ImportRequest) => Promise<ExtractedSource>;
   readonly onGenerate: (request: ImportRequest, text: string) => void;
-  readonly onUploadOnly: (request: ImportRequest) => void;
+  readonly onUploadOnly: (file: File) => void;
   readonly onCancel: () => void;
 };
 
@@ -42,9 +43,8 @@ export function ImportDialog(props: ImportDialogProps): JSX.Element {
   const [topic, setTopic] = createSignal("");
   const [firstPage, setFirstPage] = createSignal("");
   const [lastPage, setLastPage] = createSignal("");
-  const [extractedText, setExtractedText] = createSignal<string | null>(null);
+  const [extracted, setExtracted] = createSignal<ExtractedSource | null>(null);
   const [isExtracting, setExtracting] = createSignal(false);
-  const [isNoteAlreadyMade, setNoteAlreadyMade] = createSignal(false);
   const [flashcards, setFlashcards] = createSignal<UnitChoice>(
     ImportOptions.startingChoice("basic"),
   );
@@ -78,52 +78,38 @@ export function ImportDialog(props: ImportDialogProps): JSX.Element {
     ImportRequestReading.nothingChosen(request());
 
   const isShowingOptions = (): boolean =>
-    kind() === "text" || extractedText() !== null;
+    kind() === "text" || extracted() !== null;
 
-  const canUploadOnly = (): boolean =>
-    kind() === "file" && chosenFile() !== null && !isShowingOptions();
+  const uploadableFile = (): File | null => {
+    if (kind() !== "file" || isShowingOptions()) return null;
+
+    return chosenFile();
+  };
 
   const continueToReview = async (): Promise<void> => {
     setExtracting(true);
 
-    const extracted = await props.onExtract(request());
-    setNoteAlreadyMade(extracted.isNoteAlreadyMade);
+    const source = await props.onExtract(request());
 
-    if (extracted.isNoteAlreadyMade) setNote(ImportOptions.emptyChoice());
+    if (source.isNoteAlreadyMade) setNote(ImportOptions.emptyChoice());
 
-    setExtractedText(extracted.text);
+    setExtracted(source);
     setExtracting(false);
   };
 
   return (
-    <div
-      class="modal-backdrop"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) props.onCancel();
-      }}
-    >
+    <ModalBackdrop onDismiss={props.onCancel}>
       <div
         class="modal modal-wide"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="dialog-title"
+        aria-labelledby={DIALOG_TITLE_ID}
       >
-        <div class="modal-head">
-          <div class="modal-heading">
-            <h2 class="modal-title" id="dialog-title">
-              Import
-            </h2>
-            <span class="modal-text">Saved into {props.folderName}.</span>
-          </div>
-          <button
-            class="btn btn-quiet btn-icon"
-            type="button"
-            aria-label="Close dialog"
-            onClick={() => props.onCancel()}
-          >
-            <Icon name="closePlain" size="sm" />
-          </button>
-        </div>
+        <ModalHead
+          title="Import"
+          description={<>Saved into {props.folderName}.</>}
+          onClose={props.onCancel}
+        />
 
         <div class="modal-body">
           <Switch>
@@ -134,16 +120,18 @@ export function ImportDialog(props: ImportDialogProps): JSX.Element {
               />
             </Match>
 
-            <Match when={extractedText() !== null}>
-              <ImportReview
-                sourceName={sourceName()}
-                isNoteAlreadyMade={isNoteAlreadyMade()}
-                text={extractedText() ?? ""}
-                onTextChange={setExtractedText}
-              />
+            <Match when={extracted()}>
+              {(source) => (
+                <ImportReview
+                  sourceName={sourceName()}
+                  isNoteAlreadyMade={source().isNoteAlreadyMade}
+                  text={source().text}
+                  onTextChange={(text) => setExtracted({ ...source(), text })}
+                />
+              )}
             </Match>
 
-            <Match when={extractedText() === null}>
+            <Match when={extracted() === null}>
               <ImportSource
                 kind={kind()}
                 chosenFile={chosenFile()}
@@ -165,7 +153,7 @@ export function ImportDialog(props: ImportDialogProps): JSX.Element {
 
           <Show when={isShowingOptions() && !isExtracting()}>
             <GenerationChoices
-              isNoteAlreadyMade={isNoteAlreadyMade()}
+              isNoteAlreadyMade={extracted()?.isNoteAlreadyMade ?? false}
               flashcards={flashcards()}
               test={test()}
               note={note()}
@@ -181,15 +169,15 @@ export function ImportDialog(props: ImportDialogProps): JSX.Element {
           nothingChosen={nothingChosen()}
           isReviewing={isShowingOptions()}
           isExtracting={isExtracting()}
-          canUploadOnly={canUploadOnly()}
+          uploadableFile={uploadableFile()}
           onCancel={props.onCancel}
-          onUploadOnly={() => props.onUploadOnly(request())}
+          onUploadOnly={props.onUploadOnly}
           onContinue={() => void continueToReview()}
           onGenerate={() =>
-            props.onGenerate(request(), extractedText() ?? text())
+            { props.onGenerate(request(), extracted()?.text ?? text()); }
           }
         />
       </div>
-    </div>
+    </ModalBackdrop>
   );
 }

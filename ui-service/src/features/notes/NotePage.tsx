@@ -2,8 +2,8 @@ import { Show, createResource, createSignal, type JSX } from "solid-js";
 import { useParams } from "@solidjs/router";
 import { AppShell } from "../../shared/ui/AppShell";
 import { Icon } from "../../shared/ui/icons/Icon";
-import { useToasts } from "../notifications/ToastContext";
-import { NotesApi } from "./notes-api";
+import { useToasts } from "../../shared/notifications/ToastContext";
+import { NotesApi } from "../../shared/notes/notes-api";
 
 type ReadState = "unread" | "saving" | "read";
 

@@ -1,8 +1,9 @@
-import { For, createSignal, onCleanup, onMount, type JSX } from "solid-js";
-import { Icon } from "../../shared/ui/icons/Icon";
-import type { Unit } from "../../shared/models/units";
+import { For, createSignal, type JSX } from "solid-js";
+import type { Unit } from "./unit-models";
+import { ModalBackdrop } from "../../shared/ui/ModalBackdrop";
+import { DIALOG_TITLE_ID, ModalHead } from "../../shared/ui/ModalHead";
+import { ModalFoot } from "../../shared/ui/ModalFoot";
 
-const ESCAPE_KEY = "Escape";
 const HOME_FOLDER_ID = "home";
 
 export type MoveDestination = {
@@ -10,7 +11,7 @@ export type MoveDestination = {
   readonly name: string;
 };
 
-export type MoveUnitDialogProps = {
+type MoveUnitDialogProps = {
   readonly unit: Unit;
   readonly destinations: readonly MoveDestination[];
   readonly onConfirm: (folderId: string) => void;
@@ -20,48 +21,23 @@ export type MoveUnitDialogProps = {
 export function MoveUnitDialog(props: MoveUnitDialogProps): JSX.Element {
   const [chosenId, setChosenId] = createSignal(HOME_FOLDER_ID);
 
-  onMount(() => {
-    const dismissOnEscape = (event: KeyboardEvent): void => {
-      if (event.key === ESCAPE_KEY) props.onCancel();
-    };
-
-    document.addEventListener("keydown", dismissOnEscape);
-    onCleanup(() => document.removeEventListener("keydown", dismissOnEscape));
-  });
-
   return (
-    <div
-      class="modal-backdrop"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) props.onCancel();
-      }}
-    >
+    <ModalBackdrop onDismiss={props.onCancel}>
       <form
         class="modal"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="dialog-title"
+        aria-labelledby={DIALOG_TITLE_ID}
         onSubmit={(event) => {
           event.preventDefault();
           props.onConfirm(chosenId());
         }}
       >
-        <div class="modal-head">
-          <div class="modal-heading">
-            <h2 class="modal-title" id="dialog-title">
-              Move {props.unit.name}
-            </h2>
-            <span class="modal-text">Pick where it should live.</span>
-          </div>
-          <button
-            class="btn btn-quiet btn-icon"
-            type="button"
-            aria-label="Close dialog"
-            onClick={() => props.onCancel()}
-          >
-            <Icon name="closePlain" size="sm" />
-          </button>
-        </div>
+        <ModalHead
+          title={<>Move {props.unit.name}</>}
+          description="Pick where it should live."
+          onClose={props.onCancel}
+        />
 
         <div class="modal-body">
           <div class="answer-rows">
@@ -81,15 +57,12 @@ export function MoveUnitDialog(props: MoveUnitDialogProps): JSX.Element {
           </div>
         </div>
 
-        <div class="modal-foot">
-          <button class="btn" type="button" onClick={() => props.onCancel()}>
-            Cancel
-          </button>
-          <button class="btn btn-primary" type="submit">
-            Move here
-          </button>
-        </div>
+        <ModalFoot
+          confirmLabel="Move here"
+          isConfirmBlocked={false}
+          onCancel={props.onCancel}
+        />
       </form>
-    </div>
+    </ModalBackdrop>
   );
 }

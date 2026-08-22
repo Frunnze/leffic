@@ -1,7 +1,7 @@
 import { type JSX } from "solid-js";
 import { Icon } from "../../shared/ui/icons/Icon";
 
-export type FileBookmarkProps = {
+type FileBookmarkProps = {
   readonly page: number | null;
   readonly pageInView: number;
   readonly onRemember: (page: number) => void;

@@ -4,7 +4,7 @@ import { AppShell } from "../../shared/ui/AppShell";
 import { ReviewBar } from "../../shared/ui/ReviewBar";
 import { FlashcardsReview } from "./FlashcardsReview";
 
-export type FlashcardsPageProps = {
+type FlashcardsPageProps = {
   readonly scope: "flashcard_deck" | "folder";
 };
 
@@ -15,7 +15,7 @@ export default function FlashcardsPage(props: FlashcardsPageProps): JSX.Element 
   return (
     <AppShell fillsViewport>
       <div class="review-page">
-        <ReviewBar title="Flashcards" onClose={() => navigate(-1)} />
+        <ReviewBar title="Flashcards" onClose={() => { navigate(-1); }} />
         <div class="review">
           <FlashcardsReview scope={props.scope} scopeId={params.id} />
         </div>

@@ -2,26 +2,26 @@
 set -e
 . "$(dirname "$0")/../../_env.sh"
 
-require_binary "$basedpyright_binary" basedpyright
-
 echo "pre-commit: strict typing (python and typescript)"
 echo "pre-commit: type it strictly - an illegal state must fail to compile"
 echo "pre-commit: never silence the checker - fix the type instead"
 echo "pre-commit: follow LSP - an override must honour the base it replaces"
 
-for package in $node_packages; do
-    if [ ! -d "$repository_root/$package/node_modules" ]; then
-        echo "pre-commit: $package has no node_modules -" >&2
-        echo "pre-commit: run ./install.sh" >&2
-        exit 1
-    fi
+if [ -n "$node_packages" ]; then
+    for node_package in $node_packages; do
+        require_node_modules "$node_package"
 
-    if ! (cd "$repository_root/$package" && npm run --silent typecheck); then
-        echo "pre-commit: $package does not type-check" >&2
-        exit 1
-    fi
-done
+        if ! (cd "$node_package" && npm run --silent typecheck); then
+            echo "pre-commit: $node_package does not type-check" >&2
+            exit 1
+        fi
+    done
+fi
 
-for service in $services; do
-    (cd "$service" && "$basedpyright_binary")
-done
+if [ -n "$services" ]; then
+    require_binary "$basedpyright_binary" basedpyright
+
+    for service in $services; do
+        (cd "$service" && "$basedpyright_binary")
+    done
+fi

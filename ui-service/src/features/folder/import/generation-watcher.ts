@@ -4,8 +4,6 @@ import type { GenerationTaskIds } from "./generation-models";
 
 const POLL_INTERVAL_MS = 2000;
 
-export type { GenerationOutcome };
-
 export class GenerationWatcher {
   static awaitOne(
     kind: GeneratedKind,
@@ -36,7 +34,7 @@ export class GenerationWatcher {
       ...GenerationWatcher.pollEvery("test", tasks.testTaskIds, onOutcome),
     ];
 
-    return () => stops.forEach((stop) => stop());
+    return () => { stops.forEach((stop) => { stop(); }); };
   }
 
   private static pollEvery(
@@ -49,7 +47,7 @@ export class GenerationWatcher {
     const tally = new GenerationTally(kind, taskIds.length, onOutcome);
 
     return taskIds.map((taskId) =>
-      GenerationWatcher.poll(kind, taskId, (outcome) => tally.record(outcome)),
+      GenerationWatcher.poll(kind, taskId, (outcome) => { tally.record(outcome); }),
     );
   }
 
@@ -62,7 +60,7 @@ export class GenerationWatcher {
       void GenerationWatcher.checkOnce(kind, taskId, timer, onOutcome);
     }, POLL_INTERVAL_MS);
 
-    return () => window.clearInterval(timer);
+    return () => { window.clearInterval(timer); };
   }
 
   private static async checkOnce(

@@ -1,0 +1,29 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "npm",
+  "testRunner": "vitest",
+  "reporters": [
+    "clear-text",
+    "progress",
+    "json"
+  ],
+  "coverageAnalysis": "perTest",
+  "thresholds": {
+    "high": 100,
+    "low": 100,
+    "break": 100
+  },
+  "mutate": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "tempDirName": ".stryker-tmp",
+  "cleanTempDir": true,
+  "disableTypeChecks": true,
+  "concurrency": 8,
+  "incremental": true,
+  "incrementalFile": "reports/stryker-incremental.json",
+  "vitest": {
+    "related": false
+  }
+}

@@ -13,7 +13,7 @@ import { AccountApi } from "./account-api";
 import { ProviderKeysPanel } from "./ProviderKeysPanel";
 import { Theme, type ThemeChoice } from "../../shared/ui/theme";
 import { ThemePanel } from "./ThemePanel";
-import { useToasts } from "../notifications/ToastContext";
+import { useToasts } from "../../shared/notifications/ToastContext";
 
 type SectionName = "account" | "appearance" | "keys" | "deletion";
 

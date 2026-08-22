@@ -1,10 +1,10 @@
 import { Session } from "./session";
 
-export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
-export type RequestBody = Readonly<Record<string, unknown>> | FormData | null;
+type RequestBody = Readonly<Record<string, unknown>> | FormData | null;
 
-export type HttpRequest = {
+type HttpRequest = {
   readonly endpoint: string;
   readonly method?: HttpMethod;
   readonly headers?: Readonly<Record<string, string>>;
@@ -20,7 +20,7 @@ export class UnauthorizedError extends Error {
   }
 }
 
-export class HttpError extends Error {
+class HttpError extends Error {
   constructor(
     readonly status: number,
     readonly endpoint: string,

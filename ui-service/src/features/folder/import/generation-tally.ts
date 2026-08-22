@@ -1,5 +1,5 @@
 import type { GeneratedKind } from "./generation-api";
-import type { Unit } from "../../../shared/models/units";
+import type { Unit } from "../unit-models";
 
 export type GenerationOutcome = {
   readonly kind: GeneratedKind;

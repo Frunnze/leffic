@@ -12,7 +12,7 @@ const THEME_OPTIONS: readonly ThemeOption[] = [
   { choice: "dark", label: "Dark" },
 ];
 
-export type ThemePanelProps = {
+type ThemePanelProps = {
   readonly chosen: ThemeChoice;
   readonly onChoose: (choice: ThemeChoice) => void;
 };
@@ -33,7 +33,7 @@ export function ThemePanel(props: ThemePanelProps): JSX.Element {
                 type="radio"
                 name="theme"
                 checked={props.chosen === option.choice}
-                onChange={() => props.onChoose(option.choice)}
+                onChange={() => { props.onChoose(option.choice); }}
               />
               <span class="segment-face">{option.label}</span>
             </label>

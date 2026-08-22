@@ -6,17 +6,43 @@ joined_function='(async[[:space:]]+)?def[[:space:]]+[A-Za-z0-9_]*_(and|or)_'
 joined_class='class[[:space:]]+[A-Za-z0-9_]*(And|Or)[A-Z]'
 joined_definition="^[[:space:]]*($joined_function|$joined_class)"
 
+joined_name='[A-Za-z0-9]*(And|Or)[A-Z]'
+declaring='(export[[:space:]]+)?(default[[:space:]]+)?(async[[:space:]]+)?'
+joined_typescript_function="${declaring}function[[:space:]]+$joined_name"
+joined_typescript_binding="(const|let|var)[[:space:]]+$joined_name"
+joined_typescript_class="(abstract[[:space:]]+)?class[[:space:]]+$joined_name"
+joined_typescript_type="(type|interface)[[:space:]]+$joined_name"
+joined_typescript_method="(static[[:space:]]+)?[a-z]$joined_name[A-Za-z0-9]*\("
+joined_typescript_definition="^[[:space:]]*(export[[:space:]]+)?\
+($joined_typescript_function|$joined_typescript_binding\
+|$joined_typescript_class|$joined_typescript_type\
+|$joined_typescript_method)"
+
 echo "pre-commit: definition names (one responsibility per name)"
-echo "pre-commit: follow SRP - split a name that says 'and'/'or', it names two jobs"
+echo "pre-commit: follow SRP - split a name that says 'and'/'or',"
+echo "pre-commit: it names two jobs"
 
-joined_names=$(
-    python_files_in $source_directories | while read -r python_file; do
-        grep -nHE "$joined_definition" "$python_file" || true
+joined_names=""
+
+if [ -n "$source_directories" ]; then
+    joined_names=$(
+        python_files_in $source_directories | while read -r source_file; do
+            grep -nHE "$joined_definition" "$source_file" || true
+        done
+    )
+fi
+
+if [ -n "$node_source_directories" ]; then
+    joined_names="$joined_names
+$(
+    typescript_files_in $node_source_directories | while read -r source_file; do
+        grep -nHE "$joined_typescript_definition" "$source_file" || true
     done
-)
+)"
+fi
 
-if [ -n "$joined_names" ]; then
+if [ -n "$(echo "$joined_names" | tr -d '\n ')" ]; then
     echo "pre-commit: these names join two responsibilities - split them:" >&2
-    echo "$joined_names" >&2
+    echo "$joined_names" | grep . >&2
     exit 1
 fi

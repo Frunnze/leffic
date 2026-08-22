@@ -4,8 +4,8 @@ import { render } from "solid-js/web";
 import "./index.css";
 import { App } from "./App";
 import { Theme } from "./shared/ui/theme";
-import { ToastProvider } from "./features/notifications/ToastContext";
-import { AskProvider } from "./features/chatbot/AskContext";
+import { ToastProvider } from "./shared/notifications/ToastContext";
+import { AskProvider } from "./shared/chatbot/AskContext";
 
 Theme.apply(Theme.lastPainted());
 

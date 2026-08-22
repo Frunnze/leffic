@@ -1,6 +1,6 @@
 import type { JSX } from "solid-js";
 
-export type AssessmentResultProps = {
+type AssessmentResultProps = {
   readonly correct: number;
   readonly total: number;
   readonly onRetake: () => void;
@@ -21,7 +21,7 @@ export function AssessmentResult(props: AssessmentResultProps): JSX.Element {
           further out.
         </p>
         <div class="test-result-actions">
-          <button class="btn btn-primary" type="button" onClick={() => props.onRetake()}>
+          <button class="btn btn-primary" type="button" onClick={() => { props.onRetake(); }}>
             Retake test
           </button>
         </div>

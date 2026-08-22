@@ -49,7 +49,7 @@ export class FilesApi {
       endpoint: `${BOOKMARK_ENDPOINT}?${query}`,
     });
 
-    return Json.numberOrNull(Json.object(payload, "bookmark").page);
+    return Json.optionalNumber(Json.object(payload, "bookmark").page);
   }
 
   static async rememberPage(
@@ -62,7 +62,7 @@ export class FilesApi {
       body: { file_id: fileId, page },
     });
 
-    return Json.numberOrNull(Json.object(payload, "bookmark").page);
+    return Json.optionalNumber(Json.object(payload, "bookmark").page);
   }
 
   static async forgetPage(fileId: string): Promise<void> {

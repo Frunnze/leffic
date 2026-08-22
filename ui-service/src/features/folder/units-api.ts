@@ -5,7 +5,7 @@ import {
   type FolderContent,
   type Unit,
   type UnitType,
-} from "../../shared/models/units";
+} from "./unit-models";
 
 const DELETE_ENDPOINTS: Readonly<Record<UnitType, string>> = {
   folder: "/api/content/delete-folder/?folder_id=",
@@ -90,9 +90,9 @@ export class UnitsApi {
       name: Json.stringOr(raw.name, "Untitled"),
       type: UnitsApi.toUnitType(raw.type),
       createdAt: Json.stringOr(raw.created_at, ""),
-      extension: Json.stringOrNull(raw.extension),
-      dueCount: Json.numberOrNull(raw.due_count),
-      meta: Json.stringOrNull(raw.meta),
+      extension: Json.optionalString(raw.extension),
+      dueCount: Json.optionalNumber(raw.due_count),
+      meta: Json.optionalString(raw.meta),
     };
   }
 

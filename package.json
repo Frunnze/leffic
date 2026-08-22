@@ -1,0 +1,15 @@
+{
+  "name": "leffic-hooks",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Development tooling the pre-commit checks run",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^9.39.5",
+    "eslint-plugin-solid": "^0.14.5",
+    "jscpd": "^4.3.0",
+    "knip": "^5.88.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.67.0"
+  }
+}

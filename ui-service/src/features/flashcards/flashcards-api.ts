@@ -104,8 +104,8 @@ export class FlashcardsApi {
     return {
       id: Json.identifier(raw.id, "flashcard.id"),
       face: FlashcardContent.toFace(Json.stringOr(raw.type, "basic"), content),
-      nextReview: Json.stringOrNull(raw.next_review),
-      fsrsCard: Json.objectOrNull(raw.fsrs_card),
+      nextReview: Json.optionalString(raw.next_review),
+      fsrsCard: Json.optionalObject(raw.fsrs_card),
     };
   }
 }

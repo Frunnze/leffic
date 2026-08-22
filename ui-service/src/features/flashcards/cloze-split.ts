@@ -1,4 +1,4 @@
-export type ClozePiece = {
+type ClozePiece = {
   readonly text: string;
   readonly isHidden: boolean;
 };

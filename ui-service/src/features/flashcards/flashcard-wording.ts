@@ -1,6 +1,6 @@
 import type { FlashcardFace } from "./flashcard-models";
 
-export type FlashcardWords = {
+type FlashcardWords = {
   readonly question: string;
   readonly answer: string;
 };

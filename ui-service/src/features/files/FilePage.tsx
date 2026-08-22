@@ -32,28 +32,26 @@ export default function FilePage(): JSX.Element {
   const [bookmarkedPage, setBookmarkedPage] = createSignal<number | null>(null);
   const [pageInView, setPageInView] = createSignal(1);
 
-  createEffect(
-    on(opened, (file: OpenedFile | undefined) => {
-      if (file === undefined) return;
-
-      setBookmarkedPage(file.bookmarkedPage);
-    }),
-  );
-
   const fileName = (): string => `${params.id}.${params.extension}`;
 
-  const pageCount = (): number | null => {
-    if (opened.loading || opened.error) return null;
+  const readyFile = (): OpenedFile | undefined => {
+    if (opened.loading || opened.error) return undefined;
 
-    return opened()?.document.numPages ?? null;
+    return opened();
   };
+
+  createEffect(
+    on(readyFile, (file: OpenedFile | undefined) => {
+      setBookmarkedPage(file?.bookmarkedPage ?? null);
+    }),
+  );
 
   const failure = (): string | null => {
     const reason: unknown = opened.error;
 
-    if (reason === undefined || reason === null) return null;
+    if (reason instanceof Error) return reason.message;
 
-    return reason instanceof Error ? reason.message : String(reason);
+    return null;
   };
 
   const remember = async (page: number): Promise<void> => {
@@ -72,10 +70,10 @@ export default function FilePage(): JSX.Element {
           <Icon name="file" />
           <span class="file-name">{fileName()}</span>
           <span class="file-chip">{params.extension.toUpperCase()}</span>
-          <Show when={pageCount()}>
-            {(count) => (
+          <Show when={readyFile()}>
+            {(file) => (
               <span class="file-position">
-                Page {pageInView()} of {count()}
+                Page {pageInView()} of {file().document.numPages}
               </span>
             )}
           </Show>
@@ -90,7 +88,7 @@ export default function FilePage(): JSX.Element {
             type="button"
             aria-label={`Close ${fileName()}`}
             title="Close"
-            onClick={() => navigate(-1)}
+            onClick={() => { navigate(-1); }}
           >
             <Icon name="closePlain" size="sm" />
           </button>
@@ -105,7 +103,7 @@ export default function FilePage(): JSX.Element {
             )}
           </Match>
 
-          <Match when={opened.loading ? undefined : opened()}>
+          <Match when={readyFile()}>
             {(file) => (
               <PdfPages
                 document={file().document}
