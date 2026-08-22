@@ -28,3 +28,5 @@ htmlcov/
 .ruff_cache/
 .hypothesis/
 .venv
+.stryker-tmp/
+reports/

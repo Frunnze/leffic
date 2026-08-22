@@ -2,6 +2,8 @@ import { Show, createSignal, type JSX } from "solid-js";
 import { A, useNavigate } from "@solidjs/router";
 import { AuthApi } from "./authentication-api";
 import { AuthAside } from "./AuthAside";
+import { AuthCardHead } from "./AuthCardHead";
+import { AuthField } from "./AuthField";
 import { Icon } from "../../shared/ui/icons/Icon";
 
 const HOME_ROUTE = "/folder/home";
@@ -52,14 +54,10 @@ export default function Login(): JSX.Element {
 
         <div class="auth-main">
           <form class="auth-card" onSubmit={(event) => void logIn(event)}>
-            <span class="auth-mark">
-              <Icon name="logo" size="lg" />
-            </span>
-
-            <div class="auth-head">
-              <h1 class="auth-title">Log in</h1>
-              <span class="auth-subtitle">Pick up where you left off.</span>
-            </div>
+            <AuthCardHead
+              title="Log in"
+              subtitle="Pick up where you left off."
+            />
 
             <Show when={error().length > 0}>
               <p class="auth-alert" id="login-error" role="alert">
@@ -68,17 +66,15 @@ export default function Login(): JSX.Element {
               </p>
             </Show>
 
-            <div class="field">
-              <label for="email">Email</label>
-              <input
-                class="input input-lg"
-                id="email"
-                type="email"
-                autocomplete="email"
-                value={email()}
-                onInput={(event) => setEmail(event.currentTarget.value)}
-              />
-            </div>
+            <AuthField
+              id="email"
+              label="Email"
+              type="email"
+              autocomplete="email"
+              value={email()}
+              error=""
+              onInput={setEmail}
+            />
 
             <div class="field">
               <div class="field-row">

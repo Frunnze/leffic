@@ -247,6 +247,12 @@ re-verified against the current source; everything here still reproduces.
   architecture it described.
 - [ ] **No CI.** Every check runs only in the local pre-commit hook
   (`hooks/checks/`), so nothing enforces them on a pull request.
+- [x] **`ui-service` and `api-gateway` carry their own test suites.**
+  Vitest with fast-check and Stryker now stand behind the same three gates
+  the python services answer to — `property-tests`, `coverage` (100%
+  branches) and `mutation` — so every check but `api-contract` covers
+  TypeScript. `api-contract` stays python-only by design: the UI serves no
+  endpoints.
 - [ ] **The favicon points at a source path.** `ui-service/index.html`
   references `/src/assets/favicon.png`, which does not exist in `dist/`, so
   the built site 404s on its own icon.

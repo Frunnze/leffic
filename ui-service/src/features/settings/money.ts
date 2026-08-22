@@ -12,7 +12,7 @@ export class Money {
     return `$${(cents / CENTS_IN_A_DOLLAR).toFixed(DECIMAL_PLACES)}`;
   }
 
-  static toCentsOrNull(dollarText: string): number | null {
+  static toOptionalCents(dollarText: string): number | null {
     const trimmed = dollarText.trim();
 
     if (trimmed.length === 0) return null;

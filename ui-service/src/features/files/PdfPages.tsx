@@ -1,11 +1,11 @@
 import { For, onCleanup, onMount, type JSX } from "solid-js";
 import type { PDFDocumentProxy } from "pdfjs-dist";
-import { PdfViewer } from "./pdf-viewer";
+import { PdfViewer, type PageShape } from "./pdf-viewer";
 
 const MOSTLY_VISIBLE = 0.5;
 const NEARBY_MARGIN = "150% 0px";
 
-export type PdfPagesProps = {
+type PdfPagesProps = {
   readonly document: PDFDocumentProxy;
   readonly openAtPage: number | null;
   readonly onPageInView: (page: number) => void;
@@ -20,8 +20,8 @@ export function PdfPages(props: PdfPagesProps): JSX.Element {
   const textHosts = new Map<number, HTMLElement>();
   const paintedPages = new Set<number>();
   const nearbyPages = new Set<number>();
-  let stage: HTMLDivElement | undefined;
   let unscaledPageWidth = 0;
+  let stopWatching = (): void => undefined;
 
   const paintPage = async (page: number): Promise<void> => {
     const canvas = canvases.get(page);
@@ -55,16 +55,14 @@ export function PdfPages(props: PdfPagesProps): JSX.Element {
   const scrollStageToPage = (page: number): void => {
     const frame = frames.get(page);
 
-    if (frame === undefined || stage === undefined) return;
+    if (frame === undefined) return;
 
     stage.scrollTop = frame.offsetTop - stage.offsetTop;
   };
 
   const alignTextToPaintedWidth = (): void => {
-    for (const page of paintedPages) {
-      const textHost = textHosts.get(page);
-
-      if (textHost !== undefined) {
+    for (const [page, textHost] of textHosts) {
+      if (paintedPages.has(page)) {
         PdfViewer.matchPaintedWidth(textHost, unscaledPageWidth);
       }
     }
@@ -112,37 +110,33 @@ export function PdfPages(props: PdfPagesProps): JSX.Element {
   };
 
   const watchHowWideThePagesAre = (): ResizeObserver => {
-    const watcher = new ResizeObserver(() => alignTextToPaintedWidth());
+    const watcher = new ResizeObserver(() => { alignTextToPaintedWidth(); });
 
     for (const frame of frames.values()) watcher.observe(frame);
 
     return watcher;
   };
 
-  onMount(() => {
-    void PdfViewer.pageShape(props.document).then((shape) => {
-      unscaledPageWidth = shape.unscaledWidth;
-      stage?.style.setProperty("--pdf-page-width", `${shape.width}px`);
-      stage?.style.setProperty("--pdf-page-ratio", String(shape.ratio));
+  const sizeStageToPage = (shape: PageShape): void => {
+    unscaledPageWidth = shape.unscaledWidth;
+    stage.style.setProperty("--pdf-page-width", `${shape.width}px`);
+    stage.style.setProperty("--pdf-page-ratio", String(shape.ratio));
+  };
 
-      const opened = props.openAtPage;
+  const watchEveryPage = (): (() => void) => {
+    const nearby = watchWhatIsNearby();
+    const onScreen = watchWhatIsOnScreen();
+    const widths = watchHowWideThePagesAre();
 
-      if (opened !== null) scrollStageToPage(opened);
+    return () => {
+      nearby.disconnect();
+      onScreen.disconnect();
+      widths.disconnect();
+    };
+  };
 
-      const nearby = watchWhatIsNearby();
-      const onScreen = watchWhatIsOnScreen();
-      const widths = watchHowWideThePagesAre();
-
-      onCleanup(() => {
-        nearby.disconnect();
-        onScreen.disconnect();
-        widths.disconnect();
-      });
-    });
-  });
-
-  return (
-    <div class="pdf-pages" ref={stage}>
+  const stage = (
+    <div class="pdf-pages">
       <For each={pageNumbers()}>
         {(page) => (
           <div
@@ -162,5 +156,23 @@ export function PdfPages(props: PdfPagesProps): JSX.Element {
         )}
       </For>
     </div>
-  );
+  ) as HTMLDivElement;
+
+  onMount(() => {
+    const firstPageToShow = props.openAtPage;
+
+    onCleanup(() => {
+      stopWatching();
+    });
+
+    void PdfViewer.pageShape(props.document).then((shape) => {
+      sizeStageToPage(shape);
+
+      if (firstPageToShow !== null) scrollStageToPage(firstPageToShow);
+
+      stopWatching = watchEveryPage();
+    });
+  });
+
+  return stage;
 }

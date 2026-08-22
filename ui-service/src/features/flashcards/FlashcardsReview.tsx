@@ -7,7 +7,7 @@ import { FlashcardAnswer, FlashcardPrompt } from "./FlashcardPrompt";
 import { FlashcardQueue } from "./flashcard-queue";
 import { FlashcardShortcuts } from "./flashcard-shortcuts";
 import { MnemonicRequest } from "./mnemonic-request";
-import { useAsk } from "../chatbot/AskContext";
+import { useAsk } from "../../shared/chatbot/AskContext";
 import { Meter } from "../../shared/ui/Meter";
 import { Icon } from "../../shared/ui/icons/Icon";
 import type {
@@ -19,7 +19,7 @@ import type {
 
 const HOME_ROUTE = "/folder/home";
 
-export type FlashcardsReviewProps = {
+type FlashcardsReviewProps = {
   readonly scope: DeckScope;
   readonly scopeId: string;
 };
@@ -45,16 +45,22 @@ export function FlashcardsReview(props: FlashcardsReviewProps): JSX.Element {
     const deck = await FlashcardsApi.deck(props.scope, props.scopeId);
     if (deck === null) return [];
 
-    setTotalToReview((current) => (current === 0 ? deck.totalFlashcards : current));
+    setTotalToReview((current) =>
+      current === 0 ? deck.totalFlashcards : current,
+    );
 
     return deck.flashcards;
   };
 
-  onMount(async () => {
+  const openFirstCard = async (): Promise<void> => {
     const loaded = await loadDeck();
     setCards(loaded);
     await loadIntervals(loaded[0]);
     setLoading(false);
+  };
+
+  onMount(() => {
+    void openFirstCard();
   });
 
   const revealAnswer = (): void => {
@@ -62,10 +68,10 @@ export function FlashcardsReview(props: FlashcardsReviewProps): JSX.Element {
     void loadIntervals(currentCard());
   };
 
-  const rate = async (rating: FlashcardRating): Promise<void> => {
-    const reviewing = currentCard();
-    if (reviewing === undefined) return;
-
+  const rate = async (
+    reviewing: Flashcard,
+    rating: FlashcardRating,
+  ): Promise<void> => {
     const outcome = await FlashcardsApi.review(reviewing.id, rating);
 
     if (!FlashcardQueue.isToday(new Date(outcome.dueDate))) {
@@ -82,30 +88,19 @@ export function FlashcardsReview(props: FlashcardsReviewProps): JSX.Element {
     await loadIntervals(remaining[0]);
   };
 
-  FlashcardShortcuts.bind({
-    isAnswerShown,
-    onReveal: revealAnswer,
-    onRate: (rating) => void rate(rating),
-  });
-
   const askForMnemonic = (card: Flashcard): void => {
     ask.askAbout(MnemonicRequest.forCard(card));
   };
 
-  const saveCard = async (face: FlashcardFace): Promise<void> => {
-    const editing = currentCard();
-
-    if (editing === undefined) return;
-
+  const saveCard = async (
+    editing: Flashcard,
+    face: FlashcardFace,
+  ): Promise<void> => {
     await FlashcardsApi.update(editing.id, face);
     setCards([{ ...editing, face }, ...cards().slice(1)]);
   };
 
-  const deleteCard = async (): Promise<void> => {
-    const removing = currentCard();
-
-    if (removing === undefined) return;
-
+  const deleteCard = async (removing: Flashcard): Promise<void> => {
     await FlashcardsApi.remove(removing.id);
     setTotalToReview(Math.max(0, totalToReview() - 1));
     setAnswerShown(false);
@@ -150,44 +145,54 @@ export function FlashcardsReview(props: FlashcardsReviewProps): JSX.Element {
         </Match>
 
         <Match when={currentCard()}>
-          {(card) => (
-            <>
-              <div class="flashcard">
-                <FlashcardActions
-                  card={card()}
-                  onSave={(face) => void saveCard(face)}
-                  onDelete={() => void deleteCard()}
-                  onMnemonic={() => askForMnemonic(card())}
-                />
-                <div class="flashcard-face">
-                  <FlashcardPrompt face={card().face} />
-                </div>
-                <Show when={isAnswerShown()}>
-                  <div class="flashcard-face flashcard-answer">
-                    <FlashcardAnswer face={card().face} />
-                  </div>
-                </Show>
-              </div>
+          {(card) => {
+            FlashcardShortcuts.bind({
+              isAnswerShown,
+              onReveal: revealAnswer,
+              onRate: (rating) => void rate(card(), rating),
+            });
 
-              <Show
-                when={isAnswerShown()}
-                fallback={
-                  <button
-                    class="btn btn-primary btn-block btn-lg"
-                    type="button"
-                    onClick={revealAnswer}
-                  >
-                    Show answer <kbd class="kbd">Space</kbd>
-                  </button>
-                }
-              >
-                <FlashcardRatings
-                  intervals={intervals()}
-                  onRate={(rating) => void rate(rating)}
-                />
-              </Show>
-            </>
-          )}
+            return (
+              <>
+                <div class="flashcard">
+                  <FlashcardActions
+                    card={card()}
+                    onSave={(face) => void saveCard(card(), face)}
+                    onDelete={() => void deleteCard(card())}
+                    onMnemonic={() => {
+                      askForMnemonic(card());
+                    }}
+                  />
+                  <div class="flashcard-face">
+                    <FlashcardPrompt face={card().face} />
+                  </div>
+                  <Show when={isAnswerShown()}>
+                    <div class="flashcard-face flashcard-answer">
+                      <FlashcardAnswer face={card().face} />
+                    </div>
+                  </Show>
+                </div>
+
+                <Show
+                  when={isAnswerShown()}
+                  fallback={
+                    <button
+                      class="btn btn-primary btn-block btn-lg"
+                      type="button"
+                      onClick={revealAnswer}
+                    >
+                      Show answer <kbd class="kbd">Space</kbd>
+                    </button>
+                  }
+                >
+                  <FlashcardRatings
+                    intervals={intervals()}
+                    onRate={(rating) => void rate(card(), rating)}
+                  />
+                </Show>
+              </>
+            );
+          }}
         </Match>
       </Switch>
     </div>

@@ -3,7 +3,7 @@ import { FLASHCARD_TYPES, TEST_TYPES } from "./import-options";
 import { GenerationChoice } from "./GenerationChoice";
 import type { UnitChoice } from "./import-options";
 
-export type GenerationChoicesProps = {
+type GenerationChoicesProps = {
   readonly isNoteAlreadyMade: boolean;
   readonly flashcards: UnitChoice;
   readonly test: UnitChoice;

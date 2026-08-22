@@ -2,8 +2,6 @@
 set -e
 . "$(dirname "$0")/../../_env.sh"
 
-require_binary "$pip_audit_binary" pip-audit
-
 # Starlette 1.x fixes these, but it needs FastAPI >= 0.140, which drops the
 # APIRoute class our wiring tests read. Lift them with that upgrade.
 accepted_advisories="PYSEC-2026-161 PYSEC-2026-248 PYSEC-2026-249
@@ -17,15 +15,24 @@ done
 
 echo "pre-commit: dependencies (no known vulnerability)"
 echo "pre-commit: stay secure by default - upgrade rather than accept it"
-echo "pre-commit: still carrying $(echo $accepted_advisories | wc -w |
-    tr -d ' ') accepted starlette advisories"
 
 reported_vulnerability="known vulnerabilit"
 unreachable_database="requests\.exceptions\.(ConnectionError|ConnectTimeout\
 |ReadTimeout|Timeout|ProxyError|SSLError)"
+unreachable_registry="ENOTFOUND|EAI_AGAIN|ETIMEDOUT|ECONNREFUSED|ECONNRESET\
+|ERR_SOCKET_TIMEOUT|network"
 
-if ! audit_output=$("$pip_audit_binary" --progress-spinner off \
-    $ignore_flags 2>&1); then
+audit_python_environment() {
+    require_binary "$pip_audit_binary" pip-audit
+
+    echo "pre-commit: still carrying $(echo $accepted_advisories | wc -w |
+        tr -d ' ') accepted starlette advisories"
+
+    if audit_output=$("$pip_audit_binary" --progress-spinner off \
+        $ignore_flags 2>&1); then
+        return 0
+    fi
+
     if echo "$audit_output" | grep -q "$reported_vulnerability"; then
         echo "pre-commit: an installed package has a known" >&2
         echo "pre-commit: vulnerability - upgrade it, or add the advisory" >&2
@@ -37,12 +44,45 @@ if ! audit_output=$("$pip_audit_binary" --progress-spinner off \
 
     if echo "$audit_output" | grep -qE "$unreachable_database"; then
         echo "pre-commit: advisory database unreachable - skipping the" >&2
-        echo "pre-commit: vulnerability scan" >&2
-        exit 0
+        echo "pre-commit: python vulnerability scan" >&2
+        return 0
     fi
 
     echo "pre-commit: pip-audit failed before it could scan - the" >&2
     echo "pre-commit: vulnerability gate did not run:" >&2
     echo "$audit_output" >&2
     exit 1
+}
+
+audit_node_package() {
+    if audit_output=$(cd "$1" && npm audit --audit-level=low 2>&1); then
+        return 0
+    fi
+
+    if echo "$audit_output" | grep -qE "$unreachable_registry"; then
+        echo "pre-commit: npm registry unreachable - skipping the" >&2
+        echo "pre-commit: vulnerability scan of $1" >&2
+        return 0
+    fi
+
+    echo "pre-commit: a package in $1 has a known vulnerability -" >&2
+    echo "pre-commit: run npm audit fix, or pin the fixed version" >&2
+    echo "pre-commit: through the overrides field of its package.json:" >&2
+    echo "$audit_output" >&2
+    exit 1
+}
+
+if [ -n "$services" ]; then
+    audit_python_environment
+fi
+
+if [ -n "$node_packages" ]; then
+    for node_package in $node_packages; do
+        require_node_modules "$node_package"
+        audit_node_package "$node_package"
+    done
+fi
+
+if [ -f "$repository_root/package.json" ]; then
+    audit_node_package "$repository_root"
 fi

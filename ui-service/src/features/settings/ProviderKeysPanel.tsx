@@ -17,7 +17,7 @@ type PendingKey = {
   readonly monthlyLimitCents: number | null;
 };
 
-export type ProviderKeysPanelProps = {
+type ProviderKeysPanelProps = {
   readonly onSaved: (message: string) => void;
   readonly onFailed: (message: string) => void;
 };
@@ -31,11 +31,11 @@ export function ProviderKeysPanel(
   const savedKey = (provider: string) =>
     keys()?.find((entry) => entry.provider === provider);
 
-  const seal = async (password: string): Promise<void> => {
-    const request = pending();
+  const seal = async (
+    request: PendingKey,
+    password: string,
+  ): Promise<void> => {
     setPending(null);
-
-    if (request === null) return;
 
     try {
       await AccountApi.saveProviderKey({ ...request, password });
@@ -96,17 +96,19 @@ export function ProviderKeysPanel(
         )}
       </For>
 
-      <Show when={pending() !== null}>
-        <PromptDialog
-          title="Confirm your password"
-          description="The key is sealed with a secret derived from it."
-          label="Password"
-          placeholder="Your password"
-          inputType="password"
-          confirmLabel="Seal the key"
-          onConfirm={(password) => void seal(password)}
-          onCancel={() => setPending(null)}
-        />
+      <Show when={pending()}>
+        {(request) => (
+          <PromptDialog
+            title="Confirm your password"
+            description="The key is sealed with a secret derived from it."
+            label="Password"
+            placeholder="Your password"
+            inputType="password"
+            confirmLabel="Seal the key"
+            onConfirm={(password) => void seal(request(), password)}
+            onCancel={() => setPending(null)}
+          />
+        )}
       </Show>
     </section>
   );

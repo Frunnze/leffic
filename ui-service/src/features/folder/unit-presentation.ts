@@ -1,6 +1,6 @@
 import type { IconName } from "../../shared/ui/icons/icon-shapes";
 import type { MoveDestination } from "./MoveUnitDialog";
-import type { Unit, UnitType } from "../../shared/models/units";
+import type { Unit, UnitType } from "./unit-models";
 
 const HOME_FOLDER_ID = "home";
 

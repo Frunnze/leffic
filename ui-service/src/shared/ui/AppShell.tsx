@@ -1,11 +1,11 @@
 import { Show, type JSX } from "solid-js";
 import { AccountApi } from "../../features/settings/account-api";
-import { Chatbot } from "../../features/chatbot/Chatbot";
-import { useAsk } from "../../features/chatbot/AskContext";
+import { Chatbot } from "../chatbot/Chatbot";
+import { useAsk } from "../chatbot/AskContext";
 import { Rail } from "./Rail";
 import { Theme } from "./theme";
 
-export type AppShellProps = {
+type AppShellProps = {
   readonly fillsViewport?: boolean;
   readonly children: JSX.Element;
 };

@@ -1,6 +1,6 @@
 import os
 
-_ = os.environ.setdefault("DATABASE_URL", "sqlite://")
-_ = os.environ.setdefault("SCHEDULER_SERVICE", "http://scheduler")
-_ = os.environ.setdefault("REDIS_HOST", "localhost:6379")
-_ = os.environ.setdefault("OPENAI_API_KEY", "test-key")
+os.environ["DATABASE_URL"] = "sqlite://"
+os.environ["SCHEDULER_SERVICE"] = "http://scheduler"
+os.environ["REDIS_HOST"] = "localhost:6379"
+os.environ["OPENAI_API_KEY"] = "test-key-never-a-real-one"

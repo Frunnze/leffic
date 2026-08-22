@@ -1,6 +1,6 @@
 import { HttpClient } from "../../shared/api/http";
 import { Json } from "../../shared/api/json";
-import type { DueBreakdown } from "../../shared/models/units";
+import type { DueBreakdown } from "./unit-models";
 
 type DuePair = { readonly due: number; readonly done: number };
 

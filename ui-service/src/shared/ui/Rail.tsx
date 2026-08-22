@@ -7,7 +7,7 @@ import { Icon } from "./icons/Icon";
 const HOME_ROUTE = "/folder/home";
 const SETTINGS_ROUTE = "/settings";
 
-export type RailProps = {
+type RailProps = {
   readonly onToggleAsk: () => void;
 };
 
@@ -35,7 +35,7 @@ export function Rail(props: RailProps): JSX.Element {
             </A>
           </li>
           <li>
-            <button class="rail-item" type="button" onClick={() => props.onToggleAsk()}>
+            <button class="rail-item" type="button" onClick={() => { props.onToggleAsk(); }}>
               <Icon name="ask" />
               Ask
             </button>

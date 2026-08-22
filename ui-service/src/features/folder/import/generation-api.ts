@@ -7,7 +7,7 @@ import type {
   TaskStatus,
   UploadedFile,
 } from "./generation-models";
-import type { Unit } from "../../../shared/models/units";
+import type { Unit } from "../unit-models";
 import { UnitsApi } from "../units-api";
 
 const STATUS_ENDPOINTS = {
@@ -34,7 +34,7 @@ const DEFAULT_WISH: GenerationWish = {
   note: true,
 };
 
-export type TaskProgress = {
+type TaskProgress = {
   readonly status: TaskStatus;
   readonly unit: Unit | null;
 };
@@ -92,7 +92,7 @@ export class GenerationApi {
 
     return {
       flashcardsTaskIds: Json.strings(raw.flashcard_task_ids),
-      noteTaskId: Json.stringOrNull(raw.note_task_id),
+      noteTaskId: Json.optionalString(raw.note_task_id),
       testTaskIds: Json.strings(raw.test_task_ids),
     };
   }

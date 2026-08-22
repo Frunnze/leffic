@@ -16,6 +16,8 @@ fi
     -r content-management-service/requirements.txt
 "$virtual_environment/bin/pip" install -r user-service/requirements.txt
 
+npm install
+
 for node_package in ui-service api-gateway; do
     (cd "$node_package" && npm install)
 done

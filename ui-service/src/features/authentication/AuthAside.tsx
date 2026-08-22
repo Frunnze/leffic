@@ -1,7 +1,7 @@
 import { For, type JSX } from "solid-js";
 import { Icon } from "../../shared/ui/icons/Icon";
 
-export type AuthAsideProps = {
+type AuthAsideProps = {
   readonly heading: string;
   readonly points: readonly string[];
 };

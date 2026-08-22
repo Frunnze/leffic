@@ -1,6 +1,6 @@
 export type JsonObject = Readonly<Record<string, unknown>>;
 
-export class JsonDecodeError extends Error {
+class JsonDecodeError extends Error {
   constructor(field: string, expected: string, received: unknown) {
     super(`Field "${field}" should be ${expected} but was ${typeof received}`);
     this.name = "JsonDecodeError";
@@ -40,7 +40,7 @@ export class Json {
     return value;
   }
 
-  static stringOrNull(value: unknown): string | null {
+  static optionalString(value: unknown): string | null {
     return typeof value === "string" ? value : null;
   }
 
@@ -50,7 +50,7 @@ export class Json {
     return value.filter((entry): entry is string => typeof entry === "string");
   }
 
-  static objectOrNull(value: unknown): JsonObject | null {
+  static optionalObject(value: unknown): JsonObject | null {
     if (typeof value !== "object" || value === null || Array.isArray(value)) {
       return null;
     }
@@ -58,7 +58,7 @@ export class Json {
     return value as JsonObject;
   }
 
-  static numberOrNull(value: unknown): number | null {
+  static optionalNumber(value: unknown): number | null {
     return typeof value === "number" && !Number.isNaN(value) ? value : null;
   }
 

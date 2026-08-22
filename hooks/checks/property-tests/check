@@ -2,26 +2,44 @@
 set -e
 . "$(dirname "$0")/../../_env.sh"
 
-require_binary "$python_binary" python
-
 finder="$(dirname "$0")/property_test_coverage.py"
+typescript_finder="$(dirname "$0")/property_test_coverage.js"
 
 echo "pre-commit: property tests (one per definition)"
 echo "pre-commit: design by contract - assert the guarantee, not the behaviour"
 echo "pre-commit: test first - write the property before the implementation"
 
-untested=$(
-    python_files_in $source_directories $test_directories \
-        | "$python_binary" "$finder"
-)
+untested=""
 
-if [ -n "$untested" ]; then
+if [ -n "$source_directories" ]; then
+    require_binary "$python_binary" python
+
+    untested=$(
+        python_files_in $source_directories $test_directories \
+            | "$python_binary" "$finder"
+    )
+fi
+
+if [ -n "$node_packages" ]; then
+    require_binary "$node_binary" node
+    require_binary "$typescript_module" typescript
+
+    for node_package in $node_packages; do
+        untested="$untested
+$(typescript_files_in "$node_package/src" "$node_package/tests" \
+    | "$node_binary" "$typescript_finder" "$typescript_module")"
+    done
+fi
+
+if [ -n "$(echo "$untested" | tr -d '\n ')" ]; then
     echo "pre-commit: nothing states a property about these - give" >&2
-    echo "pre-commit: each a Hypothesis @given test named" >&2
-    echo "pre-commit: test_<function>_property_<what it guarantees>," >&2
-    echo "pre-commit: asserting a contract guarantee over generated" >&2
-    echo "pre-commit: input (a round-trip, an invariant, a bound, an" >&2
-    echo "pre-commit: ordering), never the current behaviour:" >&2
-    echo "$untested" >&2
+    echo "pre-commit: each a property test named" >&2
+    echo "pre-commit: test_<function>_property_<what it guarantees> in" >&2
+    echo "pre-commit: python, or a fast-check test.prop titled" >&2
+    echo "pre-commit: \"<function> property <what it guarantees>\" in" >&2
+    echo "pre-commit: typescript, asserting a contract guarantee over" >&2
+    echo "pre-commit: generated input (a round-trip, an invariant, a" >&2
+    echo "pre-commit: bound, an ordering), never the current behaviour:" >&2
+    echo "$untested" | grep . >&2
     exit 1
 fi

@@ -1,6 +1,6 @@
 import { Show, type JSX } from "solid-js";
 
-export type MeterProps = {
+type MeterProps = {
   readonly done: number;
   readonly total: number;
   readonly leadingLabel?: string;
@@ -30,7 +30,7 @@ export function Meter(props: MeterProps): JSX.Element {
         </div>
       </Show>
       <div class="meter" aria-hidden="true">
-        <div class="meter-fill" style={{ width: width() }} />
+        <div class="meter-fill" style={`width: ${width()}`} />
       </div>
     </div>
   );

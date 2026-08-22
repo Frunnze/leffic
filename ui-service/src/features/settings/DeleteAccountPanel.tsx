@@ -4,7 +4,7 @@ import { AccountApi } from "./account-api";
 import { PromptDialog } from "../../shared/ui/PromptDialog";
 import { Session } from "../../shared/api/session";
 
-export type DeleteAccountPanelProps = {
+type DeleteAccountPanelProps = {
   readonly onFailed: (message: string) => void;
 };
 

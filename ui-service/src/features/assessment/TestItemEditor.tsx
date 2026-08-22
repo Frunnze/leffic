@@ -1,8 +1,10 @@
-import { For, createSignal, onCleanup, onMount, type JSX } from "solid-js";
+import { For, createSignal, untrack, type JSX } from "solid-js";
 import { Icon } from "../../shared/ui/icons/Icon";
 import type { AssessmentItem } from "./assessment-models";
+import { ModalBackdrop } from "../../shared/ui/ModalBackdrop";
+import { DIALOG_TITLE_ID, ModalHead } from "../../shared/ui/ModalHead";
+import { ModalFoot } from "../../shared/ui/ModalFoot";
 
-const ESCAPE_KEY = "Escape";
 const CORRECT_OPTION_ID = 0;
 
 export type EditedTestItem = {
@@ -11,21 +13,22 @@ export type EditedTestItem = {
   readonly wrongAnswers: readonly string[];
 };
 
-export type TestItemEditorProps = {
+type TestItemEditorProps = {
   readonly item: AssessmentItem;
   readonly onSave: (edited: EditedTestItem) => void;
   readonly onCancel: () => void;
 };
 
 export function TestItemEditor(props: TestItemEditorProps): JSX.Element {
-  const [question, setQuestion] = createSignal(props.item.question);
+  const editedItem = untrack(() => props.item);
+  const [question, setQuestion] = createSignal(editedItem.question);
   const [answers, setAnswers] = createSignal<readonly string[]>(
-    props.item.options.map((option) => option.option),
+    editedItem.options.map((option) => option.option),
   );
   const [correctIndex, setCorrectIndex] = createSignal(
     Math.max(
       0,
-      props.item.options.findIndex(
+      editedItem.options.findIndex(
         (option) => option.id === CORRECT_OPTION_ID,
       ),
     ),
@@ -64,47 +67,20 @@ export function TestItemEditor(props: TestItemEditorProps): JSX.Element {
     });
   };
 
-  onMount(() => {
-    const dismissOnEscape = (event: KeyboardEvent): void => {
-      if (event.key === ESCAPE_KEY) props.onCancel();
-    };
-
-    document.addEventListener("keydown", dismissOnEscape);
-    onCleanup(() => document.removeEventListener("keydown", dismissOnEscape));
-  });
-
   return (
-    <div
-      class="modal-backdrop"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) props.onCancel();
-      }}
-    >
+    <ModalBackdrop onDismiss={props.onCancel}>
       <form
         class="modal modal-wide"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="dialog-title"
+        aria-labelledby={DIALOG_TITLE_ID}
         onSubmit={save}
       >
-        <div class="modal-head">
-          <div class="modal-heading">
-            <h2 class="modal-title" id="dialog-title">
-              Edit question
-            </h2>
-            <span class="modal-text">
-              Changes apply the next time this question comes up.
-            </span>
-          </div>
-          <button
-            class="btn btn-quiet btn-icon"
-            type="button"
-            aria-label="Close dialog"
-            onClick={() => props.onCancel()}
-          >
-            <Icon name="closePlain" size="sm" />
-          </button>
-        </div>
+        <ModalHead
+          title="Edit question"
+          description="Changes apply the next time this question comes up."
+          onClose={props.onCancel}
+        />
 
         <div class="modal-body">
           <div class="field">
@@ -149,14 +125,14 @@ export function TestItemEditor(props: TestItemEditorProps): JSX.Element {
                     value={answer}
                     aria-label={`Answer ${index() + 1}`}
                     onInput={(event) =>
-                      changeAnswer(index(), event.currentTarget.value)
+                      { changeAnswer(index(), event.currentTarget.value); }
                     }
                   />
                   <button
                     class="btn btn-quiet btn-icon"
                     type="button"
                     aria-label={`Remove ${answer}`}
-                    onClick={() => removeAnswer(index())}
+                    onClick={() => { removeAnswer(index()); }}
                   >
                     <Icon name="trash" size="sm" />
                   </button>
@@ -166,19 +142,12 @@ export function TestItemEditor(props: TestItemEditorProps): JSX.Element {
           </div>
         </div>
 
-        <div class="modal-foot">
-          <button class="btn" type="button" onClick={() => props.onCancel()}>
-            Cancel
-          </button>
-          <button
-            class="btn btn-primary"
-            type="submit"
-            disabled={isIncomplete()}
-          >
-            Save question
-          </button>
-        </div>
+        <ModalFoot
+          confirmLabel="Save question"
+          isConfirmBlocked={isIncomplete()}
+          onCancel={props.onCancel}
+        />
       </form>
-    </div>
+    </ModalBackdrop>
   );
 }

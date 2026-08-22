@@ -1,7 +1,7 @@
 import { For, type JSX } from "solid-js";
 import { ClozeSplit } from "./cloze-split";
 
-export type ClozeTextProps = {
+type ClozeTextProps = {
   readonly text: string;
   readonly hiddenParts: readonly string[];
   readonly isRevealed: boolean;

@@ -2,7 +2,7 @@ import { For, Show, type JSX } from "solid-js";
 
 const PRESET_COUNTS: readonly number[] = [10, 20];
 
-export type TypeCountProps = {
+type TypeCountProps = {
   readonly name: string;
   readonly count: number | null;
   readonly isCustom: boolean;
@@ -22,7 +22,7 @@ export function TypeCount(props: TypeCountProps): JSX.Element {
             type="radio"
             name={props.name}
             checked={!props.isCustom && props.count === null}
-            onChange={() => props.onChoose(null)}
+            onChange={() => { props.onChoose(null); }}
           />
           <span class="segment-face">Auto</span>
         </label>
@@ -34,7 +34,7 @@ export function TypeCount(props: TypeCountProps): JSX.Element {
                 type="radio"
                 name={props.name}
                 checked={isPreset(preset)}
-                onChange={() => props.onChoose(preset)}
+                onChange={() => { props.onChoose(preset); }}
               />
               <span class="segment-face">{preset}</span>
             </label>
@@ -46,7 +46,7 @@ export function TypeCount(props: TypeCountProps): JSX.Element {
             type="radio"
             name={props.name}
             checked={props.isCustom}
-            onChange={() => props.onCustom()}
+            onChange={() => { props.onCustom(); }}
           />
           <span class="segment-face">Custom</span>
         </label>
@@ -61,7 +61,7 @@ export function TypeCount(props: TypeCountProps): JSX.Element {
             aria-label={`How many for ${props.name}`}
             value={props.count ?? ""}
             onInput={(event) =>
-              props.onChoose(Number(event.currentTarget.value) || null)
+              { props.onChoose(Number(event.currentTarget.value) || null); }
             }
           />
         </div>

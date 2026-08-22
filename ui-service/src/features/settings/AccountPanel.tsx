@@ -1,7 +1,7 @@
 import { Show, createResource, createSignal, type JSX } from "solid-js";
 import { AccountApi } from "./account-api";
 
-export type AccountPanelProps = {
+type AccountPanelProps = {
   readonly onSaved: (message: string) => void;
   readonly onFailed: (message: string) => void;
 };

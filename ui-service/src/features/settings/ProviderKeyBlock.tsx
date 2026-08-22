@@ -7,7 +7,7 @@ export type Provider = {
   readonly name: string;
 };
 
-export type ProviderKeyBlockProps = {
+type ProviderKeyBlockProps = {
   readonly provider: Provider;
   readonly savedKey: ProviderKey | undefined;
   readonly onSave: (key: string, monthlyLimitCents: number | null) => void;
@@ -22,11 +22,11 @@ export function ProviderKeyBlock(props: ProviderKeyBlockProps): JSX.Element {
   const shownLimit = (): string =>
     limitText() ?? Money.toDollarText(props.savedKey?.monthlyLimitCents ?? null);
 
-  const isSealed = (): boolean =>
-    props.savedKey !== undefined && !isReplacing();
+  const sealedKey = (): ProviderKey | undefined =>
+    isReplacing() ? undefined : props.savedKey;
 
   const save = (): void => {
-    props.onSave(typedKey().trim(), Money.toCentsOrNull(shownLimit()));
+    props.onSave(typedKey().trim(), Money.toOptionalCents(shownLimit()));
     setTypedKey("");
     setReplacing(false);
   };
@@ -49,7 +49,7 @@ export function ProviderKeyBlock(props: ProviderKeyBlockProps): JSX.Element {
             {props.provider.name} key
           </label>
           <Show
-            when={isSealed()}
+            when={sealedKey()}
             fallback={
               <input
                 class="input"
@@ -61,18 +61,20 @@ export function ProviderKeyBlock(props: ProviderKeyBlockProps): JSX.Element {
               />
             }
           >
-            <input
-              class="input"
-              id={`key-${props.provider.id}`}
-              type="text"
-              value={`…${props.savedKey?.hint ?? ""}`}
-              readOnly
-            />
+            {(sealed) => (
+              <input
+                class="input"
+                id={`key-${props.provider.id}`}
+                type="text"
+                value={`…${sealed().hint}`}
+                readOnly
+              />
+            )}
           </Show>
         </div>
 
         <Show
-          when={isSealed()}
+          when={sealedKey() !== undefined}
           fallback={
             <button
               class="btn"
@@ -90,7 +92,7 @@ export function ProviderKeyBlock(props: ProviderKeyBlockProps): JSX.Element {
           <button
             class="btn is-danger"
             type="button"
-            onClick={() => props.onRemove()}
+            onClick={() => { props.onRemove(); }}
           >
             Remove
           </button>

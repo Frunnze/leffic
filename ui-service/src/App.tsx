@@ -9,8 +9,8 @@ import LoginPage from "./features/authentication/LoginPage";
 import NotePage from "./features/notes/NotePage";
 import SettingsPage from "./features/settings/SettingsPage";
 import SignUpPage from "./features/authentication/SignUpPage";
-import { Toasts } from "./features/notifications/Toasts";
-import { useToasts } from "./features/notifications/ToastContext";
+import { Toasts } from "./shared/notifications/Toasts";
+import { useToasts } from "./shared/notifications/ToastContext";
 
 export function App(): JSX.Element {
   const toasts = useToasts();

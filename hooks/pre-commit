@@ -1,8 +1,15 @@
 #!/bin/sh
 set -e
 
-repository_root=$(git rev-parse --show-toplevel)
-cd "$repository_root"
+. "$(dirname "$0")/_env.sh"
+
+for declared in $declared_services $declared_node_packages; do
+    if [ ! -d "$declared/src" ]; then
+        echo "pre-commit: $declared is declared in hooks/_env.sh but has" >&2
+        echo "pre-commit: no src directory, so nothing checks it" >&2
+        exit 1
+    fi
+done
 
 checks_cheapest_first="
 secrets
@@ -13,17 +20,20 @@ nested-definitions
 class-methods
 duplicate-code
 dead-code
-ruff
+linters
 unused-deps
 property-tests
 vulnerable-deps
 strict-typing
 api-contract
 coverage
-mutmut
 "
 
-run_order=" $(echo $checks_cheapest_first) "
+checks_skipped="
+mutation
+"
+
+run_order=" $(echo $checks_cheapest_first $checks_skipped) "
 
 for check_directory in hooks/checks/*/; do
     check_name=$(basename "$check_directory")

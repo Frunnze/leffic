@@ -8,7 +8,7 @@ import type {
 } from "./assessment-models";
 import type { EditedTestItem } from "./TestItemEditor";
 
-export type AssessmentQuestionProps = {
+type AssessmentQuestionProps = {
   readonly item: AssessmentItem;
   readonly chosenAnswers: readonly AssessmentAnswer[];
   readonly position: number;
@@ -43,7 +43,7 @@ export function AssessmentQuestion(props: AssessmentQuestionProps): JSX.Element 
               aria-label="Your answer"
               placeholder="Type your answer"
               value={String(props.chosenAnswers[0] ?? "")}
-              onInput={(event) => props.onChoose(event.currentTarget.value)}
+              onInput={(event) => { props.onChoose(event.currentTarget.value); }}
             />
           }
         >
@@ -54,7 +54,7 @@ export function AssessmentQuestion(props: AssessmentQuestionProps): JSX.Element 
                   class="test-option"
                   type="button"
                   aria-pressed={props.chosenAnswers.includes(option.id)}
-                  onClick={() => props.onChoose(option.id)}
+                  onClick={() => { props.onChoose(option.id); }}
                 >
                   <span class="test-key">
                     {AssessmentProgress.optionLetter(index())}
@@ -72,11 +72,11 @@ export function AssessmentQuestion(props: AssessmentQuestionProps): JSX.Element 
           class="btn"
           type="button"
           disabled={props.position <= 1}
-          onClick={() => props.onBack()}
+          onClick={() => { props.onBack(); }}
         >
           Back
         </button>
-        <button class="btn btn-primary" type="button" onClick={() => props.onNext()}>
+        <button class="btn btn-primary" type="button" onClick={() => { props.onNext(); }}>
           <Show when={isLastQuestion()} fallback="Next">
             Finish
           </Show>

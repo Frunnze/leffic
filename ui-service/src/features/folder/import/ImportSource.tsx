@@ -7,7 +7,7 @@ import {
   type SourceKind,
 } from "./import-options";
 
-export type ImportSourceProps = {
+type ImportSourceProps = {
   readonly kind: SourceKind;
   readonly chosenFile: File | null;
   readonly link: string;
@@ -25,10 +25,8 @@ export type ImportSourceProps = {
 };
 
 export function ImportSource(props: ImportSourceProps): JSX.Element {
-  let fileInput: HTMLInputElement | undefined;
-
-  const isPagedFileChosen = (): boolean => {
-    const chosenName = props.chosenFile?.name.toLowerCase() ?? "";
+  const isPaged = (chosen: File): boolean => {
+    const chosenName = chosen.name.toLowerCase();
 
     return PAGED_EXTENSIONS.some((extension) =>
       chosenName.endsWith(`.${extension}`),
@@ -45,7 +43,7 @@ export function ImportSource(props: ImportSourceProps): JSX.Element {
                 type="radio"
                 name="import-source"
                 checked={props.kind === source.kind}
-                onChange={() => props.onKindChange(source.kind)}
+                onChange={() => { props.onKindChange(source.kind); }}
               />
               <span class="segment-face">{source.label}</span>
             </label>
@@ -59,40 +57,36 @@ export function ImportSource(props: ImportSourceProps): JSX.Element {
             <div class="dropzone">
               <Icon name="fileSmall" />
               <span class="dropzone-text">Drop a file here</span>
-              <button
-                class="btn"
-                type="button"
-                onClick={() => fileInput?.click()}
-              >
+              <label class="btn" for="import-file">
                 Browse files
-              </button>
+              </label>
               <span class="dropzone-hint">
                 PDF, DOCX, PPTX or TXT · up to 20 MB
               </span>
             </div>
           </Match>
 
-          <Match when={props.kind === "file" && props.chosenFile !== null}>
-            <div class="chosen-file">
-              <Icon name="fileSmall" size="sm" />
-              <span class="chosen-file-name">{props.chosenFile?.name}</span>
-              <button
-                class="btn"
-                type="button"
-                onClick={() => fileInput?.click()}
-              >
-                Replace
-              </button>
-            </div>
+          <Match when={props.kind === "file" && props.chosenFile}>
+            {(chosen) => (
+              <>
+                <div class="chosen-file">
+                  <Icon name="fileSmall" size="sm" />
+                  <span class="chosen-file-name">{chosen().name}</span>
+                  <label class="btn" for="import-file">
+                    Replace
+                  </label>
+                </div>
 
-            <Show when={isPagedFileChosen()}>
-              <PdfPageRange
-                firstPage={props.firstPage}
-                lastPage={props.lastPage}
-                onFirstPageChange={props.onFirstPageChange}
-                onLastPageChange={props.onLastPageChange}
-              />
-            </Show>
+                <Show when={isPaged(chosen())}>
+                  <PdfPageRange
+                    firstPage={props.firstPage}
+                    lastPage={props.lastPage}
+                    onFirstPageChange={props.onFirstPageChange}
+                    onLastPageChange={props.onLastPageChange}
+                  />
+                </Show>
+              </>
+            )}
           </Match>
 
           <Match when={props.kind === "link"}>
@@ -105,7 +99,7 @@ export function ImportSource(props: ImportSourceProps): JSX.Element {
                 placeholder="https://"
                 value={props.link}
                 onInput={(event) =>
-                  props.onLinkChange(event.currentTarget.value)
+                  { props.onLinkChange(event.currentTarget.value); }
                 }
               />
               <span class="field-hint">
@@ -122,7 +116,7 @@ export function ImportSource(props: ImportSourceProps): JSX.Element {
                 id="import-text"
                 value={props.text}
                 onInput={(event) =>
-                  props.onTextChange(event.currentTarget.value)
+                  { props.onTextChange(event.currentTarget.value); }
                 }
               />
               <span class="field-hint">
@@ -142,7 +136,7 @@ export function ImportSource(props: ImportSourceProps): JSX.Element {
                 placeholder="e.g. Action potentials"
                 value={props.topic}
                 onInput={(event) =>
-                  props.onTopicChange(event.currentTarget.value)
+                  { props.onTopicChange(event.currentTarget.value); }
                 }
               />
               <span class="field-hint">
@@ -154,10 +148,9 @@ export function ImportSource(props: ImportSourceProps): JSX.Element {
       </div>
 
       <input
-        ref={fileInput}
         class="visually-hidden"
+        id="import-file"
         type="file"
-        aria-label="Choose a file to import"
         onChange={(event) => {
           const chosen = event.currentTarget.files?.[0];
           event.currentTarget.value = "";

@@ -1,7 +1,7 @@
 import type { JSX } from "solid-js";
 import { ICONS, type IconName } from "./icon-shapes";
 
-export type IconSize = "sm" | "md" | "lg";
+type IconSize = "sm" | "md" | "lg";
 
 const SIZE_CLASS: Readonly<Record<IconSize, string>> = {
   sm: "icon-sm",
@@ -9,7 +9,7 @@ const SIZE_CLASS: Readonly<Record<IconSize, string>> = {
   lg: "icon-lg",
 };
 
-export type IconProps = {
+type IconProps = {
   readonly name: IconName;
   readonly size?: IconSize;
   readonly title?: string;

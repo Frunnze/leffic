@@ -2,6 +2,8 @@ import { Show, createSignal, type JSX } from "solid-js";
 import { A, useNavigate } from "@solidjs/router";
 import { AuthApi } from "./authentication-api";
 import { AuthAside } from "./AuthAside";
+import { AuthCardHead } from "./AuthCardHead";
+import { AuthField } from "./AuthField";
 import { Icon } from "../../shared/ui/icons/Icon";
 
 const HOME_ROUTE = "/folder/home";
@@ -69,14 +71,10 @@ export default function SignUp(): JSX.Element {
 
         <div class="auth-main">
           <form class="auth-card" onSubmit={(event) => void signUp(event)}>
-            <span class="auth-mark">
-              <Icon name="logo" size="lg" />
-            </span>
-
-            <div class="auth-head">
-              <h1 class="auth-title">Create your account</h1>
-              <span class="auth-subtitle">Free, and you can import straight away.</span>
-            </div>
+            <AuthCardHead
+              title="Create your account"
+              subtitle="Free, and you can import straight away."
+            />
 
             <Show when={errors().form.length > 0}>
               <p class="auth-alert" role="alert">
@@ -85,45 +83,25 @@ export default function SignUp(): JSX.Element {
               </p>
             </Show>
 
-            <div class="field">
-              <label for="username">Username</label>
-              <input
-                class="input input-lg"
-                id="username"
-                type="text"
-                autocomplete="username"
-                aria-invalid={errors().username.length > 0}
-                aria-describedby="username-error"
-                value={username()}
-                onInput={(event) => setUsername(event.currentTarget.value)}
-              />
-              <Show when={errors().username.length > 0}>
-                <span class="field-error" id="username-error">
-                  <Icon name="failure" size="sm" />
-                  {errors().username}
-                </span>
-              </Show>
-            </div>
+            <AuthField
+              id="username"
+              label="Username"
+              type="text"
+              autocomplete="username"
+              value={username()}
+              error={errors().username}
+              onInput={setUsername}
+            />
 
-            <div class="field">
-              <label for="email">Email</label>
-              <input
-                class="input input-lg"
-                id="email"
-                type="email"
-                autocomplete="email"
-                aria-invalid={errors().email.length > 0}
-                aria-describedby="email-error"
-                value={email()}
-                onInput={(event) => setEmail(event.currentTarget.value)}
-              />
-              <Show when={errors().email.length > 0}>
-                <span class="field-error" id="email-error">
-                  <Icon name="failure" size="sm" />
-                  {errors().email}
-                </span>
-              </Show>
-            </div>
+            <AuthField
+              id="email"
+              label="Email"
+              type="email"
+              autocomplete="email"
+              value={email()}
+              error={errors().email}
+              onInput={setEmail}
+            />
 
             <div class="field">
               <label for="password">Password</label>

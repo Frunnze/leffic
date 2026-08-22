@@ -16,8 +16,8 @@ export function UnitListSkeleton(): JSX.Element {
           <div class="skeleton-row">
             <span class="skeleton-dot" />
             <span class="skeleton-lines">
-              <span class="skeleton-bar" style={{ width: nameWidth }} />
-              <span class="skeleton-bar" style={{ width: metaWidth }} />
+              <span class="skeleton-bar" style={`width: ${nameWidth}`} />
+              <span class="skeleton-bar" style={`width: ${metaWidth}`} />
             </span>
           </div>
         )}

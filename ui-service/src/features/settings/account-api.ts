@@ -5,7 +5,7 @@ import { Theme, type ThemeChoice } from "../../shared/ui/theme";
 const ACCOUNT_ENDPOINT = "/api/user/account";
 const PROVIDER_KEYS_ENDPOINT = "/api/user/account/provider-keys";
 
-export type Account = {
+type Account = {
   readonly username: string;
   readonly email: string;
   readonly theme: ThemeChoice;
@@ -18,7 +18,7 @@ export type ProviderKey = {
   readonly spentCents: number;
 };
 
-export type ProviderKeyInput = {
+type ProviderKeyInput = {
   readonly provider: string;
   readonly key: string;
   readonly password: string;
@@ -112,7 +112,7 @@ export class AccountApi {
     return {
       provider: Json.string(raw.provider, "providerKey.provider"),
       hint: Json.stringOr(raw.hint, ""),
-      monthlyLimitCents: Json.numberOrNull(raw.monthly_limit_cents),
+      monthlyLimitCents: Json.optionalNumber(raw.monthly_limit_cents),
       spentCents: Json.numberOr(raw.spent_cents, 0),
     };
   }

@@ -1,11 +1,11 @@
 import { Show, createSignal, type JSX } from "solid-js";
 import { Icon } from "../../shared/ui/icons/Icon";
 import { PromptDialog } from "../../shared/ui/PromptDialog";
-import { useToasts } from "../notifications/ToastContext";
+import { useToasts } from "../../shared/notifications/ToastContext";
 import { UnitsApi } from "./units-api";
-import type { Unit } from "../../shared/models/units";
+import type { Unit } from "./unit-models";
 
-export type NewFolderButtonProps = {
+type NewFolderButtonProps = {
   readonly folderId: string;
   readonly onFolderCreated: (created: readonly Unit[]) => void;
 };

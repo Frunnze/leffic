@@ -7,14 +7,14 @@ import {
   type ImportRequest,
 } from "./ImportDialog";
 import { ImportSources } from "./import-sources";
-import { NotesApi } from "../../notes/notes-api";
-import { useToasts } from "../../notifications/ToastContext";
+import { NotesApi } from "../../../shared/notes/notes-api";
+import { useToasts } from "../../../shared/notifications/ToastContext";
 import type {
   GenerationOrigin,
   GenerationSource,
   UploadedFile,
 } from "./generation-models";
-import type { Unit } from "../../../shared/models/units";
+import type { Unit } from "../unit-models";
 
 const KIND_LABELS = {
   flashcards: "Flashcards",
@@ -22,7 +22,7 @@ const KIND_LABELS = {
   test: "Test",
 } as const;
 
-export type ImportFlowProps = {
+type ImportFlowProps = {
   readonly folderId: string;
   readonly folderName: string;
   readonly isOpen: boolean;
@@ -93,11 +93,7 @@ export function ImportFlow(props: ImportFlowProps): JSX.Element {
     return uploaded;
   };
 
-  const uploadOnly = async (request: ImportRequest): Promise<void> => {
-    const chosen = request.file;
-
-    if (chosen === null) return;
-
+  const uploadOnly = async (chosen: File): Promise<void> => {
     props.onClose();
 
     const progressToast = toasts.show({
@@ -183,7 +179,7 @@ export function ImportFlow(props: ImportFlowProps): JSX.Element {
         folderName={props.folderName}
         onExtract={extractFrom}
         onGenerate={generate}
-        onUploadOnly={(request) => void uploadOnly(request)}
+        onUploadOnly={(chosen) => void uploadOnly(chosen)}
         onCancel={props.onClose}
       />
     </Show>

@@ -48,9 +48,10 @@ export class FlashcardQueue {
     cards: readonly Flashcard[],
     dueDate: string,
   ): boolean {
-    const last = cards[cards.length - 1];
-    if (last === undefined || last.nextReview === null) return true;
+    const lastReview = cards[cards.length - 1]?.nextReview;
 
-    return new Date(dueDate).getTime() >= new Date(last.nextReview).getTime();
+    if (lastReview === undefined || lastReview === null) return true;
+
+    return new Date(dueDate).getTime() >= new Date(lastReview).getTime();
   }
 }

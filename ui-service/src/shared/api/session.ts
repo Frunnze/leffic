@@ -2,12 +2,17 @@ import { Json } from "./json";
 
 const REFRESH_ENDPOINT = "/api/user/refresh-token";
 const LOGIN_ROUTE = "/login";
+const DEFAULT_GATEWAY_URL = "http://localhost:8888";
+
+const configuredGatewayUrl: unknown = import.meta.env.VITE_GATEWAY_URL;
 
 export class Session {
   private static accessToken: string | null = null;
 
   static readonly baseUrl: string =
-    import.meta.env.VITE_GATEWAY_URL ?? "http://localhost:8888";
+    typeof configuredGatewayUrl === "string"
+      ? configuredGatewayUrl
+      : DEFAULT_GATEWAY_URL;
 
   static currentToken(): string | null {
     return Session.accessToken;
@@ -34,7 +39,7 @@ export class Session {
     }
 
     const payload: unknown = await response.json();
-    const token = Json.stringOrNull(Json.object(payload, "session").access_token);
+    const token = Json.optionalString(Json.object(payload, "session").access_token);
     Session.store(token);
 
     return token;
