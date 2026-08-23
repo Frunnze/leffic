@@ -1,0 +1,49 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/../../_env.sh"
+
+finder="$(dirname "$0")/variant_dispatches.py"
+typescript_finder="$(dirname "$0")/variant_dispatches.js"
+protocol_finder="$(dirname "$0")/protocol_strings.py"
+
+echo "pre-commit: open/closed (no growing closed dispatches)"
+echo "pre-commit: follow OCP - extend behaviour without editing its policy"
+
+dispatches=""
+
+if [ -n "$source_directories" ]; then
+    require_binary "$python_binary" python
+
+    dispatches=$(python_files_in $source_directories \
+        | "$python_binary" "$finder")
+fi
+
+if [ -n "$node_source_directories" ]; then
+    require_binary "$node_binary" node
+    require_binary "$typescript_module" typescript
+
+    dispatches="$dispatches
+$(typescript_files_in $node_source_directories \
+    | "$node_binary" "$typescript_finder" "$typescript_module")"
+fi
+
+if [ -n "$source_directories" ]; then
+    protocol_paths=$(python_files_in $source_directories)
+
+    if [ -n "$node_source_directories" ]; then
+        protocol_paths="$protocol_paths
+$(typescript_files_in $node_source_directories)"
+    fi
+
+    dispatches="$dispatches
+$(echo "$protocol_paths" | "$python_binary" "$protocol_finder")"
+fi
+
+if [ -n "$(echo "$dispatches" | tr -d '\n ')" ]; then
+    echo "pre-commit: these open/closed risks were detected:" >&2
+    echo "$dispatches" | grep . >&2
+    echo "pre-commit: follow OCP - replace the branch with an injected" >&2
+    echo "pre-commit: strategy/handler, polymorphism, or a registry wired" >&2
+    echo "pre-commit: at the composition boundary" >&2
+    exit 1
+fi

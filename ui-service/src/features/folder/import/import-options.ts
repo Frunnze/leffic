@@ -23,13 +23,6 @@ export const PAGED_EXTENSIONS: readonly string[] = [
   "odp",
 ];
 
-export const SOURCE_KINDS: readonly { kind: SourceKind; label: string }[] = [
-  { kind: "file", label: "File" },
-  { kind: "link", label: "Link" },
-  { kind: "text", label: "Text" },
-  { kind: "topic", label: "Topic" },
-];
-
 export const FLASHCARD_TYPES: readonly CardTypeOption[] = [
   { id: "basic", label: "Basic", isSupported: true },
   { id: "cloze", label: "Fill in the blank", isSupported: true },

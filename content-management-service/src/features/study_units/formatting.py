@@ -1,5 +1,5 @@
 import secrets
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import datetime
 from typing import TypeGuard
 
@@ -46,13 +46,13 @@ def flashcard_results(
 def prepare_content(
     content: dict[str, object], item_type: str
 ) -> dict[str, object]:
-    if item_type == _TRUE_OR_FALSE:
-        return _prepared_true_false_content(content)
+    formatting = _ITEM_FORMATTING.get(item_type)
 
-    if item_type == _SHORT_ANSWER:
-        return {"question": content.get("question"), "shuffled_options": []}
-
-    return _prepared_options(content)
+    return (
+        _prepared_options(content)
+        if formatting is None
+        else formatting[0](content)
+    )
 
 
 def _prepared_true_false_content(
@@ -101,8 +101,11 @@ def evaluate_accuracy(
     item_type: str,
     content: dict[str, object],
 ) -> int:
-    if item_type == _SHORT_ANSWER:
-        return _typed_accuracy(user_answers[0], content.get("answer"))
+    formatting = _ITEM_FORMATTING.get(item_type)
+    evaluator = None if formatting is None else formatting[1]
+
+    if evaluator is not None:
+        return evaluator(user_answers, content)
 
     if user_answers[0] == _CORRECT_OPTION_ID:
         return _CORRECT
@@ -118,3 +121,21 @@ def _typed_accuracy(typed: object, stored: object) -> int:
         return _CORRECT
 
     return _INCORRECT
+
+
+ContentPreparer = Callable[[dict[str, object]], dict[str, object]]
+AccuracyEvaluator = Callable[[Sequence[object], dict[str, object]], int]
+ItemFormatting = tuple[ContentPreparer, AccuracyEvaluator | None]
+
+_ITEM_FORMATTING: dict[str, ItemFormatting] = {
+    _TRUE_OR_FALSE: (_prepared_true_false_content, None),
+    _SHORT_ANSWER: (
+        lambda content: {
+            "question": content.get("question"),
+            "shuffled_options": [],
+        },
+        lambda answers, content: _typed_accuracy(
+            answers[0], content.get("answer")
+        ),
+    ),
+}

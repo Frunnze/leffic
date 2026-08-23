@@ -62,10 +62,7 @@ describe("FaceView", () => {
         const { unmount } = render(() => (
           <FaceView
             face={face}
-            basic={() => <p>basic</p>}
-            cloze={() => <p>cloze</p>}
-            list={() => <p>list</p>}
-            feynman={() => <p>feynman</p>}
+            render={(selected) => <p>{selected.kind}</p>}
           />
         ));
 
@@ -77,6 +74,17 @@ describe("FaceView", () => {
 });
 
 describe("FlashcardPrompt", () => {
+  it("prompt property renders every face", () => {
+    fc.assert(
+      fc.property(fc.constantFrom(BASIC, CLOZE, LIST, FEYNMAN), (face) => {
+        const shown = render(() => <FlashcardPrompt face={face} />);
+
+        expect(shown.container.textContent).not.toBe("");
+        shown.unmount();
+      }),
+    );
+  });
+
   it("asks the front of a basic card", () => {
     render(() => <FlashcardPrompt face={BASIC} />);
 
@@ -86,7 +94,7 @@ describe("FlashcardPrompt", () => {
   it("blanks the hidden part of a cloze card", () => {
     render(() => <FlashcardPrompt face={CLOZE} />);
 
-    expect(document.querySelector(".cloze-blank")?.textContent?.trim()).toBe(
+    expect(document.querySelector(".cloze-blank")?.textContent.trim()).toBe(
       "",
     );
   });
@@ -105,6 +113,17 @@ describe("FlashcardPrompt", () => {
 });
 
 describe("FlashcardAnswer", () => {
+  it("answer property renders every face", () => {
+    fc.assert(
+      fc.property(fc.constantFrom(BASIC, CLOZE, LIST, FEYNMAN), (face) => {
+        const shown = render(() => <FlashcardAnswer face={face} />);
+
+        expect(shown.container.textContent).not.toBe("");
+        shown.unmount();
+      }),
+    );
+  });
+
   it("answers a basic card with its back", () => {
     render(() => <FlashcardAnswer face={BASIC} />);
 

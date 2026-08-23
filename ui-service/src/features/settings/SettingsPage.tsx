@@ -1,7 +1,6 @@
 import {
   For,
-  Match,
-  Switch,
+  Show,
   createResource,
   createSignal,
   type JSX,
@@ -20,14 +19,8 @@ type SectionName = "account" | "appearance" | "keys" | "deletion";
 type Section = {
   readonly name: SectionName;
   readonly label: string;
+  readonly panel: () => JSX.Element;
 };
-
-const SECTIONS: readonly Section[] = [
-  { name: "account", label: "Account" },
-  { name: "appearance", label: "Appearance" },
-  { name: "keys", label: "AI provider keys" },
-  { name: "deletion", label: "Delete account" },
-];
 
 export default function SettingsPage(): JSX.Element {
   const toasts = useToasts();
@@ -51,6 +44,41 @@ export default function SettingsPage(): JSX.Element {
     toasts.show({ tone: "failure", title: message });
   };
 
+  const sections: readonly Section[] = [
+    {
+      name: "account",
+      label: "Account",
+      panel: () => (
+        <AccountPanel onSaved={announceSuccess} onFailed={announceFailure} />
+      ),
+    },
+    {
+      name: "appearance",
+      label: "Appearance",
+      panel: () => (
+        <ThemePanel
+          chosen={account()?.theme ?? chosenTheme()}
+          onChoose={(choice) => void chooseTheme(choice)}
+        />
+      ),
+    },
+    {
+      name: "keys",
+      label: "AI provider keys",
+      panel: () => (
+        <ProviderKeysPanel
+          onSaved={announceSuccess}
+          onFailed={announceFailure}
+        />
+      ),
+    },
+    {
+      name: "deletion",
+      label: "Delete account",
+      panel: () => <DeleteAccountPanel onFailed={announceFailure} />,
+    },
+  ];
+
   return (
     <AppShell>
       <div class="page">
@@ -59,7 +87,7 @@ export default function SettingsPage(): JSX.Element {
 
           <div class="settings-layout">
             <nav class="settings-nav" aria-label="Settings sections">
-              <For each={SECTIONS}>
+              <For each={sections}>
                 {(entry) => (
                   <button
                     class="settings-nav-item"
@@ -73,29 +101,11 @@ export default function SettingsPage(): JSX.Element {
               </For>
             </nav>
 
-            <Switch>
-              <Match when={section() === "account"}>
-                <AccountPanel
-                  onSaved={announceSuccess}
-                  onFailed={announceFailure}
-                />
-              </Match>
-              <Match when={section() === "appearance"}>
-                <ThemePanel
-                  chosen={account()?.theme ?? chosenTheme()}
-                  onChoose={(choice) => void chooseTheme(choice)}
-                />
-              </Match>
-              <Match when={section() === "keys"}>
-                <ProviderKeysPanel
-                  onSaved={announceSuccess}
-                  onFailed={announceFailure}
-                />
-              </Match>
-              <Match when={section() === "deletion"}>
-                <DeleteAccountPanel onFailed={announceFailure} />
-              </Match>
-            </Switch>
+            <Show keyed when={section()}>
+              {(selected) =>
+                sections.find((entry) => entry.name === selected)?.panel()
+              }
+            </Show>
           </div>
         </div>
       </div>

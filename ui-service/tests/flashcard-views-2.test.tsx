@@ -7,6 +7,19 @@ import { FlashcardRatings } from "../src/features/flashcards/FlashcardRatings";
 import { BASIC, CLOZE, FEYNMAN, LIST } from "./flashcard-views-support";
 
 describe("FlashcardFields", () => {
+  it("fields property exposes editable fields for every face", () => {
+    fc.assert(
+      fc.property(fc.constantFrom(BASIC, CLOZE, LIST, FEYNMAN), (face) => {
+        const shown = render(() => (
+          <FlashcardFields face={face} onChange={vi.fn()} />
+        ));
+
+        expect(shown.container.querySelectorAll("textarea").length).toBe(2);
+        shown.unmount();
+      }),
+    );
+  });
+
   it.each([
     [BASIC, ["Front", "Back"]],
     [CLOZE, ["Sentence", "Hidden parts, one per line"]],
@@ -146,7 +159,7 @@ describe("ConfirmDialog", () => {
       />
     ));
 
-    fireEvent.click(document.querySelector(".modal-backdrop") as HTMLElement);
+    fireEvent.click(document.querySelector<HTMLElement>(".modal-backdrop")!);
 
     expect(onCancel).toHaveBeenCalledTimes(1);
   });

@@ -29,6 +29,8 @@ DatabaseSession = Annotated[Session, Depends(get_db)]
 _ISSUER = "my-issuer"
 _REFRESH_COOKIE = "refresh_token"
 _INVALID_CREDENTIALS = "Invalid token"
+_USERNAME_REGISTERED = "username_registered"
+_EMAIL_REGISTERED = "email_registered"
 
 
 def _issue_refresh_cookie(response: Response, user_id: str) -> None:
@@ -59,13 +61,13 @@ def register_user(
     if db.query(User).filter(User.username == user.username).first():
         return JSONResponse(
             status_code=status.HTTP_409_CONFLICT,
-            content="Username already registered",
+            content={"code": _USERNAME_REGISTERED},
         )
 
     if db.query(User).filter(User.email == user.email).first():
         return JSONResponse(
             status_code=status.HTTP_409_CONFLICT,
-            content="Email already registered",
+            content={"code": _EMAIL_REGISTERED},
         )
 
     # Create new user

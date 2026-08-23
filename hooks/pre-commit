@@ -15,6 +15,7 @@ checks_cheapest_first="
 secrets
 file-length
 feature-isolation
+open-closed
 definition-names
 nested-definitions
 class-methods

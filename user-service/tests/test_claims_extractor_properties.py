@@ -36,7 +36,12 @@ def test__bearer_token_property_accepts_the_scheme_in_any_case(
 
 
 @settings(max_examples=50)
-@given(st.lists(_TOKEN_TEXT, min_size=0, max_size=4))
+@given(
+    st.one_of(
+        st.lists(_TOKEN_TEXT, min_size=0, max_size=1),
+        st.lists(_TOKEN_TEXT, min_size=3, max_size=4),
+    )
+)
 def test__bearer_token_property_rejects_anything_but_two_parts(
     parts: list[str],
 ) -> None:

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from typing import override
 
 from openai import OpenAI, OpenAIError
@@ -103,17 +104,26 @@ class OpenAIManager(AIManager):
         )
 
 
+AIBuilder = Callable[[str, ModelRates | None], AIManager]
+
+
 class AIFactory:
-    def __init__(self) -> None:
+    def __init__(self, builder: AIBuilder) -> None:
         super().__init__()
-        self.openai_client: OpenAI = OpenAI()
+        self._builder: AIBuilder = builder
 
     def get_ai(self, model: str | None = None) -> AIManager:
         model_name = model or GPT_5_MINI
 
-        return OpenAIManager(
-            self.openai_client, model_name, MODEL_RATES.get(model_name)
-        )
+        return self._builder(model_name, MODEL_RATES.get(model_name))
 
 
-ai_factory = AIFactory()
+def create_openai_factory(client: OpenAI | None = None) -> AIFactory:
+    openai_client = client or OpenAI()
+
+    return AIFactory(
+        lambda model, rates: OpenAIManager(openai_client, model, rates)
+    )
+
+
+ai_factory = create_openai_factory()

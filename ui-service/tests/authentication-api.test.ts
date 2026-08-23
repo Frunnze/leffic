@@ -108,7 +108,7 @@ describe("AuthApi.toSignUpFailure", () => {
   });
 
   it("blames the username when it is already registered", async () => {
-    stubFetch(jsonResponse("Username already registered", 400));
+    stubFetch(jsonResponse({ code: "username_registered" }, 400));
 
     await expect(AuthApi.signUp(REGISTRATION)).resolves.toEqual({
       ok: false,
@@ -118,7 +118,7 @@ describe("AuthApi.toSignUpFailure", () => {
   });
 
   it("blames the email when it is already registered", async () => {
-    stubFetch(jsonResponse("Email already registered", 400));
+    stubFetch(jsonResponse({ code: "email_registered" }, 400));
 
     await expect(AuthApi.signUp(REGISTRATION)).resolves.toEqual({
       ok: false,

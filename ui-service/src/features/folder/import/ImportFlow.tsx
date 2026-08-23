@@ -7,6 +7,7 @@ import {
   type ImportRequest,
 } from "./ImportDialog";
 import { ImportSources } from "./import-sources";
+import { SourceKindHandlers } from "./source-kind-handlers";
 import { NotesApi } from "../../../shared/notes/notes-api";
 import { useToasts } from "../../../shared/notifications/ToastContext";
 import type {
@@ -15,12 +16,6 @@ import type {
   UploadedFile,
 } from "./generation-models";
 import type { Unit } from "../unit-models";
-
-const KIND_LABELS = {
-  flashcards: "Flashcards",
-  note: "Note",
-  test: "Test",
-} as const;
 
 type ImportFlowProps = {
   readonly folderId: string;
@@ -60,7 +55,10 @@ export function ImportFlow(props: ImportFlowProps): JSX.Element {
 
       toasts.show(
         outcome.succeeded
-          ? { tone: "success", title: `${KIND_LABELS[outcome.kind]} ready` }
+          ? {
+              tone: "success",
+              title: `${GenerationApi.labelFor(outcome.kind)} ready`,
+            }
           : {
               tone: "failure",
               title: `Couldn't generate the ${outcome.kind}`,
@@ -150,18 +148,11 @@ export function ImportFlow(props: ImportFlowProps): JSX.Element {
   const extractFrom = async (
     request: ImportRequest,
   ): Promise<ExtractedSource> => {
-    if (request.kind === "topic") return writtenNote(request.topic);
-
-    const source = await ImportSources.sourceFrom(
-      request,
+    return SourceKindHandlers.of(request.kind).extract(request, {
+      extractText: GenerationApi.extractText,
       uploadIntoFolder,
-    );
-    if (source === null) return { text: "", isNoteAlreadyMade: false };
-
-    return {
-      text: await GenerationApi.extractText(source),
-      isNoteAlreadyMade: false,
-    };
+      writeNote: writtenNote,
+    });
   };
 
   const generate = (request: ImportRequest, reviewedText: string): void => {

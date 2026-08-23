@@ -6,14 +6,7 @@ import {
   type Unit,
   type UnitType,
 } from "./unit-models";
-
-const DELETE_ENDPOINTS: Readonly<Record<UnitType, string>> = {
-  folder: "/api/content/delete-folder/?folder_id=",
-  flashcard_deck: "/api/content/delete-deck/?deck_id=",
-  test: "/api/content/delete-test/?test_id=",
-  note: "/api/content/delete-note/?note_id=",
-  file: "/api/content/delete-file/?file_id=",
-};
+import { UNIT_DEFINITIONS } from "./unit-definitions";
 
 export class UnitsApi {
   static async folderContent(folderId: string): Promise<FolderContent> {
@@ -55,7 +48,7 @@ export class UnitsApi {
 
   static async remove(unitId: string, unitType: UnitType): Promise<void> {
     await HttpClient.send({
-      endpoint: `${DELETE_ENDPOINTS[unitType]}${unitId}`,
+      endpoint: `${UNIT_DEFINITIONS[unitType].deleteEndpoint}${unitId}`,
       method: "DELETE",
     });
   }

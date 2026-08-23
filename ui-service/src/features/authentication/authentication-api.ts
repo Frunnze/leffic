@@ -18,6 +18,19 @@ type AuthOutcome =
 const SIGN_IN_FAILED =
   "That email and password don't match. Try again, or reset your password.";
 
+const SIGN_UP_FAILURES = {
+  username_registered: {
+    field: "username",
+    message: "That username is taken. Try another one.",
+  },
+  email_registered: {
+    field: "email",
+    message: "An account already uses that email. Log in instead.",
+  },
+} as const;
+
+type SignUpFailureCode = keyof typeof SIGN_UP_FAILURES;
+
 export class AuthApi {
   static async logIn(credentials: Credentials): Promise<AuthOutcome> {
     const response = await HttpClient.send({
@@ -71,22 +84,14 @@ export class AuthApi {
   }
 
   private static toSignUpFailure(payload: unknown): AuthOutcome {
-    const detail = typeof payload === "string" ? payload : "";
+    if (typeof payload === "object" && payload !== null) {
+      const code = Json.optionalString(
+        (payload as Readonly<Record<string, unknown>>).code,
+      );
 
-    if (detail === "Username already registered") {
-      return {
-        ok: false,
-        field: "username",
-        message: "That username is taken. Try another one.",
-      };
-    }
-
-    if (detail === "Email already registered") {
-      return {
-        ok: false,
-        field: "email",
-        message: "An account already uses that email. Log in instead.",
-      };
+      if (code !== null && Object.hasOwn(SIGN_UP_FAILURES, code)) {
+        return { ok: false, ...SIGN_UP_FAILURES[code as SignUpFailureCode] };
+      }
     }
 
     return {

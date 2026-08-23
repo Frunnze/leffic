@@ -118,7 +118,7 @@ def test_sign_up_rejects_a_duplicate_username(client: TestClient) -> None:
     )
 
     assert response.status_code == _CONFLICT
-    assert response.json() == "Username already registered"
+    assert response.json() == {"code": "username_registered"}
 
 
 def test_sign_up_rejects_a_duplicate_email(client: TestClient) -> None:
@@ -134,7 +134,7 @@ def test_sign_up_rejects_a_duplicate_email(client: TestClient) -> None:
     )
 
     assert response.status_code == _CONFLICT
-    assert response.json() == "Email already registered"
+    assert response.json() == {"code": "email_registered"}
 
 
 def test_login_returns_a_token_for_the_right_password(

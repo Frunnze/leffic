@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { FlashcardContent } from "../src/features/flashcards/flashcard-content";
+import { FlashcardFaceHandlers } from "../src/features/flashcards/flashcard-face-handlers";
 import { anyFace } from "./flashcard-factories";
 
 const KIND_FOR_TYPE: Readonly<Record<string, string>> = {
@@ -17,6 +18,27 @@ describe("FlashcardContent.toFace and FlashcardContent.toContent", () => {
         const rebuilt = FlashcardContent.toFace(face.kind, content);
 
         expect(rebuilt).toEqual(face);
+      }),
+    );
+  });
+
+  it("handlerFor property preserves every face through its handler", () => {
+    fc.assert(
+      fc.property(anyFace, (face) => {
+        const content = FlashcardFaceHandlers.toContent(face);
+
+        expect(FlashcardFaceHandlers.toFace(face.kind, content)).toEqual(face);
+      }),
+    );
+  });
+
+  it("wording property describes every face through its handler", () => {
+    fc.assert(
+      fc.property(anyFace, (face) => {
+        const words = FlashcardFaceHandlers.of(face);
+
+        expect(words.question).toBeTypeOf("string");
+        expect(words.answer).toBeTypeOf("string");
       }),
     );
   });

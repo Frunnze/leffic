@@ -3,16 +3,12 @@ import { Icon } from "../ui/icons/Icon";
 import type { IconName } from "../ui/icons/icon-shapes";
 import type { Toast, ToastTone } from "./toast-store";
 
-const TONE_CLASS: Readonly<Record<ToastTone, string>> = {
-  progress: "toast-progress",
-  success: "toast-success",
-  failure: "toast-failure",
-};
-
-const TONE_ICON: Readonly<Record<ToastTone, IconName>> = {
-  progress: "start",
-  success: "success",
-  failure: "failure",
+const TONES: Readonly<
+  Record<ToastTone, { readonly className: string; readonly icon: IconName }>
+> = {
+  progress: { className: "toast-progress", icon: "start" },
+  success: { className: "toast-success", icon: "success" },
+  failure: { className: "toast-failure", icon: "failure" },
 };
 
 type ToastsProps = {
@@ -26,9 +22,9 @@ export function Toasts(props: ToastsProps): JSX.Element {
       <div class="toast-stack" role="status" aria-live="polite">
         <For each={props.toasts}>
           {(toast) => (
-            <div class={`toast ${TONE_CLASS[toast.tone]}`}>
+            <div class={`toast ${TONES[toast.tone].className}`}>
               <span class="toast-icon">
-                <Icon name={TONE_ICON[toast.tone]} />
+                <Icon name={TONES[toast.tone].icon} />
               </span>
               <div class="toast-text">
                 <span class="toast-title">{toast.title}</span>

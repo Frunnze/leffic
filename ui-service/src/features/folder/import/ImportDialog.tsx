@@ -5,6 +5,7 @@ import { ImportRequestReading } from "./import-request";
 import { ImportFooter } from "./ImportFooter";
 import { ImportSource } from "./ImportSource";
 import { ImportReview, ImportWait } from "./ImportReview";
+import { SourceKindHandlers } from "./source-kind-handlers";
 import type { SourceKind, UnitChoice } from "./import-options";
 import { ModalBackdrop } from "../../../shared/ui/ModalBackdrop";
 import { DIALOG_TITLE_ID, ModalHead } from "../../../shared/ui/ModalHead";
@@ -77,11 +78,13 @@ export function ImportDialog(props: ImportDialogProps): JSX.Element {
   const nothingChosen = (): boolean =>
     ImportRequestReading.nothingChosen(request());
 
+  const selectedSource = () => SourceKindHandlers.of(kind());
+
   const isShowingOptions = (): boolean =>
-    kind() === "text" || extracted() !== null;
+    selectedSource().showsOptions || extracted() !== null;
 
   const uploadableFile = (): File | null => {
-    if (kind() !== "file" || isShowingOptions()) return null;
+    if (!selectedSource().uploadable || isShowingOptions()) return null;
 
     return chosenFile();
   };
@@ -115,7 +118,7 @@ export function ImportDialog(props: ImportDialogProps): JSX.Element {
           <Switch>
             <Match when={isExtracting()}>
               <ImportWait
-                isWritingNote={kind() === "topic"}
+                isWritingNote={selectedSource().writesNote}
                 sourceName={sourceName()}
               />
             </Match>

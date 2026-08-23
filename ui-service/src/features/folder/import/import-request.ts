@@ -1,4 +1,5 @@
 import type { ImportRequest } from "./ImportDialog";
+import { SourceKindHandlers } from "./source-kind-handlers";
 
 export class ImportRequestReading {
   static chosenPage(typed: string): number | null {
@@ -8,28 +9,11 @@ export class ImportRequestReading {
   }
 
   static missingSource(request: ImportRequest): string | null {
-    if (request.kind === "file" && request.file === null) {
-      return "Choose a file first.";
-    }
-    if (request.kind === "link" && request.link.trim().length === 0) {
-      return "Paste a link first.";
-    }
-    if (request.kind === "topic" && request.topic.trim().length === 0) {
-      return "Name a topic first.";
-    }
-    if (request.kind === "text" && request.text.trim().length === 0) {
-      return "Paste some text first.";
-    }
-
-    return null;
+    return SourceKindHandlers.of(request.kind).missingSource(request);
   }
 
   static sourceName(request: ImportRequest): string {
-    if (request.kind === "file") return request.file?.name ?? "";
-    if (request.kind === "link") return request.link;
-    if (request.kind === "topic") return request.topic;
-
-    return "your text";
+    return SourceKindHandlers.of(request.kind).sourceName(request);
   }
 
   static nothingChosen(request: ImportRequest): boolean {

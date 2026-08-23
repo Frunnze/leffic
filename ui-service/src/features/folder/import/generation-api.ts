@@ -9,14 +9,27 @@ import type {
 } from "./generation-models";
 import type { Unit } from "../unit-models";
 import { UnitsApi } from "../units-api";
+import { GenerationSourceHandlers } from "./generation-source-handlers";
 
-const STATUS_ENDPOINTS = {
-  flashcards: "/api/content/flashcards-status/",
-  note: "/api/content/note-task-status/",
-  test: "/api/content/test-task-status/",
+const GENERATED_KINDS = {
+  flashcards: {
+    statusEndpoint: "/api/content/flashcards-status/",
+    label: "Flashcards",
+    idField: "flashcard_deck_id",
+  },
+  note: {
+    statusEndpoint: "/api/content/note-task-status/",
+    label: "Note",
+    idField: "note_id",
+  },
+  test: {
+    statusEndpoint: "/api/content/test-task-status/",
+    label: "Test",
+    idField: "test_id",
+  },
 } as const;
 
-export type GeneratedKind = keyof typeof STATUS_ENDPOINTS;
+export type GeneratedKind = keyof typeof GENERATED_KINDS;
 
 export type GenerationWish = {
   readonly flashcardTypes: readonly string[];
@@ -99,7 +112,7 @@ export class GenerationApi {
 
   static async progress(kind: GeneratedKind, taskId: string): Promise<TaskProgress> {
     const payload = await HttpClient.json({
-      endpoint: `${STATUS_ENDPOINTS[kind]}${taskId}`,
+      endpoint: `${GENERATED_KINDS[kind].statusEndpoint}${taskId}`,
     });
     const raw = Json.object(payload, "taskProgress");
     const status = GenerationApi.toStatus(raw.status);
@@ -111,9 +124,10 @@ export class GenerationApi {
   }
 
   private static async sourceText(source: GenerationSource): Promise<string> {
-    if (source.kind === "topic") return source.topic;
-
-    return GenerationApi.extractText(source);
+    return GenerationSourceHandlers.text(
+      source,
+      GenerationApi.extractText,
+    );
   }
 
   private static wishBody(
@@ -142,25 +156,11 @@ export class GenerationApi {
   }
 
   private static sourceBody(source: GenerationSource): Readonly<Record<string, unknown>> {
-    if (source.kind === "link") return { link_metadata: source.url };
-    if (source.kind === "topic") return { topic_metadata: source.topic };
-
-    const pages: Record<string, number> = {};
-
-    if (source.firstPage !== null) pages.first = source.firstPage;
-    if (source.lastPage !== null) pages.last = source.lastPage;
-
-    const asked = Object.keys(pages).length === 0 ? {} : { pages };
-
-    return {
-      file_metadata: [
-        { file_id: source.fileId, extension: source.extension, ...asked },
-      ],
-    };
+    return GenerationSourceHandlers.body(source);
   }
 
   private static toGeneratedUnit(kind: GeneratedKind, raw: JsonObject): Unit | null {
-    const idField = { flashcards: "flashcard_deck_id", note: "note_id", test: "test_id" }[kind];
+    const idField = GENERATED_KINDS[kind].idField;
     const id = raw[idField];
 
     if (id === undefined || id === null) return null;
@@ -183,5 +183,9 @@ export class GenerationApi {
     if (name === "SUCCESS" || name === "FAILURE") return name;
 
     return "PENDING";
+  }
+
+  static labelFor(kind: GeneratedKind): string {
+    return GENERATED_KINDS[kind].label;
   }
 }

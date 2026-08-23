@@ -1,12 +1,6 @@
-export type UnitType = "folder" | "flashcard_deck" | "test" | "note" | "file";
+import type { UnitType } from "./unit-definitions";
 
-export const UNIT_TYPES: readonly UnitType[] = [
-  "folder",
-  "flashcard_deck",
-  "test",
-  "note",
-  "file",
-];
+export { UNIT_TYPES, type UnitType } from "./unit-definitions";
 
 export type Unit = {
   readonly id: string;

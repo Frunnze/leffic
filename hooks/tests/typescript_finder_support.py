@@ -3,7 +3,7 @@ from pathlib import Path
 
 HOOKS = Path(__file__).parent.parent
 CHECKS = HOOKS / "checks"
-TYPESCRIPT_MODULE = HOOKS.parent / "node_modules" / "typescript"
+TYPESCRIPT_MODULE = HOOKS / "node_modules" / "typescript"
 
 
 def report_from(

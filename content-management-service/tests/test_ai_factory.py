@@ -3,7 +3,7 @@ from typing import Self, cast
 import pytest
 from openai import OpenAIError
 
-from shared.ai_manager import AIFactory, OpenAIManager
+from shared.ai_manager import OpenAIManager, create_openai_factory
 from shared.model_rates import GPT_4_1_NANO, MODEL_RATES
 
 _SYSTEM_PROMPT = "You are helpful"
@@ -73,14 +73,14 @@ def _manager(answers: list[object], rates_for: str | None = None):  # noqa: ANN2
 
 
 def test_the_factory_defaults_to_the_mini_model() -> None:
-    manager = AIFactory().get_ai()
+    manager = create_openai_factory().get_ai()
 
     assert isinstance(manager, OpenAIManager)
     assert manager.model_name == "gpt-5-mini"
 
 
 def test_the_factory_honours_a_named_model() -> None:
-    manager = AIFactory().get_ai(GPT_4_1_NANO)
+    manager = create_openai_factory().get_ai(GPT_4_1_NANO)
 
     assert isinstance(manager, OpenAIManager)
     assert manager.model_name == GPT_4_1_NANO
@@ -112,26 +112,31 @@ def test_the_factory_reads_the_api_key_from_the_environment(
 ) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "a-configured-key")
 
-    assert AIFactory().openai_client.api_key == "a-configured-key"
+    manager = create_openai_factory().get_ai()
+
+    assert isinstance(manager, OpenAIManager)
+    assert manager.client.api_key == "a-configured-key"
 
 
 def test_the_factory_gives_the_manager_its_own_client() -> None:
-    factory = AIFactory()
+    factory = create_openai_factory()
     manager = factory.get_ai()
+    another_manager = factory.get_ai()
 
     assert isinstance(manager, OpenAIManager)
-    assert manager.client is factory.openai_client
+    assert isinstance(another_manager, OpenAIManager)
+    assert another_manager.client is manager.client
 
 
 def test_a_known_model_gets_its_rates() -> None:
-    manager = AIFactory().get_ai(GPT_4_1_NANO)
+    manager = create_openai_factory().get_ai(GPT_4_1_NANO)
 
     assert isinstance(manager, OpenAIManager)
     assert manager.request_cost.rates == MODEL_RATES[GPT_4_1_NANO]
 
 
 def test_an_unknown_model_has_no_rates() -> None:
-    manager = AIFactory().get_ai("gpt-unknown")
+    manager = create_openai_factory().get_ai("gpt-unknown")
 
     assert isinstance(manager, OpenAIManager)
     assert manager.request_cost.rates is None

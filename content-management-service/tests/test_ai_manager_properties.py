@@ -8,10 +8,10 @@ from openai import OpenAI, OpenAIError
 from openai.types.responses import Response
 
 from shared.ai_manager import (
-    AIFactory,
     AiMessage,
     OpenAIManager,
     RequestCost,
+    create_openai_factory,
 )
 from shared.model_rates import GPT_4_1_NANO, GPT_5_MINI, MODEL_RATES
 from tests.test_ai_manager import FakeClient, FakeResponse, FakeUsage
@@ -159,7 +159,21 @@ def test__answer_property_always_asks_for_the_configured_model(
 def test_get_ai_property_falls_back_to_the_default_model(
     model: str | None,
 ) -> None:
-    built = AIFactory().get_ai(model)
+    built = create_openai_factory().get_ai(model)
 
     assert isinstance(built, OpenAIManager)
     assert built.model_name == (model or GPT_5_MINI)
+
+
+@settings(max_examples=25)
+@given(st.sampled_from([GPT_4_1_NANO, GPT_5_MINI]))
+def test_create_openai_factory_property_shares_one_client(
+    model: str,
+) -> None:
+    factory = create_openai_factory()
+    first = factory.get_ai(model)
+    second = factory.get_ai(model)
+
+    assert isinstance(first, OpenAIManager)
+    assert isinstance(second, OpenAIManager)
+    assert first.client is second.client
