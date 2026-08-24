@@ -4,6 +4,14 @@ x-healthcheck-timing: &healthcheck-timing
   retries: 20
   start_period: 10s
 
+x-user-service-environment: &user-service-environment
+  - DB_USER=postgres
+  - DB_PASS=postgres
+  - DB_HOST=postgres
+  - DB_PORT=5432
+  - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+  - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+
 x-content-service: &content-service
   build: ./content-management-service
   environment:
@@ -16,8 +24,8 @@ x-content-service: &content-service
     - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
     - JWT_SECRET_KEY=${JWT_SECRET_KEY}
   depends_on:
-    postgres:
-      condition: service_healthy
+    content-migrations:
+      condition: service_completed_successfully
     redis:
       condition: service_healthy
     rabbitmq:
@@ -46,6 +54,14 @@ services:
       - content-documents
     restart: unless-stopped
 
+  content-migrations:
+    <<: *content-service
+    command: alembic upgrade head
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   content-management-service:
     <<: *content-service
     volumes:
@@ -71,18 +87,21 @@ services:
       - files:/app/files
     command: python run_consumer.py
 
-  user-service:
+  user-migrations:
     build: ./user-service
-    environment:
-      - DB_USER=postgres
-      - DB_PASS=postgres
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    environment: *user-service-environment
+    command: alembic upgrade head
+    restart: "no"
     depends_on:
       postgres:
         condition: service_healthy
+
+  user-service:
+    build: ./user-service
+    environment: *user-service-environment
+    depends_on:
+      user-migrations:
+        condition: service_completed_successfully
       rabbitmq:
         condition: service_healthy
     restart: unless-stopped

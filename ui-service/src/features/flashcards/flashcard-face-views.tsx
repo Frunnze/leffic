@@ -142,12 +142,7 @@ export const ListPrompt = (props: FaceProps<ListFace>): JSX.Element => (
 );
 
 export const FeynmanPrompt = (props: FaceProps<FeynmanFace>): JSX.Element => (
-  <>
-    <p class="flashcard-prompt">{props.face.prompt}</p>
-    <p class="flashcard-hint">
-      Explain it out loud in plain language before you flip.
-    </p>
-  </>
+  <p class="flashcard-prompt">{props.face.prompt}</p>
 );
 
 export const BasicAnswer = (props: FaceProps<BasicFace>): JSX.Element => (

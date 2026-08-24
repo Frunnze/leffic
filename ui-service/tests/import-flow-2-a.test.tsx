@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
 import fc from "fast-check";
 import { GenerationApi } from "../src/features/folder/import/generation-api";
+import { GenerationProvider } from "../src/features/folder/import/GenerationContext";
 import {
   GenerationWatcher,
 } from "../src/features/folder/import/generation-watcher";
@@ -19,14 +20,16 @@ describe("ImportFlow", () => {
   ): void {
     render(() => (
       <ToastProvider>
-        <ImportFlow
-          folderId="home"
-          folderName="Biology"
-          isOpen={isOpen}
-          onClose={onClose}
-          onUnitsAdded={onUnitsAdded}
-        />
-        <FlowToasts />
+        <GenerationProvider>
+          <ImportFlow
+            folderId="home"
+            folderName="Biology"
+            isOpen={isOpen}
+            onClose={onClose}
+            onUnitsAdded={onUnitsAdded}
+          />
+          <FlowToasts />
+        </GenerationProvider>
       </ToastProvider>
     ));
   }
@@ -47,13 +50,15 @@ describe("ImportFlow", () => {
       fc.property(fc.boolean(), (isOpen) => {
         const { unmount } = render(() => (
           <ToastProvider>
-            <ImportFlow
-              folderId="home"
-              folderName="Biology"
-              isOpen={isOpen}
-              onClose={vi.fn()}
-              onUnitsAdded={vi.fn()}
-            />
+            <GenerationProvider>
+              <ImportFlow
+                folderId="home"
+                folderName="Biology"
+                isOpen={isOpen}
+                onClose={vi.fn()}
+                onUnitsAdded={vi.fn()}
+              />
+            </GenerationProvider>
           </ToastProvider>
         ));
 
@@ -88,7 +93,7 @@ describe("ImportFlow", () => {
     expect(toastTitles()).toContain("Generating from your text");
   });
 
-  it("announces every finished generation", async () => {
+  it("announces every finished generation above the flow", async () => {
     vi.spyOn(GenerationApi, "start").mockResolvedValue(NO_TASKS);
     const made = unitOf({ id: "made", name: "Deck", type: "flashcard_deck" });
     vi.spyOn(GenerationWatcher, "watch").mockImplementation((_, onOutcome) => {
@@ -96,16 +101,12 @@ describe("ImportFlow", () => {
 
       return () => undefined;
     });
-    const onUnitsAdded = vi.fn();
-    renderFlow(onUnitsAdded);
+    renderFlow();
 
     pasteText("pasted");
     fireEvent.click(screen.getByRole("button", { name: "Generate" }));
 
-    await waitFor(() =>
-      expect(onUnitsAdded).toHaveBeenCalledWith([made], "home"),
-    );
-    expect(toastTitles()).toContain("Flashcards ready");
+    await waitFor(() => expect(toastTitles()).toContain("Flashcards ready"));
   });
 
   it("announces a generation that failed", async () => {

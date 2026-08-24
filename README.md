@@ -97,8 +97,9 @@ learner's folders, study units and uploaded documents.
 | `files` | Docker volume | the uploaded documents themselves |
 | Redis | — | Celery broker and result backend |
 
-Schemas are created on startup with `Base.metadata.create_all` — there are no
-migrations. A user's root folder is the folder whose id equals their user id.
+Each Python service owns an Alembic migration history. Docker Compose runs the
+two migration jobs before starting services that use their databases. A user's
+root folder is the folder whose id equals their user id.
 
 ## Tech stack
 

@@ -7,6 +7,7 @@ import { App } from "../src/App";
 import { AskProvider } from "../src/shared/chatbot/AskContext";
 import { NotesApi } from "../src/shared/notes/notes-api";
 import { StatsApi } from "../src/features/folder/stats-api";
+import { GenerationProvider } from "../src/features/folder/import/GenerationContext";
 import { ToastProvider } from "../src/shared/notifications/ToastContext";
 import { UnitsApi } from "../src/features/folder/units-api";
 import { NOTE, NOTHING_DUE, stubAccount } from "./pages-support";
@@ -17,9 +18,11 @@ describe("App", () => {
 
     return render(() => (
       <ToastProvider>
-        <AskProvider>
-          <App />
-        </AskProvider>
+        <GenerationProvider>
+          <AskProvider>
+            <App />
+          </AskProvider>
+        </GenerationProvider>
       </ToastProvider>
     ));
   }

@@ -6,6 +6,7 @@ import { App } from "./App";
 import { Theme } from "./shared/ui/theme";
 import { ToastProvider } from "./shared/notifications/ToastContext";
 import { AskProvider } from "./shared/chatbot/AskContext";
+import { GenerationProvider } from "./features/folder/import/GenerationContext";
 
 Theme.apply(Theme.lastPainted());
 
@@ -18,9 +19,11 @@ if (!(root instanceof HTMLElement)) {
 render(
   () => (
     <ToastProvider>
-      <AskProvider>
-        <App />
-      </AskProvider>
+      <GenerationProvider>
+        <AskProvider>
+          <App />
+        </AskProvider>
+      </GenerationProvider>
     </ToastProvider>
   ),
   root,

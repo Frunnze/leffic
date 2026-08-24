@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
 import { GenerationApi } from "../src/features/folder/import/generation-api";
+import { GenerationProvider } from "../src/features/folder/import/GenerationContext";
 import {
   GenerationWatcher,
 } from "../src/features/folder/import/generation-watcher";
@@ -19,14 +20,16 @@ describe("ImportFlow", () => {
   ): void {
     render(() => (
       <ToastProvider>
-        <ImportFlow
-          folderId="home"
-          folderName="Biology"
-          isOpen={isOpen}
-          onClose={onClose}
-          onUnitsAdded={onUnitsAdded}
-        />
-        <FlowToasts />
+        <GenerationProvider>
+          <ImportFlow
+            folderId="home"
+            folderName="Biology"
+            isOpen={isOpen}
+            onClose={onClose}
+            onUnitsAdded={onUnitsAdded}
+          />
+          <FlowToasts />
+        </GenerationProvider>
       </ToastProvider>
     ));
   }

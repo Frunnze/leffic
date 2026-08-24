@@ -48,7 +48,7 @@ max-public-methods = 15
 ]
 
 [tool.deptry.per_rule_ignores]
-DEP002 = ["uvicorn", "bcrypt"]
+DEP002 = ["alembic", "uvicorn", "bcrypt"]
 
 [tool.deptry]
 known_first_party = ["src", "run", "app_factory", "features", "shared"]

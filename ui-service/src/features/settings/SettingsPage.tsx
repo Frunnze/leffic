@@ -1,10 +1,4 @@
-import {
-  For,
-  Show,
-  createResource,
-  createSignal,
-  type JSX,
-} from "solid-js";
+import { For, Show, createSignal, type JSX } from "solid-js";
 import { AccountPanel } from "./AccountPanel";
 import { AppShell } from "../../shared/ui/AppShell";
 import { DeleteAccountPanel } from "./DeleteAccountPanel";
@@ -25,13 +19,8 @@ type Section = {
 export default function SettingsPage(): JSX.Element {
   const toasts = useToasts();
   const [section, setSection] = createSignal<SectionName>("account");
-  const [chosenTheme, setChosenTheme] = createSignal<ThemeChoice>(
-    Theme.lastPainted(),
-  );
-  const [account] = createResource(AccountApi.read);
 
   const chooseTheme = async (choice: ThemeChoice): Promise<void> => {
-    setChosenTheme(choice);
     Theme.apply(choice);
     await AccountApi.chooseTheme(choice);
   };
@@ -57,7 +46,7 @@ export default function SettingsPage(): JSX.Element {
       label: "Appearance",
       panel: () => (
         <ThemePanel
-          chosen={account()?.theme ?? chosenTheme()}
+          chosen={Theme.painted()}
           onChoose={(choice) => void chooseTheme(choice)}
         />
       ),

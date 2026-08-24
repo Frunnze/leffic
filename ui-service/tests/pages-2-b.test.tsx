@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor } from "@solidjs/testing-library";
 import { AskProvider } from "../src/shared/chatbot/AskContext";
 import FolderPage from "../src/features/folder/FolderPage";
+import { GenerationProvider } from "../src/features/folder/import/GenerationContext";
 import { GenerationApi } from "../src/features/folder/import/generation-api";
 import {
   GenerationWatcher,
@@ -23,9 +24,11 @@ describe("FolderPage", () => {
 
     return renderAt("/folder/home", "/folder/:id", () => (
       <ToastProvider>
-        <AskProvider>
-          <FolderPage />
-        </AskProvider>
+        <GenerationProvider>
+          <AskProvider>
+            <FolderPage />
+          </AskProvider>
+        </GenerationProvider>
       </ToastProvider>
     ));
   }

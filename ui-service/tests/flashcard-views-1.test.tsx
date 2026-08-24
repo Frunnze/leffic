@@ -105,10 +105,10 @@ describe("FlashcardPrompt", () => {
     expect(document.body.textContent).toContain("Name 2 items");
   });
 
-  it("tells the learner to explain a feynman card out loud", () => {
+  it("shows no extra flip hint on a feynman card", () => {
     render(() => <FlashcardPrompt face={FEYNMAN} />);
 
-    expect(document.body.textContent).toContain("Explain it out loud");
+    expect(document.body.textContent).toBe("Explain gravity");
   });
 });
 

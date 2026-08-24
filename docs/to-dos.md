@@ -29,12 +29,12 @@ P2 is what makes it survivable in the long run.
   Dockerfile copies it to `/etc/nginx/conf.d/default.conf`, so `/login`,
   `/folder/home`, `/settings` and `/note/:id` survive a reload instead of
   404ing against the stock `nginx:alpine` config.
-- [ ] **No database migrations anywhere.** Every service calls
-  `Base.metadata.create_all` at startup (`shared/database.py`), which
-  creates missing tables but never alters existing ones. The `provider_keys`
-  table and every future column change will silently not exist on a database
-  that already has data. Adopt Alembic per service and run migrations as a
-  deploy step.
+- [x] **Alembic now owns both database schemas.** Each Python service has
+  its own configuration and initial revision under `migrations/`, application
+  startup no longer calls `Base.metadata.create_all`, and Compose runs the
+  `user-migrations` and `content-migrations` jobs before starting anything
+  that uses those databases. Migration tests cover upgrade, model parity,
+  a single revision head and downgrade for both services.
 
 ## P0 — broken access control
 
