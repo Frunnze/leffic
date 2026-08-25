@@ -2,19 +2,16 @@ import ast
 import sys
 from pathlib import Path
 
-from central_constructions import CentralConstructions
-from closed_factories import closed_factories
 from concrete_type_comparisons import ConcreteTypeComparisons
+from enum_comparisons import EnumComparisons
 from module_constants import string_constants
 from ocp_findings import (
     FUNCTION_NODES,
-    CentralConstruction,
     ClosedFactory,
     ConcreteFactoryDependency,
-    ClosedVisitor,
     FragmentedRegistry,
-    RegistryEscape,
     ConcreteTypeDispatch,
+    EnumDispatch,
     Finding,
     ScatteredVariantDispatch,
     VariantDispatch,
@@ -36,50 +33,56 @@ class VariantDispatches:
     def _find_in_file(self, path: Path) -> list[Finding]:
         tree = ast.parse(path.read_text(encoding="utf-8"))
         constants = string_constants(tree)
-        found: list[Finding] = [*closed_factories(str(path), tree)]
-        found.extend(
+        found: list[Finding] = list(
             scattered_comparisons(
                 str(path), top_level_scopes(tree), constants
             )
         )
 
         for scope in ast.walk(tree):
-            if not isinstance(scope, FUNCTION_NODES):
-                continue
-
-            collector = StringComparisons(scope, constants)
-            collector.visit(scope)
-            type_collector = ConcreteTypeComparisons(scope)
-            type_collector.visit(scope)
-            construction_collector = CentralConstructions(scope)
-            construction_collector.visit(scope)
-            name = getattr(scope, "name", "(anonymous)")
-            constructions = construction_collector.collected()
-            constructed_subjects = {key for key, _, _ in constructions}
-
-            for key, subject, variants in collector.collected():
-                if key not in constructed_subjects:
-                    found.append(
-                        VariantDispatch(
-                            str(path), scope.lineno, name, subject, variants
-                        )
-                    )
-
-            for subject, concrete_types in type_collector.collected():
-                found.append(
-                    ConcreteTypeDispatch(
-                        str(path), scope.lineno, name, subject, concrete_types
-                    )
-                )
-
-            for _, subject, implementations in constructions:
-                found.append(
-                    CentralConstruction(
-                        str(path), scope.lineno, name, subject, implementations
-                    )
-                )
+            if isinstance(scope, FUNCTION_NODES):
+                found.extend(_scope_findings(str(path), scope, constants))
 
         return found
+
+
+Scope = ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda
+
+
+def _scope_findings(
+    path: str, scope: Scope, constants: dict[str, str]
+) -> list[Finding]:
+    name = getattr(scope, "name", "(anonymous)")
+    line = scope.lineno
+    strings = StringComparisons(scope, constants)
+    strings.visit(scope)
+
+    found: list[Finding] = [
+        VariantDispatch(path, line, name, subject, variants)
+        for _, subject, variants in strings.collected()
+    ]
+
+    return [*found, *_type_findings(path, line, name, scope)]
+
+
+def _type_findings(
+    path: str, line: int, name: str, scope: Scope
+) -> list[Finding]:
+    types = ConcreteTypeComparisons(scope)
+    types.visit(scope)
+    members = EnumComparisons(scope)
+    members.visit(scope)
+
+    found: list[Finding] = [
+        ConcreteTypeDispatch(path, line, name, subject, concrete)
+        for subject, concrete in types.collected()
+    ]
+    found.extend(
+        EnumDispatch(path, line, name, subject, variants)
+        for subject, variants in members.collected()
+    )
+
+    return found
 
 
 def message_for(dispatch: Finding) -> str:
@@ -88,6 +91,12 @@ def message_for(dispatch: Finding) -> str:
         return (
             f"{dispatch.function_name} compares {dispatch.subject} to "
             f"{len(dispatch.variants)} strings: {values}"
+        )
+    if isinstance(dispatch, EnumDispatch):
+        values = ", ".join(dispatch.members)
+        return (
+            f"{dispatch.function_name} compares {dispatch.subject} to "
+            f"{len(dispatch.members)} enum members: {values}"
         )
     if isinstance(dispatch, ConcreteTypeDispatch):
         values = ", ".join(dispatch.concrete_types)
@@ -114,30 +123,13 @@ def message_for(dispatch: Finding) -> str:
             f"{dispatch.factory_name} leaks concrete dependencies while "
             f"creating {dispatch.abstraction}: {values}"
         )
-    if isinstance(dispatch, RegistryEscape):
-        return (
-            f"{dispatch.function_name} branches on {dispatch.axis} outside "
-            f"its handler registry in {', '.join(dispatch.registry_paths)}"
-        )
-    if isinstance(dispatch, FragmentedRegistry):
-        return (
-            f"{dispatch.axis} behavior is split across "
-            f"{len(dispatch.registry_names)} registries in "
-            f"{dispatch.file_count} "
-            f"{'file' if dispatch.file_count == 1 else 'files'}: "
-            f"{', '.join(dispatch.registry_names)}"
-        )
-    if isinstance(dispatch, ClosedVisitor):
-        return (
-            f"{dispatch.visitor_name} requires one callback for every "
-            f"{dispatch.axis} variant: {', '.join(dispatch.variants)}"
-        )
 
-    values = ", ".join(dispatch.implementations)
     return (
-        f"{dispatch.function_name} centrally constructs "
-        f"{len(dispatch.implementations)} implementations selected by "
-        f"{dispatch.subject}: {values}"
+        f"{dispatch.axis} behavior is split across "
+        f"{len(dispatch.registry_names)} registries in "
+        f"{dispatch.file_count} "
+        f"{'file' if dispatch.file_count == 1 else 'files'}: "
+        f"{', '.join(dispatch.registry_names)}"
     )
 
 

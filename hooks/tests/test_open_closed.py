@@ -154,26 +154,7 @@ def test_ignores_primitive_runtime_validation(tmp_path: Path) -> None:
     assert _report_for(tmp_path, source) == []
 
 
-def test_reports_central_construction_instead_of_generic_strings(
-    tmp_path: Path,
-) -> None:
-    source = (
-        "def create_processor(kind):\n"
-        "    if kind == 'csv':\n        return CsvProcessor()\n"
-        "    if kind == 'pdf':\n        return PdfProcessor()\n"
-        "    if kind == 'docx':\n        return DocxProcessor()\n"
-    )
-
-    assert _report_for(tmp_path, source) == [
-        (
-            f"{_MODULE}:1: create_processor centrally constructs 3 "
-            "implementations selected by kind: CsvProcessor, "
-            "DocxProcessor, PdfProcessor"
-        )
-    ]
-
-
-def test_does_not_treat_composition_as_central_dispatch(
+def test_does_not_flag_plain_composition(
     tmp_path: Path,
 ) -> None:
     source = (

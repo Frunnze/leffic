@@ -1,153 +1,125 @@
 import ast
 
-from factory_dependencies import abstract_classes, constructed_dependencies
+from factory_dependencies import constructed_dependencies
+from factory_hierarchy import (
+    annotation_name,
+    class_bases,
+    classes_in,
+    declared_abstractions,
+    inherits,
+    is_factory_method,
+    returned_constructors,
+)
 from ocp_findings import ClosedFactory, ConcreteFactoryDependency
+from python_structure_types import Module
 
-_FACTORY_VERBS = ("build", "create", "get", "make", "resolve")
+Factory = ClosedFactory | ConcreteFactoryDependency
 
 
-def closed_factories(
-    path: str, tree: ast.Module
-) -> list[ClosedFactory | ConcreteFactoryDependency]:
-    bases = _class_bases(tree)
-    abstractions_in_module = abstract_classes(tree)
-    found: list[ClosedFactory | ConcreteFactoryDependency] = []
+def closed_factories(modules: list[Module]) -> list[Factory]:
+    bases = class_bases(modules)
+    abstractions = declared_abstractions(modules)
+    found: list[Factory] = []
 
-    for owner in (node for node in tree.body if isinstance(node, ast.ClassDef)):
-        abstractions: set[str] = set()
-
-        for method in owner.body:
-            if not isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                continue
-            if not _is_factory_method(owner.name, method.name):
-                continue
-
-            abstraction = _annotation_name(method.returns)
-
-            if abstraction is None:
-                continue
-
-            if abstraction in abstractions_in_module:
-                abstractions.add(abstraction)
-
-            implementations = tuple(
-                sorted(
-                    concrete
-                    for concrete in _returned_constructors(method)
-                    if concrete != abstraction
-                    and _inherits(concrete, abstraction, bases)
-                )
+    for module in modules:
+        for owner in classes_in(module.tree):
+            found.extend(
+                _factory_findings(module.path, owner, bases, abstractions)
             )
-
-            if implementations:
-                found.append(
-                    ClosedFactory(
-                        path,
-                        method.lineno,
-                        method.name,
-                        abstraction,
-                        implementations,
-                    )
-                )
-
-        constructor = next(
-            (
-                method
-                for method in owner.body
-                if isinstance(method, ast.FunctionDef)
-                and method.name == "__init__"
-            ),
-            None,
-        )
-
-        if constructor is not None and abstractions:
-            dependencies = constructed_dependencies(constructor)
-
-            if dependencies:
-                found.append(
-                    ConcreteFactoryDependency(
-                        path,
-                        constructor.lineno,
-                        owner.name,
-                        ", ".join(sorted(abstractions)),
-                        tuple(sorted(dependencies)),
-                    )
-                )
 
     return sorted(found)
 
 
-def _class_bases(tree: ast.Module) -> dict[str, set[str]]:
-    return {
-        node.name: {
-            name
-            for base in node.bases
-            if (name := _expression_name(base)) is not None
-        }
-        for node in tree.body
-        if isinstance(node, ast.ClassDef)
-    }
+def _factory_findings(
+    path: str,
+    owner: ast.ClassDef,
+    bases: dict[str, set[str]],
+    abstractions: set[str],
+) -> list[Factory]:
+    found: list[Factory] = []
+    produced: set[str] = set()
+
+    for method in _factory_methods(owner):
+        abstraction = annotation_name(method.returns)
+
+        if abstraction is None:
+            continue
+
+        if abstraction in abstractions:
+            produced.add(abstraction)
+
+        closed = _closed_factory(path, method, abstraction, bases)
+
+        if closed is not None:
+            found.append(closed)
+
+    leak = _dependency_leak(path, owner, produced)
+
+    return found if leak is None else [*found, leak]
 
 
-def _is_factory_method(owner: str, method: str) -> bool:
-    if method.startswith("_"):
-        return False
+def _factory_methods(
+    owner: ast.ClassDef,
+) -> list[ast.FunctionDef | ast.AsyncFunctionDef]:
+    return [
+        method
+        for method in owner.body
+        if isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and is_factory_method(owner.name, method.name)
+    ]
 
-    return owner.casefold().endswith("factory") or method.startswith(
-        _FACTORY_VERBS
+
+def _closed_factory(
+    path: str,
+    method: ast.FunctionDef | ast.AsyncFunctionDef,
+    abstraction: str,
+    bases: dict[str, set[str]],
+) -> ClosedFactory | None:
+    implementations = tuple(
+        sorted(
+            concrete
+            for concrete in returned_constructors(method)
+            if concrete != abstraction
+            and inherits(concrete, abstraction, bases)
+        )
+    )
+
+    if not implementations:
+        return None
+
+    return ClosedFactory(
+        path, method.lineno, method.name, abstraction, implementations
     )
 
 
-def _annotation_name(annotation: ast.expr | None) -> str | None:
-    if not isinstance(annotation, (ast.Name, ast.Attribute)):
+def _dependency_leak(
+    path: str, owner: ast.ClassDef, produced: set[str]
+) -> ConcreteFactoryDependency | None:
+    if not produced:
         return None
 
-    return _expression_name(annotation)
+    constructor = next(
+        (
+            method
+            for method in owner.body
+            if isinstance(method, ast.FunctionDef)
+            and method.name == "__init__"
+        ),
+        None,
+    )
 
+    if constructor is None:
+        return None
 
-def _returned_constructors(scope: ast.AST) -> set[str]:
-    found: set[str] = set()
+    dependencies = constructed_dependencies(constructor)
 
-    for node in ast.walk(scope):
-        if not isinstance(node, ast.Return) or not isinstance(node.value, ast.Call):
-            continue
+    if not dependencies:
+        return None
 
-        name = _expression_name(node.value.func)
-
-        if name is not None and name.rsplit(".", 1)[-1][:1].isupper():
-            found.add(name.rsplit(".", 1)[-1])
-
-    return found
-
-
-def _inherits(
-    concrete: str, abstraction: str, bases: dict[str, set[str]]
-) -> bool:
-    pending = [concrete]
-    visited: set[str] = set()
-
-    while pending:
-        current = pending.pop()
-
-        if current in visited:
-            continue
-
-        visited.add(current)
-        direct = bases.get(current, set())
-
-        if abstraction in direct:
-            return True
-
-        pending.extend(direct)
-
-    return False
-
-
-def _expression_name(node: ast.expr) -> str | None:
-    if isinstance(node, ast.Name):
-        return node.id
-    if isinstance(node, ast.Attribute):
-        owner = _expression_name(node.value)
-        return node.attr if owner is None else f"{owner}.{node.attr}"
-
-    return None
+    return ConcreteFactoryDependency(
+        path,
+        constructor.lineno,
+        owner.name,
+        ", ".join(sorted(produced)),
+        tuple(sorted(dependencies)),
+    )

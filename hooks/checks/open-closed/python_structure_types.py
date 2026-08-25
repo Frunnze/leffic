@@ -3,6 +3,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from module_constants import string_constants
+from python_ast_values import (
+    assigned_name,
+    expression_name,
+    inherits_from,
+    literal_annotation,
+    string_value,
+)
 
 _MAPPING_NAMES = {"dict", "Dict", "Mapping", "MutableMapping"}
 
@@ -80,45 +87,6 @@ def axes_in(modules: list[Module]) -> dict[str, list[Axis]]:
     return found
 
 
-def literal_annotation(node: ast.AST) -> set[str] | None:
-    if not isinstance(node, ast.Subscript):
-        return None
-    if expression_name(node.value).rsplit(".", 1)[-1] != "Literal":
-        return None
-
-    values = node.slice.elts if isinstance(node.slice, ast.Tuple) else [node.slice]
-    domain = {
-        value.value
-        for value in values
-        if isinstance(value, ast.Constant) and isinstance(value.value, str)
-    }
-
-    return domain if len(domain) == len(values) else None
-
-
-def class_fields(
-    modules: list[Module], axes: dict[str, list[Axis]]
-) -> dict[tuple[str, str], Axis]:
-    fields: dict[tuple[str, str], Axis] = {}
-
-    for module in modules:
-        for owner in (
-            node for node in module.tree.body if isinstance(node, ast.ClassDef)
-        ):
-            for member in owner.body:
-                if not isinstance(member, ast.AnnAssign):
-                    continue
-                if not isinstance(member.target, ast.Name):
-                    continue
-
-                axis = axis_from_annotation(member.annotation, axes)
-
-                if axis is not None:
-                    fields[(owner.name, member.target.id)] = axis
-
-    return fields
-
-
 def mapping_axis(
     annotation: ast.AST, axes: dict[str, list[Axis]]
 ) -> Axis | None:
@@ -132,6 +100,9 @@ def mapping_axis(
         if isinstance(annotation.slice, ast.Tuple)
         else [annotation.slice]
     )
+
+    if not arguments:
+        return None
 
     return axis_from_annotation(arguments[0], axes)
 
@@ -161,40 +132,3 @@ def axis_for_domain(
     ]
 
     return min(matches, key=lambda axis: axis.name) if matches else None
-
-
-def assigned_name(node: ast.Assign | ast.AnnAssign) -> str | None:
-    if isinstance(node, ast.AnnAssign):
-        return node.target.id if isinstance(node.target, ast.Name) else None
-    if len(node.targets) != 1 or not isinstance(node.targets[0], ast.Name):
-        return None
-
-    return node.targets[0].id
-
-
-def string_value(
-    node: ast.AST | None, constants: dict[str, str]
-) -> str | None:
-    if isinstance(node, ast.Constant) and isinstance(node.value, str):
-        return node.value
-    if isinstance(node, ast.Name):
-        return constants.get(node.id)
-
-    return None
-
-
-def inherits_from(owner: ast.ClassDef, names: set[str]) -> bool:
-    return any(
-        expression_name(base).rsplit(".", 1)[-1] in names
-        for base in owner.bases
-    )
-
-
-def expression_name(node: ast.AST) -> str:
-    if isinstance(node, ast.Name):
-        return node.id
-    if isinstance(node, ast.Attribute):
-        owner = expression_name(node.value)
-        return f"{owner}.{node.attr}" if owner else node.attr
-
-    return ""

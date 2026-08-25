@@ -1,6 +1,6 @@
 import ast
 
-from python_structure_types import string_value
+from python_ast_values import string_value
 
 _PREFERRED_KEYS = [
     "kind",

@@ -1,3 +1,5 @@
+const SHARED_MAJORITY = 2;
+
 function typeReferenceNamed(typescript, node, name) {
   return (
     typescript.isTypeReferenceNode(node) &&
@@ -331,22 +333,54 @@ function labelFor(group) {
   return labels[0] ?? "variant";
 }
 
-function repeatedRegistryReports(registries) {
-  const grouped = new Map();
+function namedDifferently(narrow, wide) {
+  return (
+    narrow.key !== undefined &&
+    wide.key !== undefined &&
+    narrow.key.key !== wide.key.key
+  );
+}
 
-  for (const registry of registries) {
-    const key = domainKey(registry.domain);
-    const group = grouped.get(key) ?? [];
-    group.push(registry);
-    grouped.set(key, group);
+function sameAxis(narrow, wide) {
+  if (domainKey(narrow.domain) === domainKey(wide.domain)) return true;
+  if (namedDifferently(narrow, wide)) return false;
+
+  return (
+    isSubset(narrow.domain, wide.domain) &&
+    narrow.domain.size * SHARED_MAJORITY > wide.domain.size
+  );
+}
+
+function groupedByAxis(registries) {
+  const widestFirst = [...registries].sort((left, right) => {
+    const bySize = right.domain.size - left.domain.size;
+
+    return bySize === 0
+      ? domainKey(left.domain).localeCompare(domainKey(right.domain))
+      : bySize;
+  });
+  const groups = [];
+
+  for (const registry of widestFirst) {
+    const covering = groups.find((group) => sameAxis(registry, group[0]));
+
+    if (covering === undefined) {
+      groups.push([registry]);
+    } else {
+      covering.push(registry);
+    }
   }
 
+  return groups;
+}
+
+function repeatedRegistryReports(registries) {
   const reports = [];
 
-  for (const group of grouped.values()) {
+  for (const group of groupedByAxis(registries)) {
+    const shared = Math.min(...group.map((entry) => entry.domain.size));
     const enoughRegistries =
-      group.length >= 3 ||
-      (group.length >= 2 && group[0].domain.size >= 3);
+      group.length >= 3 || (group.length >= 2 && shared >= 3);
 
     if (!enoughRegistries) continue;
 
@@ -373,79 +407,6 @@ function isSubset(left, right) {
   return [...left].every((value) => right.has(value));
 }
 
-function structuralAxis(typescript, checker, subject, namedType) {
-  if (!typescript.isPropertyAccessExpression(subject)) return undefined;
-
-  const domain = literalDomain(
-    typescript,
-    checker.getTypeAtLocation(subject),
-  );
-  const owner = namedType(checker.getTypeAtLocation(subject.expression));
-
-  if (domain === undefined || owner === undefined) return undefined;
-
-  return {
-    domain,
-    label: `${owner.label}.${subject.name.text}`,
-  };
-}
-
-function registryEscapeReports(
-  typescript,
-  checker,
-  sites,
-  registries,
-  displayPathFor,
-  axisFor,
-  namedType,
-  nameOf,
-) {
-  const behavior = registries.filter((entry) => entry.isBehavior);
-  const reports = [];
-
-  for (const site of sites) {
-    const exactAxis = axisFor(checker, site.subject);
-    const structural = structuralAxis(
-      typescript,
-      checker,
-      site.subject,
-      namedType,
-    );
-    const matching = behavior.filter((registry) => {
-      if (
-        exactAxis !== undefined &&
-        registry.key?.key === exactAxis.key
-      ) {
-        return true;
-      }
-
-      return (
-        structural !== undefined &&
-        isSubset(structural.domain, registry.domain)
-      );
-    });
-
-    if (matching.length === 0) continue;
-
-    const sitePath = displayPathFor(site.sourceFile);
-
-    if (matching.some((registry) => registry.path === sitePath)) continue;
-
-    const start = site.sourceFile.getLineAndCharacterOfPosition(
-      site.scope.getStart(site.sourceFile),
-    );
-    const registryPaths = [...new Set(matching.map((entry) => entry.path))].sort();
-    const label = exactAxis?.label ?? structural.label;
-    reports.push(
-      `${sitePath}:${start.line + 1}: ${nameOf(site.sourceFile, site.scope)} ` +
-        `branches on ${label} outside its handler registry in ` +
-        registryPaths.join(", "),
-    );
-  }
-
-  return reports;
-}
-
 function registryReports(context) {
   const registries = registriesIn(
     context.typescript,
@@ -455,19 +416,7 @@ function registryReports(context) {
     context.namedType,
   );
 
-  return [
-    ...repeatedRegistryReports(registries),
-    ...registryEscapeReports(
-      context.typescript,
-      context.checker,
-      context.sites,
-      registries,
-      context.displayPathFor,
-      context.axisFor,
-      context.namedType,
-      context.nameOf,
-    ),
-  ];
+  return repeatedRegistryReports(registries);
 }
 
-module.exports = { literalDomain, registryReports };
+module.exports = { registryReports };

@@ -1,6 +1,10 @@
 import ast
 
-from ocp_findings import EQUALITY_NODES, MAXIMUM_VARIANTS
+from ocp_findings import (
+    EQUALITY_NODES,
+    MAXIMUM_VARIANTS,
+    MEMBERSHIP_NODES,
+)
 from scoped_visitor import ScopedVisitor
 
 
@@ -29,6 +33,8 @@ class StringComparisons(ScopedVisitor):
     def visit_Compare(self, node: ast.Compare) -> None:
         if len(node.ops) == 1 and isinstance(node.ops[0], EQUALITY_NODES):
             self._record_comparison(node.left, node.comparators[0])
+        elif len(node.ops) == 1 and isinstance(node.ops[0], MEMBERSHIP_NODES):
+            self._record_membership(node.left, node.comparators[0])
 
         self.generic_visit(node)
 
@@ -53,6 +59,18 @@ class StringComparisons(ScopedVisitor):
             self._record(right, left_string)
         elif right_string is not None and left_string is None:
             self._record(left, right_string)
+
+    def _record_membership(
+        self, subject: ast.expr, container: ast.expr
+    ) -> None:
+        if not isinstance(container, (ast.Tuple, ast.List, ast.Set)):
+            return
+
+        for element in container.elts:
+            variant = self._string_from(element)
+
+            if variant is not None:
+                self._record(subject, variant)
 
     def _record(self, subject: ast.expr, variant: str) -> None:
         key = ast.dump(subject, include_attributes=False)

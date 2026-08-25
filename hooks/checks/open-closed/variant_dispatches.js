@@ -1,8 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 const { registryReports } = require("./typescript_registries");
-const { visitorReports } = require("./typescript_visitors");
 const { factoryReports } = require("./typescript_factories");
+const { enumReports } = require("./typescript_enums");
 
 const MAXIMUM_VARIANTS = 2;
 const typescript = require(process.argv[2]);
@@ -70,6 +70,27 @@ function comparisonFrom(node) {
   return undefined;
 }
 
+function membershipFrom(node) {
+  if (!typescript.isCallExpression(node)) return undefined;
+  if (node.arguments.length !== 1) return undefined;
+
+  const callee = node.expression;
+
+  if (!typescript.isPropertyAccessExpression(callee)) return undefined;
+  if (callee.name.text !== "includes") return undefined;
+
+  const array = unwrapped(callee.expression);
+
+  if (!typescript.isArrayLiteralExpression(array)) return undefined;
+
+  const variants = array.elements.map(stringFrom);
+
+  if (variants.length === 0) return undefined;
+  if (variants.some((variant) => variant === undefined)) return undefined;
+
+  return { subject: unwrapped(node.arguments[0]), variants };
+}
+
 function record(groups, sourceFile, subject, variant) {
   if (typescript.isTypeOfExpression(subject)) return;
 
@@ -96,6 +117,14 @@ function collectFrom(sourceFile, root) {
 
     if (comparison !== undefined) {
       record(groups, sourceFile, comparison.subject, comparison.variant);
+    }
+
+    const membership = membershipFrom(node);
+
+    if (membership !== undefined) {
+      for (const variant of membership.variants) {
+        record(groups, sourceFile, membership.subject, variant);
+      }
     }
 
     if (typescript.isSwitchStatement(node)) {
@@ -305,8 +334,8 @@ const pathSet = new Set(rootPaths);
 const sourceFiles = program
   .getSourceFiles()
   .filter((sourceFile) => pathSet.has(path.resolve(sourceFile.fileName)));
-const sites = sourceFiles.flatMap(dispatchSitesIn);
 const checker = program.getTypeChecker();
+const sites = sourceFiles.flatMap(dispatchSitesIn);
 const reported = [
   ...localReports(sites),
   ...scatteredReports(checker, sites),
@@ -314,22 +343,21 @@ const reported = [
     typescript,
     checker,
     sourceFiles,
-    sites,
     displayPathFor,
     namedType,
-    axisFor,
-    nameOf,
-  }),
-  ...visitorReports({
-    typescript,
-    checker,
-    sourceFiles,
-    displayPathFor,
   }),
   ...factoryReports({
     typescript,
     sourceFiles,
     displayPathFor,
+  }),
+  ...enumReports({
+    typescript,
+    checker,
+    sourceFiles,
+    displayPathFor,
+    isFunctionScope,
+    nameOf,
   }),
 ].sort();
 

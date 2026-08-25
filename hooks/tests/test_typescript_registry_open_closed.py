@@ -5,58 +5,6 @@ from typescript_finder_support import CHECKS, report_from
 _FINDER = CHECKS / "open-closed" / "variant_dispatches.js"
 
 
-def test_flags_branch_outside_a_typed_handler_registry(
-    tmp_path: Path,
-) -> None:
-    files = {
-        "src/source-models.ts": (
-            'export type SourceKind = "file" | "topic";\n'
-            "export type Request = { readonly kind: SourceKind };\n"
-        ),
-        "src/source-handlers.ts": (
-            'import type { SourceKind } from "./source-models";\n'
-            "type Handler = { readonly run: () => string };\n"
-            "export const HANDLERS: Readonly<Record<SourceKind, Handler>> = {\n"
-            '  file: { run: () => "file" },\n'
-            '  topic: { run: () => "topic" },\n'
-            "};\n"
-        ),
-        "src/workflow.ts": (
-            'import type { Request } from "./source-models";\n'
-            "export function extract(request: Request): string {\n"
-            '  return request.kind === "topic" ? "write" : "read";\n'
-            "}\n"
-        ),
-    }
-
-    assert report_from(_FINDER, tmp_path, files) == [
-        (
-            "src/workflow.ts:2: extract branches on SourceKind outside its "
-            "handler registry in src/source-handlers.ts"
-        )
-    ]
-
-
-def test_allows_branching_inside_the_handler_registry_module(
-    tmp_path: Path,
-) -> None:
-    files = {
-        "src/source.ts": (
-            'type SourceKind = "file" | "topic";\n'
-            "type Handler = { readonly run: () => string };\n"
-            "const HANDLERS: Readonly<Record<SourceKind, Handler>> = {\n"
-            '  file: { run: () => "file" },\n'
-            '  topic: { run: () => "topic" },\n'
-            "};\n"
-            "export function known(kind: SourceKind): boolean {\n"
-            '  return kind === "file";\n'
-            "}\n"
-        ),
-    }
-
-    assert report_from(_FINDER, tmp_path, files) == []
-
-
 def test_flags_one_axis_split_across_three_typed_registries(
     tmp_path: Path,
 ) -> None:
@@ -125,39 +73,6 @@ def test_flags_descriptor_array_split_from_inferred_behavior_map(
         (
             "src/navigation.ts:2: Destination behavior is split across 2 "
             "registries in 1 file: DESTINATIONS, PANELS"
-        )
-    ]
-
-
-def test_flags_structural_union_branch_outside_superset_registry(
-    tmp_path: Path,
-) -> None:
-    files = {
-        "src/handlers.ts": (
-            'export type InputKind = "disk" | "http" | "memory" | "queue";\n'
-            "type Handler = { readonly run: () => void };\n"
-            "export const HANDLERS: Readonly<Record<InputKind, Handler>> = {\n"
-            "  disk: { run: () => undefined },\n"
-            "  http: { run: () => undefined },\n"
-            "  memory: { run: () => undefined },\n"
-            "  queue: { run: () => undefined },\n"
-            "};\n"
-        ),
-        "src/workflow.ts": (
-            "export type MaterializedInput =\n"
-            '  | { readonly kind: "disk" }\n'
-            '  | { readonly kind: "http" }\n'
-            '  | { readonly kind: "memory" };\n'
-            "export function read(input: MaterializedInput): string {\n"
-            '  return input.kind === "memory" ? "cached" : "external";\n'
-            "}\n"
-        ),
-    }
-
-    assert report_from(_FINDER, tmp_path, files) == [
-        (
-            "src/workflow.ts:5: read branches on MaterializedInput.kind "
-            "outside its handler registry in src/handlers.ts"
         )
     ]
 

@@ -4,6 +4,7 @@ from typing import NamedTuple
 MAXIMUM_VARIANTS = 2
 FUNCTION_NODES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
 EQUALITY_NODES = (ast.Eq, ast.NotEq)
+MEMBERSHIP_NODES = (ast.In, ast.NotIn)
 TYPE_EQUALITY_NODES = (ast.Eq, ast.NotEq, ast.Is, ast.IsNot)
 
 
@@ -15,20 +16,20 @@ class VariantDispatch(NamedTuple):
     variants: tuple[str, ...]
 
 
+class EnumDispatch(NamedTuple):
+    path: str
+    line_number: int
+    function_name: str
+    subject: str
+    members: tuple[str, ...]
+
+
 class ConcreteTypeDispatch(NamedTuple):
     path: str
     line_number: int
     function_name: str
     subject: str
     concrete_types: tuple[str, ...]
-
-
-class CentralConstruction(NamedTuple):
-    path: str
-    line_number: int
-    function_name: str
-    subject: str
-    implementations: tuple[str, ...]
 
 
 class ScatteredVariantDispatch(NamedTuple):
@@ -56,14 +57,6 @@ class ConcreteFactoryDependency(NamedTuple):
     dependencies: tuple[str, ...]
 
 
-class RegistryEscape(NamedTuple):
-    path: str
-    line_number: int
-    function_name: str
-    axis: str
-    registry_paths: tuple[str, ...]
-
-
 class FragmentedRegistry(NamedTuple):
     path: str
     line_number: int
@@ -72,22 +65,12 @@ class FragmentedRegistry(NamedTuple):
     file_count: int
 
 
-class ClosedVisitor(NamedTuple):
-    path: str
-    line_number: int
-    visitor_name: str
-    axis: str
-    variants: tuple[str, ...]
-
-
 Finding = (
     VariantDispatch
+    | EnumDispatch
     | ConcreteTypeDispatch
-    | CentralConstruction
     | ScatteredVariantDispatch
     | ClosedFactory
     | ConcreteFactoryDependency
-    | RegistryEscape
     | FragmentedRegistry
-    | ClosedVisitor
 )
