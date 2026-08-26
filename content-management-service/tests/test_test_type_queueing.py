@@ -11,6 +11,7 @@ from app_factory import create_app
 from features.study_units_generation import (
     generation_router as router_module,
 )
+from features.study_units_generation.task_ownership import signed_task_id
 from shared.database import get_db
 from shared.models import Folder
 from tests.support import (
@@ -167,7 +168,9 @@ def test_flashcards_queue_one_job_for_every_asked_type(
 
     queued = [call["flashcard_type"] for call in flashcards_task.calls]
 
-    assert body["flashcard_task_ids"] == ["cards-1", "cards-1"]
+    assert body["flashcard_task_ids"] == [
+        signed_task_id("cards-1", _FOLDER_ID)
+    ] * 2
     assert body["flashcard_deck_id"]
     assert queued == ["cloze", "feynman"]
     settings = cast(

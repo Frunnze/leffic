@@ -4,9 +4,10 @@ What stands between this repo and a public deployment, in the order it
 should be done. Every item names the file that carries the problem, so it
 can be checked rather than believed.
 
-**Verdict:** not deployable today. Two frontend defects break the app the
-moment it is built for production, and the two review endpoints still
-accept an id and act on it without asking who is calling.
+**Verdict:** not deployable today. A clean checkout cannot build the
+frontend, authenticated users can place or extract files outside their own
+folders, test sessions are not scoped to an owner, and the current quality
+gate is red.
 
 Grouped by tier. P0 blocks any exposure at all; P1 blocks a public launch;
 P2 is what makes it survivable in the long run.
@@ -15,6 +16,14 @@ P2 is what makes it survivable in the long run.
 
 ## P0 — the app does not work when built
 
+- [ ] **A clean checkout cannot build the frontend image.**
+  `ui-service/Dockerfile` copies `package-lock.json` and runs `npm ci`, but
+  the root `.gitignore` ignores every `package-lock.json` and the only
+  tracked UI lock is `ui-service/pnpm-lock.yaml`. The local build succeeds
+  only because an ignored lockfile happens to exist in this worktree;
+  `git ls-files` confirms it will be absent from a clone. Choose npm, track
+  its lockfile explicitly and remove the pnpm lock, or change the image and
+  all checks to pnpm.
 - [x] **The production bundle now points at the real gateway.**
   `ui-service/Dockerfile` takes `ARG VITE_GATEWAY_URL` / `ENV
   VITE_GATEWAY_URL` before `npm run build`, and `docker-compose.yml` passes
@@ -38,15 +47,12 @@ P2 is what makes it survivable in the long run.
 
 ## P0 — broken access control
 
-Each service decodes the JWT with `verify_signature=False`
-(`shared/claims_extractor.py`) and trusts the gateway to have verified it.
-That model only holds if no service port is reachable directly — which is
-true today, since `docker-compose.yml` publishes only the frontend and the
-gateway. Keep it that way. A `user_id` claim that is not a UUID is now
-refused with 401 `Token carries an invalid user_id` instead of reaching the
-database and failing as a 500. The problem is what happens *after* the
-token is trusted: the review endpoints still never check that the caller
-owns the row.
+The gateway verifies the JWT before proxying protected routes and both
+services verify it again in `shared/claims_extractor.py`. No service port is
+published directly by `docker-compose.yml`; keep it that way. A `user_id`
+claim that is not a UUID is refused with 401 instead of reaching the database
+and failing as a 500. The remaining problems happen *after* authentication:
+several endpoints still do not establish ownership of the row they act on.
 
 - [x] **Deleting content now proves ownership.** `delete_deck`,
   `delete_test`, `delete_note` and `delete_file`
@@ -85,6 +91,15 @@ owns the row.
   reaches the `FlexibleUuid` bind, so `create-folder`, `move-unit`,
   `notes-stats`, `flashcards-stats` and the folder read paths answer 404
   instead of raising out of the database layer.
+- [ ] **A non-dict task result is still a 500.** `_finished_result`
+  (`task_status_router.py`) raises an uncaught
+  `TypeError("The task did not finish with a result object")` when a
+  succeeded task's `result` is not a dict, and the three status endpoints
+  let it escape as a 500. The task-status ownership fix below narrows who
+  can reach it — the caller must now hold a valid token for a folder they
+  own — but it does not remove it: an owner whose own task returned a
+  non-dict still gets the 500. Decide what the endpoints should answer
+  instead (a `{"status": ...}` body, or a logged 500) and handle it there.
 - [x] **`GET /file` now proves ownership.** `get_file`
   (`features/file_upload/file_uploader.py`) takes `AuthenticatedUserId`
   and resolves the id through `owned_file`
@@ -92,14 +107,58 @@ owns the row.
   disk — the same lookup the bookmark endpoints in that feature already
   routed through. A foreign or unknown file id now answers 404 instead
   of streaming the file.
-- [ ] **The task-status endpoints have no identity.**
-  `/flashcards-status/{task_id}`, `/test-task-status/{task_id}` and
-  `/note-task-status/{task_id}` (`task_status_router.py`) take a task id
-  and return its result to anyone, so a generated deck, note or test leaks
-  to whoever guesses the Celery task id.
+- [~] **The task-status endpoints prove ownership, but the branch is not
+  green yet.**
+  `generate_study_units` (`generation_router.py`) no longer hands back a
+  bare Celery id: `note_task_id`, every `flashcard_task_ids` entry and
+  every `test_task_ids` entry is now `signed_task_id(task_id, folder_id)`
+  from `features/study_units_generation/task_ownership.py`, an
+  HMAC-SHA256 token `<task_id>.<folder_id>.<hexdigest>` signed with the
+  service's `SECRET_KEY` under its own domain prefix so a JWT signature
+  can never be replayed as a task token. `get_flashcard_status`,
+  `get_test_task_status` and `get_note_task_status`
+  (`task_status_router.py`) each take `AuthenticatedUserId`, run the path
+  parameter through `verified_task_id` — a `hmac.compare_digest`
+  check — and then `owned_folder` on the embedded folder id, before any
+  Celery or database read. A forged or tampered digest, a token signed
+  for a folder that does not exist, another learner's well-signed token,
+  a malformed reference such as `a.b.zzz` and a raw Celery uuid all
+  answer the identical 404 `{"detail": "Task does not exist!"}` on all
+  three routes, so none of them confirms a task exists. Verified: a token
+  the caller minted still answers `{"status": "PENDING"}` and the
+  succeeded-task bodies keep every key they had; the five refusal shapes
+  were compared body-for-body across the three routes; and `ui-service`
+  needed no change, since it only ever echoes the ids it was given. The
+  repository gate still reports three `fast-api-unused-path-parameter`
+  errors, and four property tests call the handlers with the old `task_id`,
+  `user_id`, `db` signature and fail. Reconcile the dependency/handler
+  signature and make the full gate green before marking this complete.
+- [ ] **Uploading a file does not prove folder ownership.** `upload_files`
+  (`features/file_upload/file_uploader.py`) calls `resolved_folder_id`, which
+  only parses the id, then `_recorded_files` loads `Folder` by id without a
+  `user_id` predicate. Any authenticated learner can therefore attach a
+  document to another learner's folder. Resolve the folder with
+  `owned_folder_id` before writing bytes, and remove partial files if either
+  storage or the database operation fails.
+- [ ] **Text extraction bypasses file ownership and accepts storage paths.**
+  `ExtractionRequest.file_metadata` carries arbitrary `file_id` and
+  `extension` strings; `text_from_files` (`text_sources.py`) concatenates
+  them into `files/{file_id}.{extension}` and reads the path with no database
+  lookup. An authenticated learner who obtains another file UUID can extract
+  its contents, and `../` identifiers can escape the storage directory.
+  Resolve every id through `owned_file`, use the stored extension, reject
+  path segments, and make the documents route take a database session.
 - [ ] **`review_flashcard` and `review_test_item` trust the id.** Both
   record a review against a card/item without checking the owner, so one
   learner can corrupt another's schedule.
+- [ ] **Test sessions have no owner boundary.** A folder-scoped
+  `get_test_items` (`assessment_router.py`) calls `owned_scope`, which only
+  parses the folder id, and opens a `TestSession` before proving the folder is
+  owned. A caller-supplied `test_session` is not checked against the requested
+  test/folder, and `test_session_results` takes no `AuthenticatedUserId` at
+  all, so any known session UUID can be closed. Store or derive the owner,
+  bind each session to exactly one owned origin, and enforce that invariant
+  on open, resume, answer and result routes.
 - [ ] **The chatbot has no identity at all.** `features/chatbot/chatbot.py`
   takes no `AuthenticatedUserId`; it is protected only by the gateway's JWT
   check, so any authenticated user can spend OpenAI budget without limit and
@@ -118,8 +177,10 @@ owns the row.
   `postgres/postgres`, RabbitMQ runs on `guest/guest`, and Redis has no
   password. Move all of them to injected secrets and close the default users.
 - [ ] **`JWT_SECRET_KEY` and `OPENAI_API_KEY` come from a gitignored `.env`.**
-  Fine locally; for production they need a real secret store, plus a
-  documented rotation procedure for the JWT secret.
+  Fine locally; for production they need a real secret store, startup must
+  reject a weak JWT key (PyJWT currently warns that the test key is below its
+  32-byte recommendation), and rotation needs a documented overlap procedure
+  for access, refresh and in-flight task tokens.
 - [~] **No application health checks.** Postgres, Redis and RabbitMQ now
   carry `healthcheck` blocks and every service waits on
   `condition: service_healthy`, so the boot race is gone. The services
@@ -131,9 +192,23 @@ owns the row.
   crash rather than a retryable startup failure.
 - [ ] **No backups.** Postgres and the `files` volume have no dump,
   snapshot or restore procedure, and no restore has ever been rehearsed.
-- [ ] **CORS is `allow_origins=["*"]` in every service** (`app_factory.py`).
-  Harmless while only the gateway is reachable, dangerous the moment a port
-  is exposed. Restrict to the real origin.
+- [ ] **The browser origin is hardcoded to localhost in three places.**
+  `api-gateway/nginx.conf` and both services' `app_factory.py` accept only
+  `http://localhost:3009`; unlike `VITE_GATEWAY_URL`, none is configured from
+  the deployment environment. A real web origin will receive no usable CORS
+  response. Make one validated origin setting feed the gateway and services,
+  and add a production-origin smoke test.
+- [ ] **The public responses have no browser security policy.** The frontend
+  and gateway nginx configs set no Content-Security-Policy,
+  `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` or
+  clickjacking defense. Add them at the public edge, with a CSP compatible
+  with the SPA/PDF worker, and verify them in a deployed-response test.
+- [ ] **Five known dependency advisories are explicitly accepted.**
+  `hooks/checks/vulnerable-deps/check` suppresses `PYSEC-2026-161`,
+  `PYSEC-2026-248`, `PYSEC-2026-249`, `PYSEC-2026-2280` and
+  `PYSEC-2026-2281` because the required Starlette upgrade is blocked by the
+  current FastAPI route-wiring tests. Upgrade FastAPI/Starlette, adapt those
+  tests and remove every exception before exposing the service.
 - [ ] **No rate limiting.** The gateway applies none, so login, sign-up,
   upload, generation and chat are all unthrottled — password guessing and
   cost-burning are free.
@@ -146,14 +221,67 @@ owns the row.
 - [ ] **Nothing enforces a spend limit.** `provider_keys.monthly_limit_cents`
   and `spent_cents` exist and the settings screen shows them, but no code
   path ever increments `spent_cents` or refuses a generation, so the limit is
-  decorative. Record cost per call (the AI client already computes it) and
-  refuse work past the limit.
+  decorative. The default model is `gpt-5-mini`, while `MODEL_RATES` contains
+  only `gpt-4.1-nano`, so its computed cost is currently `None` as well.
+  Correct the rate table, record cost atomically per call and refuse work past
+  the limit.
 - [ ] **Sealed provider keys are never used for generation.** A key can be
   saved and opened (`POST /account/provider-keys/{provider}/open`), but the
   generation tasks always use the server's `OPENAI_API_KEY`. Either wire
   bring-your-own-key through generation or stop offering it in the UI.
 - [ ] **No global quota for users without a key**, so the shared
   `OPENAI_API_KEY` is an open budget.
+- [ ] **Callers choose unbounded LLM work.** `GenerationRequest.ai_model` is
+  any string, test/card amounts have no useful upper bound, and generation
+  text plus chatbot history have no length or token cap. Allowlist models,
+  bound counts and source/history size, estimate the maximum charge before
+  queueing, and reject work that cannot fit the user's remaining budget.
+- [ ] **Model output is persisted without a schema.** `generated_records`
+  accepts any dictionaries, and note fields are converted with `str`, so a
+  malformed answer can create empty cards, unusable tests or literal `"None"`
+  content while the task reports success. Validate each output type before a
+  transaction, reject or quarantine invalid records and return an actionable
+  generation failure.
+- [ ] **Generation dispatch is neither atomic nor idempotent.** Deck/test
+  placeholder rows are committed before `.delay`, and each task is queued one
+  at a time; a broker failure or client retry can leave `Generating…` rows,
+  partially queued work or duplicate units. Give an import an idempotency key
+  and durable state, then make enqueue/retry/cleanup converge on one result.
+
+## P1 — authentication and account lifecycle
+
+- [ ] **The JWT contract is not enforced consistently.** Tokens are issued
+  with `iss`, but neither service nor `api-gateway/src/jwt.ts` requires that
+  issuer, an audience or even an `exp` claim; the gateway treats a missing
+  expiry as valid. Define the claims once and require `iss`, `aud` and `exp`
+  at every verifier; access/refresh separation is tracked below.
+- [ ] **Refresh tokens cannot be revoked or rotated.** Logout only deletes the
+  browser cookie, password changes leave every stolen refresh token valid,
+  and `/refresh-token` does not check that its user still exists. Account
+  deletion does not clear the cookie, so the deleted browser can mint a ghost
+  access token. Store hashed rotating sessions (or a token version), revoke
+  them on logout/password change/deletion, detect reuse and check the account
+  before refresh.
+- [ ] **Credential validation exists mainly in the browser.** Sign-up accepts
+  an empty/short password and blank or oversized username at the API, password
+  change accepts four characters while the UI promises eight, and username or
+  provider-limit overflows reach database constraints as 500s. Put shared
+  length/range/normalization rules in Pydantic models and translate uniqueness
+  races into stable 4xx responses.
+- [ ] **Password recovery is a dead link.** `LoginPage.tsx` labels a link
+  “Reset password” but points it back to `/login`; there is no reset-token,
+  email-delivery or verified-email flow. Implement expiring single-use reset
+  tokens and email verification, or remove the promise before launch.
+- [ ] **Changing a password strands every sealed provider key.** Keys are
+  derived from the old password in `key_sealing.py`, but `change_password`
+  updates only the bcrypt hash. Re-encrypt saved keys during the confirmed
+  password change (or require removal first) and test that they remain usable.
+- [ ] **Account deletion is not atomic across Postgres and RabbitMQ.**
+  `delete_account` publishes `user.deleted` before committing the user delete;
+  a later database failure can erase content for an account that still exists,
+  while a process failure around the two operations has no reconciliation.
+  Use a transactional outbox plus an idempotent consumer and expose deletion
+  progress until both stores are reconciled.
 
 ## P1 — correctness defects
 
@@ -192,6 +320,45 @@ re-verified against the current source; everything here still reproduces.
   destination check, so it will happily fetch `169.254.169.254` or any
   service reachable from the container. Block private and link-local
   ranges and refuse redirects into them.
+- [ ] **Flashcards due later today are served immediately.** `_due_condition`
+  in both `flashcard_router.py` and `flashcard_stats_router.py` applies
+  `date(next_review) <= utc_today()` instead of comparing instants. A card due
+  in ten minutes stays in the current queue, and a one-card deck can loop it
+  immediately. Compare UTC timestamps and test the minute/hour boundary.
+- [ ] **Tests are advertised as scheduled, but have no schedule.**
+  `TestItem` has no due date or scheduler state; `/test-items` serves every
+  item on every attempt, while the landing/result copy says missed questions
+  return tomorrow and correct ones later. Implement per-item scheduling and
+  due queries/stats, or remove those product claims.
+- [ ] **A valid zero-score test result is returned as 404.**
+  `test_session_results` checks `if correct`, so a sum of `0` becomes “No
+  test stats!” even though it closes the session. Return `{"correct": 0}`
+  for a valid session and reserve 404 for an unknown or foreign session.
+- [ ] **Review inputs can still crash handlers.** `rating` is an unbounded
+  integer and indexes `RATING_MAP`, while `evaluate_accuracy` reads
+  `user_answers[0]`; an invalid rating or empty answers reaches `KeyError` or
+  `IndexError`. Constrain ratings to 1–4, validate answers by item type and
+  return 422 without mutating a review.
+- [ ] **API timestamps have no timezone contract.** `date_to_str` emits a
+  naive `YYYY-MM-DD HH:MM:SS`, the browser parses it in the device timezone,
+  and database columns are timezone-naive even though scheduling is computed
+  in UTC. Use timezone-aware storage and ISO 8601 UTC responses so review
+  ordering and due calculations agree across regions.
+- [ ] **Import failures can leave the UI permanently busy.**
+  `ImportDialog.continueToReview` has no `try/finally`, and
+  `GenerationStore.start` does not catch upload/extraction/start failures,
+  so rejected requests leave “extracting” or progress state behind with no
+  retry path. Give every async user journey a recoverable error state and
+  prevent duplicate submission while it is pending.
+
+## P1 — public-user obligations
+
+- [ ] **There is no privacy policy, terms of use or AI-processing notice.**
+  Users upload documents and URLs that are sent to OpenAI and retained in
+  Postgres/files, but the UI states no retention period, subprocessors,
+  deletion timing, acceptable-use rules or contact. Publish the applicable
+  documents, obtain the required acknowledgement and make actual retention
+  and deletion behavior match them.
 
 ## P2 — coupling and resilience
 
@@ -207,6 +374,11 @@ re-verified against the current source; everything here still reproduces.
   failed ones unacknowledged forever. Add a DLQ and a redelivery limit.
 - [ ] **Celery tasks have no retry policy.** A transient OpenAI error fails
   the import with no backoff and no dead-letter.
+- [ ] **Browser polling treats one network error as final and has no timeout.**
+  `GenerationWatcher.checkOnce` converts the first rejected status request to
+  a permanent failed outcome, while a task that remains `PENDING` is polled
+  forever. Retry transient HTTP failures with bounded backoff, set a terminal
+  deadline and let users reconnect to durable import state after a reload.
 - [ ] **`/flashcards` can only ever serve its first page.**
   `get_flashcards` applies `.limit(per_page)` with no `.offset`
   (`flashcard_router.py`), while still reporting `total_flashcards`, so
@@ -215,6 +387,11 @@ re-verified against the current source; everything here still reproduces.
   (`assessment_router.py`) checks for an ongoing row and then inserts one,
   with no unique constraint on `(origin_id, status)` to make the pair
   atomic, so concurrent opens of the same test each get their own session.
+- [ ] **Review writes are not concurrency-safe or idempotent.** Test answers
+  query then insert without a unique `(test_session, test_item_id)` constraint,
+  and flashcard ratings can be double-submitted while the UI buttons remain
+  enabled. Add database uniqueness/locking or idempotency keys so retries and
+  double-clicks cannot create duplicate history or advance a card twice.
 - [ ] **`TestSession` rows are never cleaned up.** `origin_id`
   (`shared/models/assessment.py`) is a plain column with no foreign key
   and no cascade, and no delete endpoint touches `test_sessions`, so
@@ -237,10 +414,8 @@ re-verified against the current source; everything here still reproduces.
 
 ## P2 — repository hygiene
 
-- [ ] **`tests/` at the repo root are legacy scripts.** `login_tests.py` and
-  `create_folder_tests.py` import module paths that no longer exist and would
-  hit a real database; only `test_extract_link_main_content.py` runs. Delete
-  or rewrite them.
+- [x] **The legacy root `tests/` scripts are gone.** All tracked Python tests
+  now live under the service that owns the code they exercise.
 - [x] **The root `to-dos.md` is gone.** It was gitignored and described the
   pre-restructure layout — Kong, `file-processor`, `scheduler-service`,
   MongoDB and the SolidJS-import crashes. Every item still true of the
@@ -253,17 +428,26 @@ re-verified against the current source; everything here still reproduces.
   services answer to — `property-tests` and `coverage` (100% branches) — so
   every check but `api-contract` covers TypeScript. `api-contract` stays
   python-only by design: the UI serves no endpoints.
-- [ ] **The favicon points at a source path.** `ui-service/index.html`
-  references `/src/assets/favicon.png`, which does not exist in `dist/`, so
-  the built site 404s on its own icon.
+- [x] **Vite emits the favicon correctly.** Although `index.html` references
+  `/src/assets/favicon.png`, the production build rewrites it to the hashed
+  `/assets/favicon-*.png` file and includes that file in `dist`.
 - [ ] **Dependencies are largely unpinned.** `uvicorn`, `PyJWT`,
   `pydantic`, `celery[redis]`, `openai`, `pika`, `python-multipart`,
   `youtube-transcript-api`, `beautifulsoup4` and `fsrs` float in
   `content-management-service/requirements.txt`, as do five in
   `user-service`. A rebuild is not reproducible.
-- [ ] **`ui-service/pnpm-lock.yaml` is tracked but unused** — the
-  Dockerfile runs `npm ci`, so the committed pnpm lockfile is a second
-  source of truth nothing reads. Delete it.
+- [ ] **The supported Node toolchain is undefined.** Neither package declares
+  `engines` and there is no `.nvmrc`/Volta pin; under the installed Node
+  `20.10.0`, UI tests fail before collection on an ESM/CJS incompatibility and
+  gateway Vitest fails because `node:util.styleText` is unavailable, even
+  though both builds pass. Pin a compatible Node/npm version for developers,
+  CI and Docker and prove a clean install runs both suites.
+- [ ] **There is no full-stack release test.** The suites replace Postgres,
+  Redis, RabbitMQ, Celery, nginx and OpenAI with in-memory fakes or mocks, so
+  migrations, proxy routing, cookies/CORS, event cleanup, file sharing and a
+  real worker are never exercised together. Add a Compose-based smoke/E2E
+  suite for the sign-up, import, generation, review and deletion journey,
+  and run it in CI before deployment.
 - [ ] **`UserResponse.id` is typed `int`** (`user-service/.../schemas.py`)
   while the `User` primary key is a UUID. Harmless today because nothing
   uses it as a `response_model`, and a serialization error the moment

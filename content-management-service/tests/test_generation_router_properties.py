@@ -15,6 +15,7 @@ from features.study_units_generation.generation_router import (
 from features.study_units_generation.study_unit_source import (
     StudyUnitSource,
 )
+from features.study_units_generation.task_ownership import signed_task_id
 from shared.models import FlashcardDeck, Test
 from tests.folder_seeding import seeded_folder
 from tests.property_fakes import RecordingQueuedTask
@@ -84,7 +85,9 @@ def test__queued_flashcards_property_queues_one_job_for_every_type(
         )
 
     assert deck is not None
-    assert queued["flashcard_task_ids"] == ["queued"] * len(types)
+    assert queued["flashcard_task_ids"] == [
+        signed_task_id("queued", str(folder_id))
+    ] * len(types)
     assert [call["flashcard_type"] for call in queued_task.calls] == types
     assert all(
         call
@@ -126,7 +129,9 @@ def test__queued_test_property_queues_one_job_for_every_type(
         created = session.get(Test, uuid.UUID(str(queued["test_id"])))
 
     assert created is not None
-    assert queued["test_task_ids"] == ["queued"] * len(types)
+    assert queued["test_task_ids"] == [
+        signed_task_id("queued", str(folder_id))
+    ] * len(types)
     assert [call["item_type"] for call in queued_task.calls] == types
     assert all(
         call
@@ -161,7 +166,9 @@ def test__queued_flashcards_property_falls_back_to_one_default_job(
                 request_data, str(folder_id), session, _NO_SOURCE
             )
 
-    assert queued["flashcard_task_ids"] == ["queued"]
+    assert queued["flashcard_task_ids"] == [
+        signed_task_id("queued", str(folder_id))
+    ]
 
 
 @settings(max_examples=25, deadline=None)
@@ -184,4 +191,6 @@ def test__queued_test_property_falls_back_to_one_default_job(
                 request_data, str(folder_id), session, _NO_SOURCE
             )
 
-    assert queued["test_task_ids"] == ["queued"]
+    assert queued["test_task_ids"] == [
+        signed_task_id("queued", str(folder_id))
+    ]

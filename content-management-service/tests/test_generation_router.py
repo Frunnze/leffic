@@ -11,6 +11,7 @@ from app_factory import create_app
 from features.study_units_generation import (
     generation_router as router_module,
 )
+from features.study_units_generation.task_ownership import signed_task_id
 from shared.database import get_db
 from shared.models import Folder
 from tests.support import (
@@ -104,7 +105,9 @@ def test_a_note_is_queued_with_the_reviewed_text(
         )
 
     assert code == _OK
-    assert body == {"note_task_id": "note-1"}
+    assert body == {
+        "note_task_id": signed_task_id("note-1", _FOLDER_ID)
+    }
     assert note_task.calls[0] == {
         "ai_model": "gpt-4.1-nano",
         "extracted_text": _TEXT,
@@ -125,7 +128,9 @@ def test_a_test_is_queued_on_its_own(client: TestClient) -> None:
             {"text": _TEXT, "folder_id": _FOLDER_ID, "test": {}},
         )
 
-    assert body["test_task_ids"] == ["test-1"]
+    assert body["test_task_ids"] == [
+        signed_task_id("test-1", _FOLDER_ID)
+    ]
     assert body["test_id"]
     assert test_task.calls[0]["item_type"] == "multiple_choice"
 
