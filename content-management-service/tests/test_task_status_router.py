@@ -1,41 +1,36 @@
 from collections.abc import Iterator
-from typing import cast
+from typing import Final
 from unittest import mock
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session, sessionmaker
 
-from app_factory import create_app
 from features.study_units_generation import task_status_router
 from features.study_units_generation.celery_app import celery_app
+from tests.access_support import (
+    HOME_ID,
+    OwnedContent,
+    scoped_client,
+    seeded_content,
+)
+from tests.support import authorization, in_memory_sessions
+from tests.task_token_support import (
+    CELERY_TASK_ID,
+    NOTE_TASK_STATUS,
+    OK,
+    STATUS_PATHS,
+    answered,
+    owned_token,
+)
 
-_OK = 200
-
-_USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"
-_FOLDER_ID = "6f1c7d4e-0000-4000-8000-000000000002"
-
-
-class FakeTaskResult:
-    def __init__(self, task_id: str) -> None:
-        super().__init__()
-        self.id: str = task_id
-
-
-class FakeTask:
-    def __init__(self, task_id: str) -> None:
-        super().__init__()
-        self.task_id: str = task_id
-        self.calls: list[dict[str, object]] = []
-
-    def delay(self, **kwargs: object) -> FakeTaskResult:
-        self.calls.append(kwargs)
-
-        return FakeTaskResult(self.task_id)
+_SUCCEEDED: Final[str] = "SUCCESS"
+_PENDING: Final[str] = "PENDING"
+_FAILED: Final[str] = "FAILURE"
 
 
 class FakeAsyncResult:
     def __init__(self, status: str, result: object | None) -> None:
-        super().__init__()
         self.status: str = status
         self.result: object | None = result
 
@@ -43,28 +38,19 @@ class FakeAsyncResult:
         return self.result is not None
 
 
-class FakeAi:
-    def get_ai_res_hist(
-        self, system_prompt: str, history: list[object]
-    ) -> str:
-        return f"answered {len(history)} messages for {len(system_prompt)}"
-
-
-class FakeFactory:
-    def __init__(self) -> None:
-        super().__init__()
-        self.models: list[str | None] = []
-
-    def get_ai(self, model: str | None = None) -> FakeAi:
-        self.models.append(model)
-
-        return FakeAi()
+@pytest.fixture
+def sessions() -> sessionmaker[Session]:
+    return in_memory_sessions()
 
 
 @pytest.fixture
-def client() -> Iterator[TestClient]:
-    with TestClient(create_app()) as test_client:
-        yield test_client
+def client(sessions: sessionmaker[Session]) -> Iterator[TestClient]:
+    yield from scoped_client(sessions)
+
+
+@pytest.fixture
+def owned(sessions: sessionmaker[Session]) -> OwnedContent:
+    return seeded_content(sessions, HOME_ID)
 
 
 @pytest.mark.parametrize(
@@ -81,6 +67,7 @@ def client() -> Iterator[TestClient]:
 )
 def test_a_finished_task_reports_its_study_unit(
     client: TestClient,
+    owned: OwnedContent,
     path: str,
     stored: dict[str, object],
     expected_key: str,
@@ -88,62 +75,76 @@ def test_a_finished_task_reports_its_study_unit(
     with mock.patch.object(
         task_status_router,
         "AsyncResult",
-        return_value=FakeAsyncResult("SUCCESS", stored),
+        return_value=FakeAsyncResult(_SUCCEEDED, stored),
     ) as looked_up:
-        response = client.get(f"{path}/task-1")
-
-    body = cast("dict[str, object]", response.json())
+        _code, body = answered(
+            client,
+            path,
+            owned_token(owned.folder_id),
+            authorization(),
+        )
 
     assert body[expected_key] == stored[expected_key]
-    assert body["status"] == "SUCCESS"
-    assert looked_up.call_args.args[0] == "task-1"
+    assert body["status"] == _SUCCEEDED
+    assert looked_up.call_args.args[0] == CELERY_TASK_ID
     assert looked_up.call_args.kwargs["app"] is celery_app
 
 
-@pytest.mark.parametrize(
-    "path",
-    ["/flashcards-status", "/test-task-status", "/note-task-status"],
-)
+@pytest.mark.parametrize("path", STATUS_PATHS)
 def test_a_pending_task_reports_only_its_status(
-    client: TestClient, path: str
+    client: TestClient, owned: OwnedContent, path: str
 ) -> None:
     with mock.patch.object(
         task_status_router,
         "AsyncResult",
-        return_value=FakeAsyncResult("PENDING", None),
+        return_value=FakeAsyncResult(_PENDING, None),
     ):
-        response = client.get(f"{path}/task-1")
+        _code, body = answered(
+            client,
+            path,
+            owned_token(owned.folder_id),
+            authorization(),
+        )
 
-    assert response.json() == {"status": "PENDING"}
+    assert body == {"status": _PENDING}
 
 
 def test_an_unfinished_result_object_is_rejected(
-    client: TestClient,
+    client: TestClient, owned: OwnedContent
 ) -> None:
     with (
         mock.patch.object(
             task_status_router,
             "AsyncResult",
-            return_value=FakeAsyncResult("SUCCESS", ["not", "a", "dict"]),
+            return_value=FakeAsyncResult(
+                _SUCCEEDED, ["not", "a", "dict"]
+            ),
         ),
         pytest.raises(TypeError, match="did not finish with a result"),
     ):
-        _ = client.get("/note-task-status/task-1")
+        _ = answered(
+            client,
+            NOTE_TASK_STATUS,
+            owned_token(owned.folder_id),
+            authorization(),
+        )
 
 
-@pytest.mark.parametrize(
-    "path",
-    ["/flashcards-status", "/test-task-status", "/note-task-status"],
-)
+@pytest.mark.parametrize("path", STATUS_PATHS)
 def test_a_failed_task_reports_its_failure(
-    client: TestClient, path: str
+    client: TestClient, owned: OwnedContent, path: str
 ) -> None:
     with mock.patch.object(
         task_status_router,
         "AsyncResult",
-        return_value=FakeAsyncResult("FAILURE", RuntimeError("no folder")),
+        return_value=FakeAsyncResult(
+            _FAILED, RuntimeError("no folder")
+        ),
     ):
-        response = client.get(f"{path}/task-1")
+        response = client.get(
+            f"{path}/{owned_token(owned.folder_id)}",
+            headers=authorization(),
+        )
 
-    assert response.status_code == _OK
-    assert response.json() == {"status": "FAILURE"}
+    assert response.status_code == OK
+    assert response.json() == {"status": _FAILED}

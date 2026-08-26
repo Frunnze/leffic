@@ -28,3 +28,4 @@ htmlcov/
 .hypothesis/
 .venv
 package-lock.json
+docs/tasks/

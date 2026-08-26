@@ -1,4 +1,5 @@
 import uuid
+from typing import Final
 from unittest import mock
 
 import pytest
@@ -17,22 +18,29 @@ from features.study_units_generation.flashcard_deck_writer import (
 from features.study_units_generation.study_unit_source import (
     StudyUnitSource,
 )
+from features.study_units_generation.task_ownership import signed_task_id
 from features.study_units_generation.task_status_router import (
     _finished_result,
+    _owned_task_id,
     get_flashcard_status,
-    get_note_task_status,
     get_test_task_status,
 )
 from tests.folder_seeding import seeded_folder
 from tests.property_fakes import FakeAsyncResult
 from tests.support import in_memory_sessions
 
-_SUCCEEDED = "SUCCESS"
-_UNFINISHED = st.sampled_from(["PENDING", "STARTED", "RETRY", "FAILURE"])
-_TASK_IDS = st.text(alphabet="abcdef0123456789", min_size=4, max_size=12)
-_NAMES = st.text(min_size=1, max_size=10)
+_SUCCEEDED: Final[str] = "SUCCESS"
+_UNFINISHED: Final[st.SearchStrategy[str]] = st.sampled_from(
+    ["PENDING", "STARTED", "RETRY", "FAILURE"]
+)
+_TASK_IDS: Final[st.SearchStrategy[str]] = st.text(
+    alphabet="abcdef0123456789", min_size=4, max_size=12
+)
+_NAMES: Final[st.SearchStrategy[str]] = st.text(min_size=1, max_size=10)
 _SESSIONS = in_memory_sessions()
-_NO_SOURCE = StudyUnitSource(kind=None, reference=None)
+_NO_SOURCE: Final[StudyUnitSource] = StudyUnitSource(
+    kind=None, reference=None
+)
 
 
 def _reporting(
@@ -93,12 +101,20 @@ def test_get_flashcard_status_property_describes_a_finished_deck(
         _ = name_deck_once(session, deck_id, deck_name)
         finished = {"flashcard_deck_id": deck_id, "type": "basic"}
 
+        owned = _owned_task_id(
+            task_id=signed_task_id(task_id, str(folder_id)),
+            user_id=str(owner),
+            db=session,
+        )
+
         with mock.patch.object(
             task_status_router,
             "AsyncResult",
             _reporting(_SUCCEEDED, finished, ready=True),
         ):
-            described = get_flashcard_status(task_id, session)
+            described = get_flashcard_status(
+                task_id=owned, db=session
+            )
 
     assert described["type"] == "flashcard_deck"
     assert described["flashcard_deck_id"] == deck_id
@@ -117,48 +133,22 @@ def test_get_test_task_status_property_describes_a_finished_test(
         _ = name_test_once(session, test_id, test_name)
         finished = {"test_id": test_id, "type": "short_answer"}
 
+        owned = _owned_task_id(
+            task_id=signed_task_id(task_id, str(folder_id)),
+            user_id=str(owner),
+            db=session,
+        )
+
         with mock.patch.object(
             task_status_router,
             "AsyncResult",
             _reporting(_SUCCEEDED, finished, ready=True),
         ):
-            described = get_test_task_status(task_id, session)
+            described = get_test_task_status(
+                task_id=owned, db=session
+            )
 
     assert described["type"] == "test"
     assert described["test_id"] == test_id
     assert described["test_item_type"] == "short_answer"
     assert described["name"] == test_name
-
-
-@settings(max_examples=25)
-@given(_TASK_IDS, _NAMES, _NAMES)
-def test_get_note_task_status_property_describes_a_finished_note(
-    task_id: str, note_id: str, note_name: str
-) -> None:
-    finished = {"note_id": note_id, "note_name": note_name}
-
-    with mock.patch.object(
-        task_status_router,
-        "AsyncResult",
-        _reporting(_SUCCEEDED, finished, ready=True),
-    ):
-        described = get_note_task_status(task_id)
-
-    assert described["type"] == "note"
-    assert described["note_id"] == note_id
-    assert described["name"] == note_name
-
-
-@settings(max_examples=25)
-@given(_TASK_IDS, _UNFINISHED)
-def test_get_flashcard_status_property_reports_only_a_status_while_running(
-    task_id: str, status: str
-) -> None:
-    with _SESSIONS() as session, mock.patch.object(
-        task_status_router,
-        "AsyncResult",
-        _reporting(status, None, ready=False),
-    ):
-        assert get_flashcard_status(task_id, session) == {
-            "status": status
-        }

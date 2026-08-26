@@ -11,6 +11,7 @@ from features.study_units_generation.extraction_router import (
     ExtractionRequest,
     _extracted_text,
 )
+from features.study_units_generation.task_ownership import signed_task_id
 from features.study_units_generation.text_sources import FileMetadata
 from shared.models import Test, TestItem
 from tests.folder_seeding import seeded_folder
@@ -121,7 +122,9 @@ def test__queued_tasks_property_queues_only_what_was_asked_for(
     reported = cast("dict[str, object]", response.json())
 
     assert response.status_code == _OK
-    assert reported == {"note_task_id": "task-1"}
+    assert reported == {
+        "note_task_id": signed_task_id("task-1", str(owner))
+    }
 
 
 @settings(max_examples=25, deadline=None)

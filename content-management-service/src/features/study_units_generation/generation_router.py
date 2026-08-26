@@ -22,6 +22,9 @@ from features.study_units_generation.study_unit_types import (
     DEFAULT_TEST_ITEM_TYPES,
     requested_names,
 )
+from features.study_units_generation.task_ownership import (
+    signed_task_id,
+)
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
 from shared.folder_access import ensured_home_folder, owned_folder_id
 
@@ -98,18 +101,17 @@ def _queued_tasks(
     )
 
     if request_data.note:
-        queued["note_task_id"] = generate_note_task.delay(
+        note_task = generate_note_task.delay(
             ai_model=request_data.ai_model,
             extracted_text=request_data.text,
             folder_id=folder_id,
             source_kind=request_data.source_kind,
             source_reference=request_data.source_reference,
-        ).id
+        )
+        queued["note_task_id"] = signed_task_id(note_task.id, folder_id)
 
     if request_data.flashcards:
-        queued.update(
-            _queued_flashcards(request_data, folder_id, db, source)
-        )
+        queued.update(_queued_flashcards(request_data, folder_id, db, source))
 
     if request_data.test:
         queued.update(_queued_test(request_data, folder_id, db, source))
@@ -130,19 +132,18 @@ def _queued_flashcards(
     for flashcard_type in requested_names(
         tuple(wanted.types or ()), DEFAULT_FLASHCARD_TYPES
     ):
-        task_ids.append(
-            generate_flashcards_of_type_task.delay(
-                ai_model=request_data.ai_model,
-                extracted_text=request_data.text,
-                deck_id=deck_id,
-                flashcard_type=flashcard_type,
-                settings=FlashcardGenerationSettings(
-                    comprehensiveness=wanted.comprehensiveness or "medium",
-                    verbosity=wanted.verbosity or "low",
-                    amount=wanted.amount,
-                ),
-            ).id
+        flashcard_task = generate_flashcards_of_type_task.delay(
+            ai_model=request_data.ai_model,
+            extracted_text=request_data.text,
+            deck_id=deck_id,
+            flashcard_type=flashcard_type,
+            settings=FlashcardGenerationSettings(
+                comprehensiveness=wanted.comprehensiveness or "medium",
+                verbosity=wanted.verbosity or "low",
+                amount=wanted.amount,
+            ),
         )
+        task_ids.append(signed_task_id(flashcard_task.id, folder_id))
 
     return {"flashcard_deck_id": deck_id, "flashcard_task_ids": task_ids}
 
@@ -160,14 +161,13 @@ def _queued_test(
     for item_type in requested_names(
         tuple(wanted.types or ()), DEFAULT_TEST_ITEM_TYPES
     ):
-        task_ids.append(
-            generate_test_items_of_type_task.delay(
-                ai_model=request_data.ai_model,
-                extracted_text=request_data.text,
-                test_id=test_id,
-                item_type=item_type,
-                amount=wanted.amount,
-            ).id
+        test_task = generate_test_items_of_type_task.delay(
+            ai_model=request_data.ai_model,
+            extracted_text=request_data.text,
+            test_id=test_id,
+            item_type=item_type,
+            amount=wanted.amount,
         )
+        task_ids.append(signed_task_id(test_task.id, folder_id))
 
     return {"test_id": test_id, "test_task_ids": task_ids}

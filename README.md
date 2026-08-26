@@ -79,10 +79,11 @@ user-events consumer.
 The browser uploads a file to the documents deployable, which stores the
 bytes and the row itself, then asks it to extract the text. You review that
 text, and the content API enqueues one Celery task per study-unit type. The
-browser polls each task id until it succeeds, and the worker writes each
-finished study unit straight to the content database. All four deployables
-are built from `content-management-service`; only the documents image
-carries LibreOffice and OCR.
+browser polls each signed task token until it succeeds — a token names the
+folder it was minted for, so another learner cannot poll it — and the
+worker writes each finished study unit straight to the content database.
+All four deployables are built from `content-management-service`; only the
+documents image carries LibreOffice and OCR.
 
 Deleting an account publishes a durable `user.deleted` event to RabbitMQ
 before the account row goes, and a consumer on the content side removes that

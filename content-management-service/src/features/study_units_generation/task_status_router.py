@@ -1,16 +1,27 @@
 import uuid
 from datetime import UTC, datetime
-from typing import TypeGuard
+from typing import Annotated, Final, TypeGuard
 
 from celery.result import AsyncResult
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, params
 
 from features.study_units_generation.celery_app import celery_app
-from shared.dependencies import DatabaseSession
+from features.study_units_generation.task_ownership import (
+    MISSING_TASK,
+    verified_task_id,
+)
+from shared.claims_extractor import get_user_id_from_jwt
+from shared.database import get_db
+from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.folder_access import owned_folder
 from shared.models import FlashcardDeck, Test
 
 task_status_router = APIRouter()
 
+_SCOPED_TO_THE_CALLER: Final[list[params.Depends]] = [
+    Depends(get_user_id_from_jwt),
+    Depends(get_db),
+]
 _UNEXPECTED_RESULT = "The task did not finish with a result object"
 _SUCCEEDED = "SUCCESS"
 
@@ -63,9 +74,23 @@ def _test_name(db: DatabaseSession, test_id: object) -> str | None:
     return None if test is None else str(test.name)
 
 
-@task_status_router.get("/flashcards-status/{task_id}")
+def _owned_task_id(
+    task_id: str, user_id: AuthenticatedUserId, db: DatabaseSession
+) -> str:
+    celery_task_id, folder_id = verified_task_id(task_id)
+    _ = owned_folder(db, user_id, folder_id, MISSING_TASK)
+
+    return celery_task_id
+
+
+OwnedTaskId = Annotated[str, Depends(_owned_task_id)]
+
+
+@task_status_router.get(
+    "/flashcards-status/{task_id}", dependencies=_SCOPED_TO_THE_CALLER
+)
 def get_flashcard_status(
-    task_id: str, db: DatabaseSession
+    task_id: OwnedTaskId, db: DatabaseSession
 ) -> dict[str, object]:
     status, result = _finished_result(task_id)
 
@@ -85,9 +110,11 @@ def get_flashcard_status(
     }
 
 
-@task_status_router.get("/test-task-status/{task_id}")
+@task_status_router.get(
+    "/test-task-status/{task_id}", dependencies=_SCOPED_TO_THE_CALLER
+)
 def get_test_task_status(
-    task_id: str, db: DatabaseSession
+    task_id: OwnedTaskId, db: DatabaseSession
 ) -> dict[str, object]:
     status, result = _finished_result(task_id)
 
@@ -107,8 +134,12 @@ def get_test_task_status(
     }
 
 
-@task_status_router.get("/note-task-status/{task_id}")
-def get_note_task_status(task_id: str) -> dict[str, object]:
+@task_status_router.get(
+    "/note-task-status/{task_id}", dependencies=_SCOPED_TO_THE_CALLER
+)
+def get_note_task_status(
+    task_id: OwnedTaskId,
+) -> dict[str, object]:
     status, result = _finished_result(task_id)
 
     if result is None:

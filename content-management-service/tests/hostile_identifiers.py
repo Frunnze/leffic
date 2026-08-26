@@ -1,4 +1,5 @@
 import random
+from urllib.parse import unquote
 
 _SEED = 731125
 _GENERATOR = random.Random(_SEED)
@@ -37,4 +38,26 @@ HOSTILE_IDENTIFIERS: tuple[str, ...] = (
         "".join(_GENERATOR.choices(_ALPHABET, k=_NOISE_LENGTH))
         for _ in range(_NOISE_COUNT)
     ),
+)
+
+_PATH_SEPARATOR = "/"
+_SEGMENT_SEPARATOR = "."
+
+SINGLE_SEGMENT_IDENTIFIERS: tuple[str, ...] = tuple(
+    hostile
+    for hostile in HOSTILE_IDENTIFIERS
+    if _PATH_SEPARATOR not in hostile
+    and _SEGMENT_SEPARATOR not in hostile
+)
+
+TRANSPORT_MANGLED_IDENTIFIERS: tuple[str, ...] = tuple(
+    hostile
+    for hostile in SINGLE_SEGMENT_IDENTIFIERS
+    if unquote(hostile) != hostile
+)
+
+TRANSPORT_STABLE_IDENTIFIERS: tuple[str, ...] = tuple(
+    hostile
+    for hostile in SINGLE_SEGMENT_IDENTIFIERS
+    if unquote(hostile) == hostile
 )
