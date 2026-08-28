@@ -2,9 +2,10 @@ FROM node:20-alpine AS builder
 
 WORKDIR /build
 
-COPY package.json tsconfig.json ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm ci
 
+COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 

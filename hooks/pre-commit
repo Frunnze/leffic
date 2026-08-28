@@ -14,6 +14,7 @@ done
 checks_cheapest_first="
 tracked-lockfiles
 secrets
+reproducible-images
 file-length
 feature-isolation
 open-closed

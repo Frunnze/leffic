@@ -1,7 +1,21 @@
 from pathlib import Path
 
 import pytest
-from check_support import repository, run_check, stage_file
+from check_support import (
+    DOCKERIGNORE_PATTERNS,
+    HOOK_OUTPUT_PREFIX,
+    HYPOTHESIS_SETTINGS,
+    NPM_PACKAGES,
+    REPOSITORY,
+    docker_build_of_clean_export,
+    dockerignore_patterns,
+    git,
+    pre_commit_check_order,
+    repository,
+    run_check,
+    stage_file,
+    stderr_lines,
+)
 from hypothesis import given
 from hypothesis import strategies as st
 from lockfile_check_support import (
@@ -9,30 +23,19 @@ from lockfile_check_support import (
     CHECK_SCRIPT,
     CLAIM_MARKER,
     DECOY_LOCKFILE_PATHS,
-    DOCKERIGNORE_PATTERNS,
     EXIT_EXPECTATIONS,
     EXPECTED_OVERRIDES,
-    HOOK_OUTPUT_PREFIX,
-    HYPOTHESIS_SETTINGS,
-    NPM_PACKAGES,
     PACKAGE_SUBSETS,
-    REPOSITORY,
     TO_DOS,
     TRACKED_LOCKFILES,
     completed_lockfile_items,
     declared_overrides,
-    docker_build_of_clean_export,
-    dockerignore_patterns,
-    gateway_to_do_items,
-    git,
-    pre_commit_check_order,
     recorded_overrides,
     run_for,
     run_with_decoy_lockfile,
     run_with_deleted_lockfile,
     run_with_extra_package,
     run_with_unstaged_lockfile,
-    stderr_lines,
 )
 
 
@@ -71,8 +74,11 @@ def test_r13_check_runs_first_in_the_pre_commit_order() -> None:
     assert pre_commit_check_order()[:2] == [CHECK_NAME, "secrets"]
 
 
-def test_r14_dockerignore_lists_exactly_four_patterns() -> None:
-    assert dockerignore_patterns() == DOCKERIGNORE_PATTERNS
+@pytest.mark.parametrize("package", NPM_PACKAGES)
+def test_r14_r21_dockerignore_lists_exactly_four_patterns(
+    package: str,
+) -> None:
+    assert dockerignore_patterns(package) == DOCKERIGNORE_PATTERNS
 
 
 def test_r16_the_finished_item_records_every_part_of_the_change() -> None:
@@ -81,10 +87,6 @@ def test_r16_the_finished_item_records_every_part_of_the_change() -> None:
 
 def test_r17_the_claim_marker_is_removed() -> None:
     assert CLAIM_MARKER not in TO_DOS.read_text(encoding="utf-8")
-
-
-def test_r18_a_new_open_todo_names_the_gateway_image() -> None:
-    assert len(gateway_to_do_items()) == 1
 
 
 def test_r20_the_change_lands_on_main() -> None:
@@ -116,8 +118,11 @@ def test_r12_a_passing_run_prints_its_rationale(tmp_path: Path) -> None:
     assert finished.stdout.startswith(HOOK_OUTPUT_PREFIX)
 
 
-def test_r15_a_clean_export_of_ui_service_builds(tmp_path: Path) -> None:
-    assert docker_build_of_clean_export(tmp_path) == 0
+@pytest.mark.parametrize("package", NPM_PACKAGES)
+def test_r7_r15_r20_a_clean_export_of_each_package_builds(
+    tmp_path: Path, package: str
+) -> None:
+    assert docker_build_of_clean_export(tmp_path, package) == 0
 
 
 @given(tracked=PACKAGE_SUBSETS)

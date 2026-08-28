@@ -1,0 +1,61 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/../../_env.sh"
+
+echo "pre-commit: reproducible-images (an image must build from the lockfile)"
+
+an_image_is_unreproducible=""
+
+text_contains() {
+    case "$1" in
+        *"$2"*) return 0 ;;
+    esac
+
+    return 1
+}
+
+installs_node_dependencies() {
+    case "$1" in
+        *"npm ci"*|*"npm i"*|*yarn*) return 0 ;;
+    esac
+
+    return 1
+}
+
+for node_package in $node_packages; do
+    dockerfile="$node_package/Dockerfile"
+
+    if [ ! -f "$dockerfile" ]; then
+        continue
+    fi
+
+    if ! dockerfile_text=$(cat "$dockerfile" 2>/dev/null); then
+        echo "pre-commit: $node_package has an unreadable Dockerfile" >&2
+        an_image_is_unreproducible=1
+        continue
+    fi
+
+    if ! installs_node_dependencies "$dockerfile_text"; then
+        continue
+    fi
+
+    if ! text_contains "$dockerfile_text" package-lock.json; then
+        echo "pre-commit: $node_package never copies its package-lock.json" >&2
+        an_image_is_unreproducible=1
+    fi
+
+    if ! text_contains "$dockerfile_text" "npm ci"; then
+        echo "pre-commit: $node_package does not install with npm ci" >&2
+        an_image_is_unreproducible=1
+    fi
+
+    if text_contains "$dockerfile_text" "npm install"; then
+        echo "pre-commit: $node_package installs with npm install" >&2
+        an_image_is_unreproducible=1
+    fi
+done
+
+if [ -n "$an_image_is_unreproducible" ]; then
+    echo "pre-commit: copy the lockfile and run npm ci" >&2
+    exit 1
+fi
