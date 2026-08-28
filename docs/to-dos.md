@@ -142,7 +142,7 @@ several endpoints still do not establish ownership of the row they act on.
   errors, and four property tests call the handlers with the old `task_id`,
   `user_id`, `db` signature and fail. Reconcile the dependency/handler
   signature and make the full gate green before marking this complete.
-- [ ] **Uploading a file does not prove folder ownership.** `upload_files`
+- [x] **Uploading a file does not prove folder ownership.** `upload_files`
   (`features/file_upload/file_uploader.py`) calls `resolved_folder_id`, which
   only parses the id, then `_recorded_files` loads `Folder` by id without a
   `user_id` predicate. Any authenticated learner can therefore attach a
