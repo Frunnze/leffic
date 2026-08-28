@@ -52,12 +52,12 @@ class RequestCost:
 
 class OpenAIManager(AIManager):
     def __init__(
-        self, client: OpenAI, model_name: str, rates: ModelRates | None
+        self, client: OpenAI, model_name: str, request_cost: RequestCost
     ) -> None:
         super().__init__()
         self.client: OpenAI = client
         self.model_name: str = model_name
-        self.request_cost: RequestCost = RequestCost(rates)
+        self.request_cost: RequestCost = request_cost
 
     @override
     def get_ai_res(
@@ -122,7 +122,9 @@ def create_openai_factory(client: OpenAI | None = None) -> AIFactory:
     openai_client = client or OpenAI()
 
     return AIFactory(
-        lambda model, rates: OpenAIManager(openai_client, model, rates)
+        lambda model, rates: OpenAIManager(
+            openai_client, model, RequestCost(rates)
+        )
     )
 
 

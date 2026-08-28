@@ -3,7 +3,11 @@ from typing import Self, cast
 import pytest
 from openai import OpenAIError
 
-from shared.ai_manager import OpenAIManager, create_openai_factory
+from shared.ai_manager import (
+    OpenAIManager,
+    RequestCost,
+    create_openai_factory,
+)
 from shared.model_rates import GPT_4_1_NANO, MODEL_RATES
 
 _SYSTEM_PROMPT = "You are helpful"
@@ -69,7 +73,11 @@ def _manager(answers: list[object], rates_for: str | None = None):  # noqa: ANN2
     client = FakeClient(answers)
     rates = MODEL_RATES.get(rates_for) if rates_for else None
 
-    return OpenAIManager(client, "gpt-5-mini", rates), client  # pyright: ignore[reportArgumentType]
+    return OpenAIManager(
+        client,  # pyright: ignore[reportArgumentType]
+        "gpt-5-mini",
+        RequestCost(rates),
+    ), client
 
 
 def test_the_factory_defaults_to_the_mini_model() -> None:

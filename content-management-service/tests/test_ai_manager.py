@@ -70,7 +70,11 @@ def _manager(answers: list[object], rates_for: str | None = None):  # noqa: ANN2
     client = FakeClient(answers)
     rates = MODEL_RATES.get(rates_for) if rates_for else None
 
-    return OpenAIManager(client, "gpt-5-mini", rates), client  # pyright: ignore[reportArgumentType]
+    return OpenAIManager(
+        client,  # pyright: ignore[reportArgumentType]
+        "gpt-5-mini",
+        RequestCost(rates),
+    ), client
 
 
 def test_returns_a_parsed_object_for_json_answers() -> None:

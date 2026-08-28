@@ -1,0 +1,25 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/../../_env.sh"
+
+finder="$(dirname "$0")/constructed_collaborators.py"
+shared_finders="$(dirname "$0")/../open-closed"
+
+echo "pre-commit: dependency inversion (depend on abstractions)"
+
+if [ -z "$source_directories" ]; then
+    exit 0
+fi
+
+require_binary "$python_binary" python
+
+constructions=$(python_files_in $source_directories \
+    | PYTHONPATH="$shared_finders" "$python_binary" "$finder")
+
+if [ -n "$(echo "$constructions" | tr -d '\n ')" ]; then
+    echo "pre-commit: these dependency inversion risks were detected:" >&2
+    echo "$constructions" | grep . >&2
+    echo "pre-commit: follow DIP - receive the collaborator as an" >&2
+    echo "pre-commit: injected abstraction instead of constructing it" >&2
+    exit 1
+fi

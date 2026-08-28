@@ -43,7 +43,7 @@ def _manager(
     manager = OpenAIManager(
         cast("OpenAI", cast("object", client)),
         model,
-        MODEL_RATES.get(model),
+        RequestCost(MODEL_RATES.get(model)),
     )
 
     return manager, client

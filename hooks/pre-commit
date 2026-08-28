@@ -16,6 +16,7 @@ secrets
 file-length
 feature-isolation
 open-closed
+dependency-inversion
 definition-names
 nested-definitions
 class-methods
