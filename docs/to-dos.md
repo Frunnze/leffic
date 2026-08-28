@@ -28,7 +28,7 @@ P2 is what makes it survivable in the long run.
   built with `docker build` exits 0, with `ui-service/.dockerignore`
   keeping `node_modules`, `dist`, `tests` and `.DS_Store` out of the
   context.
-- [ ] **The gateway image is not reproducible.** `api-gateway/Dockerfile`
+- [x] **The gateway image is not reproducible.** `api-gateway/Dockerfile`
   runs `npm install` rather than `npm ci`, so every build resolves the
   dependency tree afresh and can drift from the tree that was tested. Now
   that `api-gateway/package-lock.json` is tracked, copy it into the build
