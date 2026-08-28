@@ -1,5 +1,6 @@
 import subprocess
 from pathlib import Path
+from typing import cast
 from unittest import mock
 
 import pytest
@@ -7,8 +8,8 @@ import textract
 
 from features.study_units_generation import text_sources
 from features.study_units_generation.text_sources import (
-    FileMetadata,
     PageRange,
+    StoredDocument,
     text_from_files,
 )
 from tests.pdf_support import (
@@ -24,8 +25,8 @@ def _extraction_of_a_ranged_docx(
     tmp_path: Path, libreoffice: LibreOfficeStub
 ) -> DocumentRecorder:
     _ = (tmp_path / f"{_FILE_ID}.docx").write_bytes(b"docx payload")
-    ranged = FileMetadata(
-        file_id=_FILE_ID,
+    ranged = StoredDocument(
+        storage_name=f"{_FILE_ID}.docx",
         extension="docx",
         pages=PageRange(first=2, last=3),
     )
@@ -72,7 +73,9 @@ def test_a_docx_without_a_page_range_is_never_converted(
     tmp_path: Path,
 ) -> None:
     _ = (tmp_path / f"{_FILE_ID}.docx").write_bytes(b"docx payload")
-    whole = FileMetadata(file_id=_FILE_ID, extension="docx")
+    whole = StoredDocument(
+        storage_name=f"{_FILE_ID}.docx", extension="docx"
+    )
     libreoffice = LibreOfficeStub(6)
     recorder = DocumentRecorder([])
 
@@ -96,8 +99,10 @@ def test_every_paged_format_accepts_a_range(
 ) -> None:
     stored = tmp_path / f"{_FILE_ID}.{extension}"
     _ = stored.write_bytes(PdfDocuments.blank(6))
-    ranged = FileMetadata(
-        file_id=_FILE_ID, extension=extension, pages=PageRange(first=1, last=2)
+    ranged = StoredDocument(
+        storage_name=f"{_FILE_ID}.{extension}",
+        extension=extension,
+        pages=PageRange(first=1, last=2),
     )
     recorder = DocumentRecorder([])
     expected_page_count = 2
@@ -112,3 +117,23 @@ def test_every_paged_format_accepts_a_range(
     assert (
         PdfDocuments.page_count(recorder.documents[0]) == expected_page_count
     )
+
+
+def test_temporary_file_is_suffixed_with_the_storage_name(
+    tmp_path: Path,
+) -> None:
+    _ = (tmp_path / f"{_FILE_ID}.pdf").write_bytes(PdfDocuments.blank(2))
+    document = StoredDocument(
+        storage_name=f"{_FILE_ID}.pdf", extension="pdf"
+    )
+    extractor = mock.Mock(return_value=b"")
+
+    with (
+        mock.patch.object(text_sources, "_FILES_DIRECTORY", str(tmp_path)),
+        mock.patch.object(textract, "process", extractor),
+    ):
+        _ = text_from_files([document])
+
+    written = cast("str", extractor.call_args.args[0])
+
+    assert written.endswith(document.storage_name)

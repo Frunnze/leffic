@@ -1,15 +1,19 @@
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from features.study_units_generation.pdf_pages import PageSelectionError
 from features.study_units_generation.text_sources import (
     FileMetadata,
     MissingDocumentError,
+    StoredDocument,
     text_from_files,
     text_from_link,
 )
-from shared.dependencies import AuthenticatedUserId
+from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.file_access import owned_file
+from shared.file_storage import storage_name
 from shared.pdf_conversion import ConversionError
 
 extraction_router = APIRouter()
@@ -24,30 +28,60 @@ class ExtractionRequest(BaseModel):
     topic_metadata: str | None = None
 
 
-def _extracted_text(request_data: ExtractionRequest) -> str:
-    if request_data.file_metadata:
-        return text_from_files(request_data.file_metadata)
+def _resolved_documents(
+    db: Session, user_id: str, file_metadata: list[FileMetadata]
+) -> list[StoredDocument]:
+    documents: list[StoredDocument] = []
 
-    if request_data.link_metadata:
-        return text_from_link(request_data.link_metadata)
+    for requested_document in file_metadata:
+        owned_file_record = owned_file(
+            db, user_id, requested_document.file_id
+        )
+        documents.append(
+            StoredDocument(
+                storage_name=storage_name(
+                    str(owned_file_record.id), owned_file_record.extension
+                ),
+                extension=owned_file_record.extension,
+                pages=requested_document.pages,
+            )
+        )
+
+    return documents
+
+
+def _extracted_text(
+    documents: list[StoredDocument], link: str | None
+) -> str:
+    if documents:
+        return text_from_files(documents)
+
+    if link:
+        return text_from_link(link)
 
     return ""
 
 
 @extraction_router.post("/extract-text", response_model=None)
 async def extract_text(
-    request_data: ExtractionRequest, user_id: AuthenticatedUserId
+    request_data: ExtractionRequest,
+    user_id: AuthenticatedUserId,
+    db: DatabaseSession,
 ) -> dict[str, str] | JSONResponse:
-    _ = user_id
-
     if request_data.topic_metadata:
         return JSONResponse(
             content={"msg": _TOPIC_IS_WRITTEN},
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
+    documents = _resolved_documents(
+        db, user_id, request_data.file_metadata or []
+    )
+
     try:
-        extracted_text = _extracted_text(request_data)
+        extracted_text = _extracted_text(
+            documents, request_data.link_metadata
+        )
     except (
         PageSelectionError,
         ConversionError,

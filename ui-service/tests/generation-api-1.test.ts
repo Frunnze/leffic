@@ -99,7 +99,7 @@ describe("GenerationApi.extractText and GenerationApi.sourceBody", () => {
     await GenerationApi.extractText(FILE_SOURCE);
 
     expect(sentBody(fetching)).toEqual({
-      file_metadata: [{ file_id: "9", extension: "pdf" }],
+      file_metadata: [{ file_id: "9" }],
     });
   });
 
@@ -114,7 +114,7 @@ describe("GenerationApi.extractText and GenerationApi.sourceBody", () => {
 
     expect(sentBody(fetching)).toEqual({
       file_metadata: [
-        { file_id: "9", extension: "pdf", pages: { first: 2, last: 5 } },
+        { file_id: "9", pages: { first: 2, last: 5 } },
       ],
     });
   });
@@ -125,7 +125,7 @@ describe("GenerationApi.extractText and GenerationApi.sourceBody", () => {
     await GenerationApi.extractText({ ...FILE_SOURCE, firstPage: 3 });
 
     expect(sentBody(fetching)).toEqual({
-      file_metadata: [{ file_id: "9", extension: "pdf", pages: { first: 3 } }],
+      file_metadata: [{ file_id: "9", pages: { first: 3 } }],
     });
   });
 });

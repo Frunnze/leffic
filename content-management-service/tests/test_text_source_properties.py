@@ -10,8 +10,8 @@ from pydantic import ValidationError
 from features.study_units_generation import text_sources
 from features.study_units_generation.pdf_pages import PageSelectionError
 from features.study_units_generation.text_sources import (
-    FileMetadata,
     PageRange,
+    StoredDocument,
     _readable_document,
     _text_from_bytes,
     get_file_from_storage,
@@ -24,10 +24,10 @@ _PAGES = st.integers(min_value=1, max_value=20)
 _STORAGE_NAMES = st.text(alphabet="abcdef0123456789", min_size=3, max_size=8)
 
 
-def _chunk_for(file_bytes: bytes, file_meta: FileMetadata) -> str:
+def _chunk_for(file_bytes: bytes, document: StoredDocument) -> str:
     _ = file_bytes
 
-    return f"{file_meta.file_id}|"
+    return f"{document.storage_name}|"
 
 
 @settings(max_examples=50)
@@ -61,7 +61,10 @@ def test_get_file_from_storage_property_round_trips_the_stored_bytes(
 def test_text_from_files_property_joins_one_chunk_per_file(
     names: list[str],
 ) -> None:
-    metadata = [FileMetadata(file_id=name, extension="txt") for name in names]
+    documents = [
+        StoredDocument(storage_name=name, extension="txt")
+        for name in names
+    ]
 
     with (
         mock.patch.object(
@@ -69,7 +72,7 @@ def test_text_from_files_property_joins_one_chunk_per_file(
         ),
         mock.patch.object(text_sources, "_text_from_bytes", _chunk_for),
     ):
-        joined = text_from_files(metadata)
+        joined = text_from_files(documents)
 
     assert joined == "".join(f"{name}|" for name in names)
 
@@ -79,12 +82,14 @@ def test_text_from_files_property_joins_one_chunk_per_file(
 def test__readable_document_property_refuses_pages_from_an_unpaged_file(
     extension: str,
 ) -> None:
-    metadata = FileMetadata(
-        file_id="f", extension=extension, pages=PageRange(first=1)
+    document = StoredDocument(
+        storage_name=f"f.{extension}",
+        extension=extension,
+        pages=PageRange(first=1),
     )
 
     with pytest.raises(PageSelectionError):
-        _ = _readable_document(b"anything", metadata)
+        _ = _readable_document(b"anything", document)
 
 
 @settings(max_examples=10, deadline=None)
@@ -92,9 +97,13 @@ def test__readable_document_property_refuses_pages_from_an_unpaged_file(
 def test__text_from_bytes_property_stays_empty_without_an_extractor(
     page_count: int,
 ) -> None:
-    metadata = FileMetadata(file_id="f", extension="unheard-of")
+    document = StoredDocument(
+        storage_name="f.unheard-of", extension="unheard-of"
+    )
 
-    assert _text_from_bytes(PdfDocuments.blank(page_count), metadata) == ""
+    assert (
+        _text_from_bytes(PdfDocuments.blank(page_count), document) == ""
+    )
 
 
 @settings(max_examples=25, deadline=None)

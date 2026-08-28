@@ -8,8 +8,8 @@ from pydantic import ValidationError
 from features.study_units_generation import text_sources
 from features.study_units_generation.pdf_pages import PageSelectionError
 from features.study_units_generation.text_sources import (
-    FileMetadata,
     PageRange,
+    StoredDocument,
     text_from_files,
 )
 from tests.pdf_support import DocumentRecorder, PdfDocuments
@@ -19,7 +19,9 @@ _FILE_ID = "3f6c2b1a"
 
 def _pages_reaching_the_extractor(tmp_path: Path, asked: PageRange) -> int:
     _ = (tmp_path / f"{_FILE_ID}.pdf").write_bytes(PdfDocuments.blank(6))
-    ranged = FileMetadata(file_id=_FILE_ID, extension="pdf", pages=asked)
+    ranged = StoredDocument(
+        storage_name=f"{_FILE_ID}.pdf", extension="pdf", pages=asked
+    )
     recorder = DocumentRecorder([])
 
     with (
@@ -67,8 +69,8 @@ def test_a_page_range_on_a_document_without_pages_is_refused(
     tmp_path: Path,
 ) -> None:
     _ = (tmp_path / f"{_FILE_ID}.txt").write_bytes(b"payload")
-    ranged = FileMetadata(
-        file_id=_FILE_ID,
+    ranged = StoredDocument(
+        storage_name=f"{_FILE_ID}.txt",
         extension="txt",
         pages=PageRange(first=1, last=2),
     )

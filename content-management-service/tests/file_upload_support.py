@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from features.file_upload import file_uploader as uploader_module
 from shared import file_storage
+from shared.file_storage import storage_name
 from shared.models import Folder
 from tests.support import OTHER_USER_ID, USER_ID, in_memory_sessions
 
@@ -115,7 +116,10 @@ def stored_uploads(
             file = an_upload(filename, b"payload")
             metadata = uploader_module._uploaded_file_metadata(file)
             uploader_module.save_file_to_storage(
-                file, uploader_module._storage_name(metadata)
+                file,
+                storage_name(
+                    metadata["file_id"], metadata["extension"]
+                ),
             )
             written.append(metadata)
 

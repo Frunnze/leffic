@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from features.file_system.file_access import owned_file
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
+from shared.file_access import owned_file
 
 bookmark_router = APIRouter()
 

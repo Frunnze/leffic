@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from shared.content_access import owned_content
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
-from shared.file_storage import delete_file_from_storage
+from shared.file_storage import delete_file_from_storage, storage_name
 from shared.folder_access import owned_folder_id
 from shared.models import File as StoredFile
 from shared.pdf_conversion import ConversionError, PdfConversion
@@ -37,13 +37,6 @@ def save_file_to_storage(file: UploadFile, unique_name: str) -> None:
         shutil.copyfileobj(file.file, out_file)
 
 
-def _storage_name(uploaded_file_metadata: UploadedFileMetadata) -> str:
-    extension = uploaded_file_metadata["extension"]
-    suffix = f".{extension}" if extension else ""
-
-    return uploaded_file_metadata["file_id"] + suffix
-
-
 def _uploaded_file_metadata(file: UploadFile) -> UploadedFileMetadata:
     filename = file.filename or ""
 
@@ -58,12 +51,15 @@ def _remove_uploaded_files_from_storage(
     uploaded_files: list[UploadedFileMetadata],
 ) -> None:
     for uploaded_file_metadata in uploaded_files:
-        storage_name = _storage_name(uploaded_file_metadata)
+        stored_name = storage_name(
+            uploaded_file_metadata["file_id"],
+            uploaded_file_metadata["extension"],
+        )
 
-        name_length_in_bytes = len(storage_name.encode())
+        name_length_in_bytes = len(stored_name.encode())
 
         if name_length_in_bytes <= _MAXIMUM_STORAGE_NAME_BYTES:
-            delete_file_from_storage(storage_name)
+            delete_file_from_storage(stored_name)
 
 
 def _recorded_files(
@@ -101,7 +97,11 @@ async def upload_files(
             uploaded_file_metadata = _uploaded_file_metadata(file)
             uploaded_files.append(uploaded_file_metadata)
             save_file_to_storage(
-                file, _storage_name(uploaded_file_metadata)
+                file,
+                storage_name(
+                    uploaded_file_metadata["file_id"],
+                    uploaded_file_metadata["extension"],
+                ),
             )
 
         _recorded_files(db, owned_folder_identifier, uploaded_files)

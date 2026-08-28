@@ -8,11 +8,10 @@ from hypothesis import strategies as st
 
 from features.study_units_generation import generation_router
 from features.study_units_generation.extraction_router import (
-    ExtractionRequest,
     _extracted_text,
 )
 from features.study_units_generation.task_ownership import signed_task_id
-from features.study_units_generation.text_sources import FileMetadata
+from features.study_units_generation.text_sources import StoredDocument
 from shared.models import Test, TestItem
 from tests.folder_seeding import seeded_folder
 from tests.property_fakes import (
@@ -64,20 +63,18 @@ def _seeded_item(owner: uuid.UUID) -> int:
 def test__extracted_text_property_reads_whichever_source_was_given(
     body: str, source: str
 ) -> None:
-    request = ExtractionRequest(
-        file_metadata=(
-            [FileMetadata(file_id="f", extension="txt")]
-            if source == "files"
-            else None
-        ),
-        link_metadata="https://example.com" if source == "link" else None,
+    documents = (
+        [StoredDocument(storage_name="f.pdf", extension="pdf")]
+        if source == "files"
+        else []
     )
+    link = "https://example.com" if source == "link" else None
 
     with (
         mock.patch(_TEXT_FROM_FILES, return_value=body),
         mock.patch(_TEXT_FROM_LINK, return_value=body),
     ):
-        extracted = _extracted_text(request)
+        extracted = _extracted_text(documents, link)
 
     assert extracted == ("" if source == "neither" else body)
 

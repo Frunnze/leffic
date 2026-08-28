@@ -32,7 +32,7 @@ const HANDLERS: SourceHandlers = {
 
       return {
         file_metadata: [
-          { file_id: source.fileId, extension: source.extension, ...asked },
+          { file_id: source.fileId, ...asked },
         ],
       };
     },

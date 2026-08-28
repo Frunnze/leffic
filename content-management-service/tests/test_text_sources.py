@@ -1,28 +1,30 @@
+import inspect
 import tempfile
 from pathlib import Path
 from unittest import mock
 
 import textract
 
-from features.study_units_generation import text_sources
+from features.study_units_generation import (
+    extraction_router,
+    text_sources,
+)
 from features.study_units_generation.text_extractor import (
     GeneralTextExtractor,
     TextExtractorFactory,
     text_extractor_factory,
 )
 from features.study_units_generation.text_sources import (
-    FileMetadata,
+    StoredDocument,
     get_file_from_storage,
     text_from_files,
 )
+from tests.extraction_support import read_the_document
 
 _FILE_ID = "3f6c2b1a"
 _OTHER_FILE_ID = "9a1d4c7b"
-_PDF = FileMetadata(file_id=_FILE_ID, extension="pdf")
-
-
-def _read_the_document(filename: str, **_: object) -> bytes:
-    return Path(filename).read_bytes()
+_PDF = StoredDocument(storage_name=f"{_FILE_ID}.pdf", extension="pdf")
+_STORAGE_CONSTANT = '_FILES_DIRECTORY = "files"'
 
 
 class RecordingExtractor:
@@ -79,14 +81,47 @@ def test_reads_a_stored_file(tmp_path: Path) -> None:
         assert get_file_from_storage("stored.bin") == b"payload"
 
 
+def test_text_from_files_reads_the_given_storage_name() -> None:
+    document = StoredDocument(
+        storage_name="a-name-nobody-would-build", extension="pdf"
+    )
+
+    with (
+        mock.patch.object(
+            text_sources, "get_file_from_storage", return_value=b""
+        ) as reader,
+        mock.patch.object(textract, "process", read_the_document),
+    ):
+        _ = text_from_files([document])
+
+    assert reader.call_args.args[0] == "a-name-nobody-would-build"
+
+
+def test_text_sources_has_no_database_import() -> None:
+    source = inspect.getsource(text_sources)
+
+    assert "sqlalchemy" not in source
+    assert "shared.models" not in source
+
+
+def test_reads_stay_in_one_place() -> None:
+    router_source = inspect.getsource(extraction_router)
+
+    assert "Path(" not in router_source
+    assert "_FILES_DIRECTORY" not in router_source
+    assert inspect.getsource(text_sources).count(_STORAGE_CONSTANT) == 1
+
+
 def test_text_from_files_joins_every_document(tmp_path: Path) -> None:
     _ = (tmp_path / f"{_FILE_ID}.pdf").write_bytes(b"payload")
-    other = FileMetadata(file_id=_OTHER_FILE_ID, extension="pdf")
+    other = StoredDocument(
+        storage_name=f"{_OTHER_FILE_ID}.pdf", extension="pdf"
+    )
     _ = (tmp_path / f"{_OTHER_FILE_ID}.pdf").write_bytes(b"second")
 
     with (
         mock.patch.object(text_sources, "_FILES_DIRECTORY", str(tmp_path)),
-        mock.patch.object(textract, "process", _read_the_document),
+        mock.patch.object(textract, "process", read_the_document),
     ):
         joined = text_from_files([_PDF, other])
 
@@ -109,13 +144,15 @@ def test_the_document_is_written_where_the_extractor_can_read_it(
         _ = text_from_files([_PDF])
 
     assert seen[0].startswith(tempfile.gettempdir())
-    assert seen[0].endswith(_FILE_ID)
+    assert seen[0].endswith(_PDF.storage_name)
     assert not Path(seen[0]).exists()
     assert extensions == ["pdf"]
 
 
 def test_text_from_files_skips_unknown_extensions(tmp_path: Path) -> None:
-    unknown = FileMetadata(file_id=_FILE_ID, extension="xyz")
+    unknown = StoredDocument(
+        storage_name=f"{_FILE_ID}.xyz", extension="xyz"
+    )
     _ = (tmp_path / f"{_FILE_ID}.xyz").write_bytes(b"payload")
 
     with mock.patch.object(text_sources, "_FILES_DIRECTORY", str(tmp_path)):
@@ -139,7 +176,7 @@ def test_extraction_needs_no_pre_created_directory(tmp_path: Path) -> None:
 
     with (
         mock.patch.object(text_sources, "_FILES_DIRECTORY", str(tmp_path)),
-        mock.patch.object(textract, "process", _read_the_document),
+        mock.patch.object(textract, "process", read_the_document),
     ):
         extracted = text_from_files([_PDF])
 

@@ -15,10 +15,10 @@ from features.file_upload import file_uploader as uploader_module
 from features.file_upload.file_uploader import (
     _converted_to_pdf,
     _recorded_files,
-    _storage_name,
     _uploaded_file_metadata,
     save_file_to_storage,
 )
+from shared.file_storage import storage_name
 from shared.models import File as StoredFile
 from shared.pdf_conversion import ConversionError
 from tests.file_upload_support import EXTENSIONS
@@ -53,6 +53,10 @@ def _written_document() -> Path:
     _ = written.write_bytes(b"body")
 
     return written
+
+
+def _named(described: dict[str, str]) -> str:
+    return storage_name(described["file_id"], described["extension"])
 
 
 def _upload(name: str, content: bytes) -> UploadFile:
@@ -90,7 +94,7 @@ def test__uploaded_file_metadata_property_describes_the_upload(
 
 @settings(max_examples=25, deadline=None)
 @given(st.sampled_from(_UPLOAD_NAMES), _CONTENT)
-def test__storage_name_property_names_the_file_that_was_written(
+def test_storage_name_property_names_the_file_that_was_written(
     filename: str, content: bytes
 ) -> None:
     uploaded = _upload(filename, content)
@@ -99,9 +103,9 @@ def test__storage_name_property_names_the_file_that_was_written(
     with mock.patch.object(
         uploader_module, "_FILES_DIRECTORY", _STORAGE
     ):
-        save_file_to_storage(uploaded, _storage_name(described))
+        save_file_to_storage(uploaded, _named(described))
 
-    written = Path(_STORAGE) / _storage_name(described)
+    written = Path(_STORAGE) / _named(described)
 
     assert written.read_bytes() == content
 

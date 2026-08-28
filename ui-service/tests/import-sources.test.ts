@@ -166,10 +166,18 @@ describe("ImportSources.sourceFrom", () => {
     await expect(ImportSources.sourceFrom(request, upload)).resolves.toEqual({
       kind: "file",
       fileId: "7",
-      extension: "pdf",
       firstPage: 1,
       lastPage: 3,
     });
+  });
+
+  it("builds a file source that carries no extension", async () => {
+    const upload = vi.fn().mockResolvedValue([UPLOADED]);
+    const request = importRequest({ kind: "file", file: pdfFile() });
+
+    const source = await ImportSources.sourceFrom(request, upload);
+
+    expect(source).not.toHaveProperty("extension");
   });
 
   it("points nowhere when no file was chosen", async () => {

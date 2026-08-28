@@ -78,7 +78,6 @@ const HANDLERS: Readonly<Record<SourceKind, SourceKindHandler>> = {
       return {
         kind: "file",
         fileId: first.fileId,
-        extension: first.extension,
         firstPage: request.firstPage,
         lastPage: request.lastPage,
       };

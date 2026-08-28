@@ -4,7 +4,6 @@ export type GenerationSource =
   | {
       readonly kind: "file";
       readonly fileId: string;
-      readonly extension: string;
       readonly firstPage: number | null;
       readonly lastPage: number | null;
     }

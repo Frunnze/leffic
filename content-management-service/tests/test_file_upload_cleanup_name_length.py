@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
 from features.file_upload import file_uploader as uploader_module
+from shared.file_storage import storage_name
 from tests.access_support import scoped_client
 from tests.file_upload_support import (
     LEARNER_FOLDER_ID,
@@ -39,7 +40,9 @@ def test_removing_a_wide_absent_name_raises_nothing(
         "name": "notes",
     }
 
-    assert len(uploader_module._storage_name(absent)) <= _GUARD_LENGTH
+    stored = storage_name(absent["file_id"], absent["extension"])
+
+    assert len(stored) <= _GUARD_LENGTH
 
     with storage_directory(tmp_path):
         uploader_module._remove_uploaded_files_from_storage([absent])

@@ -18,6 +18,7 @@ _SCOPED_ROUTES = (
     ("/test-task-status/{task_id}", "GET"),
     ("/note-task-status/{task_id}", "GET"),
     ("/upload-files", "POST"),
+    ("/extract-text", "POST"),
 )
 
 

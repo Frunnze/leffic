@@ -1,99 +1,71 @@
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, cast
+from pathlib import Path
+from typing import cast
 from unittest import mock
 
-import jwt
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session, sessionmaker
 
-from app_factory import create_app
 from features.study_units_generation import (
     extraction_router as router_module,
 )
-from shared.jwt_secret import ALGORITHM, SECRET_KEY
+from features.study_units_generation.text_sources import StoredDocument
+from tests.access_support import scoped_client
+from tests.extraction_support import OK, extract, stored_file_id
+from tests.support import USER_ID, authorization, in_memory_sessions
 
-_OK = 200
-
-if TYPE_CHECKING:
-    from features.study_units_generation.text_sources import (
-        FileMetadata,
-    )
-
-_USER_ID = "6f1c7d4e-0000-4000-8000-000000000001"
 _PAGE_TEXT = "A neuron at rest sits near -70 mV."
 
 
 @pytest.fixture
-def client() -> Iterator[TestClient]:
-    with TestClient(create_app()) as test_client:
-        yield test_client
+def sessions() -> sessionmaker[Session]:
+    return in_memory_sessions()
 
 
-def _authorization() -> dict[str, str]:
-    token = jwt.encode(
-        {"user_id": _USER_ID}, SECRET_KEY, algorithm=ALGORITHM
+@pytest.fixture
+def client(sessions: sessionmaker[Session]) -> Iterator[TestClient]:
+    yield from scoped_client(sessions)
+
+
+def _requested_pages(
+    client: TestClient, file_id: str, asked: dict[str, int]
+) -> tuple[int, StoredDocument]:
+    payload: dict[str, object] = {
+        "file_metadata": [{"file_id": file_id, "pages": asked}]
+    }
+
+    with mock.patch.object(
+        router_module, "text_from_files", return_value=_PAGE_TEXT
+    ) as from_files:
+        code, _ = extract(client, payload, authorization(USER_ID))
+
+    requested = cast(
+        "list[StoredDocument]", from_files.call_args.args[0]
     )
 
-    return {"Authorization": f"Bearer {token}"}
-
-
-def _extract(
-    client: TestClient, payload: dict[str, object]
-) -> tuple[int, dict[str, object]]:
-    response = client.post(
-        "/extract-text", json=payload, headers=_authorization()
-    )
-
-    return response.status_code, cast("dict[str, object]", response.json())
+    return code, requested[0]
 
 
 def test_a_range_without_an_end_reads_on_to_the_last_page(
-    client: TestClient,
+    client: TestClient, sessions: sessionmaker[Session], tmp_path: Path
 ) -> None:
-    with mock.patch.object(
-        router_module, "text_from_files", return_value=_PAGE_TEXT
-    ) as from_files:
-        code, _ = _extract(
-            client,
-            {
-                "file_metadata": [
-                    {
-                        "file_id": "f1",
-                        "extension": "pdf",
-                        "pages": {"first": 2},
-                    }
-                ]
-            },
-        )
+    file_id = stored_file_id(sessions, USER_ID, tmp_path)
 
-    requested = cast("list[FileMetadata]", from_files.call_args.args[0])
+    code, document = _requested_pages(client, file_id, {"first": 2})
 
-    assert code == _OK
-    assert requested[0].pages is not None
-    assert requested[0].pages.last is None
+    assert code == OK
+    assert document.pages is not None
+    assert document.pages.last is None
 
 
 def test_a_range_without_a_start_begins_at_the_first_page(
-    client: TestClient,
+    client: TestClient, sessions: sessionmaker[Session], tmp_path: Path
 ) -> None:
-    with mock.patch.object(
-        router_module, "text_from_files", return_value=_PAGE_TEXT
-    ) as from_files:
-        code, _ = _extract(
-            client,
-            {
-                "file_metadata": [
-                    {
-                        "file_id": "f1",
-                        "extension": "pdf",
-                        "pages": {"last": 3},
-                    }
-                ]
-            },
-        )
+    file_id = stored_file_id(sessions, USER_ID, tmp_path)
 
-    requested = cast("list[FileMetadata]", from_files.call_args.args[0])
+    code, document = _requested_pages(client, file_id, {"last": 3})
 
-    assert code == _OK
-    assert requested[0].pages is not None
-    assert requested[0].pages.first == 1
+    assert code == OK
+    assert document.pages is not None
+    assert document.pages.first == 1

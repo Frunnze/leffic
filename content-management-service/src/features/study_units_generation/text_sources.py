@@ -41,6 +41,11 @@ class PageRange(BaseModel):
 
 class FileMetadata(BaseModel):
     file_id: str
+    pages: PageRange | None = None
+
+
+class StoredDocument(BaseModel):
+    storage_name: str
     extension: str
     pages: PageRange | None = None
 
@@ -59,26 +64,24 @@ def get_file_from_storage(storage_name: str) -> bytes:
         raise MissingDocumentError from unreadable
 
 
-def text_from_files(file_metadata: list[FileMetadata]) -> str:
+def text_from_files(documents: list[StoredDocument]) -> str:
     extracted_text = ""
 
-    for file_meta in file_metadata:
-        file_bytes = get_file_from_storage(
-            f"{file_meta.file_id}.{file_meta.extension}"
-        )
-        extracted_text += _text_from_bytes(file_bytes, file_meta)
+    for document in documents:
+        file_bytes = get_file_from_storage(document.storage_name)
+        extracted_text += _text_from_bytes(file_bytes, document)
 
     return extracted_text
 
 
 def _readable_document(
-    file_bytes: bytes, file_meta: FileMetadata
+    file_bytes: bytes, document: StoredDocument
 ) -> tuple[bytes, str]:
-    asked = file_meta.pages
-    extension = file_meta.extension.lower()
+    asked = document.pages
+    extension = document.extension.lower()
 
     if asked is None:
-        return file_bytes, file_meta.extension
+        return file_bytes, document.extension
 
     if extension not in _PAGED_EXTENSIONS:
         raise PageSelectionError(_NOT_PAGED)
@@ -93,17 +96,19 @@ def _readable_document(
     return sliced, _PDF_EXTENSION
 
 
-def _text_from_bytes(file_bytes: bytes, file_meta: FileMetadata) -> str:
-    document, extension = _readable_document(file_bytes, file_meta)
+def _text_from_bytes(
+    file_bytes: bytes, document: StoredDocument
+) -> str:
+    readable, extension = _readable_document(file_bytes, document)
     text_extractor = text_extractor_factory.get_text_extractor(extension)
 
     if text_extractor is None:
         return ""
 
     with tempfile.NamedTemporaryFile(
-        suffix=file_meta.file_id
+        suffix=document.storage_name
     ) as temp_file:
-        _ = temp_file.write(document)
+        _ = temp_file.write(readable)
         temp_file.flush()
         extracted = text_extractor.extract_text(temp_file.name, extension)
 

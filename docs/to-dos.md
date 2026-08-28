@@ -157,6 +157,7 @@ several endpoints still do not establish ownership of the row they act on.
   its contents, and `../` identifiers can escape the storage directory.
   Resolve every id through `owned_file`, use the stored extension, reject
   path segments, and make the documents route take a database session.
+  _(claimed 2026-08-28T19:57Z)_
 - [ ] **`review_flashcard` and `review_test_item` trust the id.** Both
   record a review against a card/item without checking the owner, so one
   learner can corrupt another's schedule.
