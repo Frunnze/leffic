@@ -10,20 +10,21 @@ from sqlalchemy.orm import Session
 
 from shared.content_access import owned_content
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
-from shared.folder_access import resolved_folder_id
+from shared.file_storage import delete_file_from_storage
+from shared.folder_access import owned_folder_id
 from shared.models import File as StoredFile
-from shared.models import Folder
 from shared.pdf_conversion import ConversionError, PdfConversion
 
 file_uploader = APIRouter()
 
+UploadedFileMetadata = dict[str, str]
+
 _FILES_DIRECTORY = "files"
-_HOME_FOLDER = "home"
 _PDF_EXTENSION = "pdf"
 _PDF_MEDIA_TYPE = "application/pdf"
 _FILE_NOT_FOUND = "File not found"
 _MISSING_FILE = "File does not exist!"
-_MISSING_FOLDER = "Folder does not exist!"
+_MAXIMUM_STORAGE_NAME_BYTES = 255
 
 UploadedFiles = Annotated[list[UploadFile], File(...)]
 FolderId = Annotated[str | None, Form(...)]
@@ -36,37 +37,51 @@ def save_file_to_storage(file: UploadFile, unique_name: str) -> None:
         shutil.copyfileobj(file.file, out_file)
 
 
-def _stored_file(file: UploadFile) -> dict[str, str]:
+def _storage_name(uploaded_file_metadata: UploadedFileMetadata) -> str:
+    extension = uploaded_file_metadata["extension"]
+    suffix = f".{extension}" if extension else ""
+
+    return uploaded_file_metadata["file_id"] + suffix
+
+
+def _uploaded_file_metadata(file: UploadFile) -> UploadedFileMetadata:
     filename = file.filename or ""
-    file_id = str(uuid4())
-    extension = Path(filename).suffix
-    save_file_to_storage(file, file_id + extension)
 
     return {
-        "file_id": file_id,
-        "extension": extension.lstrip("."),
+        "file_id": str(uuid4()),
+        "extension": Path(filename).suffix.lstrip("."),
         "name": filename,
     }
 
 
-def _recorded_files(
-    db: Session, folder_id: str, uploaded_files: list[dict[str, str]]
+def _remove_uploaded_files_from_storage(
+    uploaded_files: list[UploadedFileMetadata],
 ) -> None:
-    folder = db.query(Folder).filter_by(id=folder_id).first()
+    for uploaded_file_metadata in uploaded_files:
+        storage_name = _storage_name(uploaded_file_metadata)
 
-    if folder is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=_MISSING_FOLDER
-        )
+        name_length_in_bytes = len(storage_name.encode())
 
-    for uploaded in uploaded_files:
-        folder.files.append(
+        if name_length_in_bytes <= _MAXIMUM_STORAGE_NAME_BYTES:
+            delete_file_from_storage(storage_name)
+
+
+def _recorded_files(
+    db: Session,
+    folder_id: str,
+    uploaded_files: list[UploadedFileMetadata],
+) -> None:
+    db.add_all(
+        [
             StoredFile(
-                id=uuid.UUID(uploaded["file_id"]),
-                name=uploaded["name"],
-                extension=uploaded["extension"],
+                id=uuid.UUID(uploaded_file_metadata["file_id"]),
+                name=uploaded_file_metadata["name"],
+                extension=uploaded_file_metadata["extension"],
+                folder_id=folder_id,
             )
-        )
+            for uploaded_file_metadata in uploaded_files
+        ]
+    )
 
     db.commit()
 
@@ -78,8 +93,21 @@ async def upload_files(
     files: UploadedFiles,
     folder_id: FolderId = None,
 ) -> dict[str, object]:
-    uploaded_files = [_stored_file(file) for file in files]
-    _recorded_files(db, resolved_folder_id(user_id, folder_id), uploaded_files)
+    owned_folder_identifier = owned_folder_id(db, user_id, folder_id)
+    uploaded_files: list[UploadedFileMetadata] = []
+
+    try:
+        for file in files:
+            uploaded_file_metadata = _uploaded_file_metadata(file)
+            uploaded_files.append(uploaded_file_metadata)
+            save_file_to_storage(
+                file, _storage_name(uploaded_file_metadata)
+            )
+
+        _recorded_files(db, owned_folder_identifier, uploaded_files)
+    except BaseException:
+        _remove_uploaded_files_from_storage(uploaded_files)
+        raise
 
     return {"msg": "Files uploaded!", "file_metadata": uploaded_files}
 

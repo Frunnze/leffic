@@ -129,13 +129,10 @@ def test_an_extension_starting_with_a_letter_keeps_it(
     assert stored["name"] == "sheet.Xml"
 
 
-def test_a_file_without_a_filename_is_stored_without_one(
-    tmp_path: Path,
-) -> None:
+def test_a_file_without_a_filename_is_stored_without_one() -> None:
     upload = UploadFile(file=io.BytesIO(b"payload"), filename=None)
 
-    with mock.patch.object(upload_module, "_FILES_DIRECTORY", str(tmp_path)):
-        stored = upload_module._stored_file(upload)
+    stored = upload_module._uploaded_file_metadata(upload)
 
     assert stored["name"] == ""
     assert stored["extension"] == ""
