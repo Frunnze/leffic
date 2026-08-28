@@ -12,6 +12,7 @@ for declared in $declared_services $declared_node_packages; do
 done
 
 checks_cheapest_first="
+tracked-lockfiles
 secrets
 file-length
 feature-isolation

@@ -16,14 +16,23 @@ P2 is what makes it survivable in the long run.
 
 ## P0 — the app does not work when built
 
-- [ ] **A clean checkout cannot build the frontend image.**
-  `ui-service/Dockerfile` copies `package-lock.json` and runs `npm ci`, but
-  the root `.gitignore` ignores every `package-lock.json` and the only
-  tracked UI lock is `ui-service/pnpm-lock.yaml`. The local build succeeds
-  only because an ignored lockfile happens to exist in this worktree;
-  `git ls-files` confirms it will be absent from a clone. Choose npm, track
-  its lockfile explicitly and remove the pnpm lock, or change the image and
-  all checks to pnpm.
+- [x] **A clean checkout now builds the frontend image.** `ui-service`
+  standardised on npm: `ui-service/package-lock.json` is tracked, the
+  `package-lock.json` rule left the root `.gitignore`, and the stale
+  `ui-service/pnpm-lock.yaml` was deleted. `api-gateway/package-lock.json`
+  and `hooks/package-lock.json` are tracked too, both regenerated so the
+  lock records the `overrides` their `package.json` declares. A new
+  `tracked-lockfiles` pre-commit check runs first and fails the commit if
+  any declared npm package has no lockfile in `git ls-files`. Verified: a
+  `git archive HEAD ui-service` extracted into an empty directory and
+  built with `docker build` exits 0, with `ui-service/.dockerignore`
+  keeping `node_modules`, `dist`, `tests` and `.DS_Store` out of the
+  context.
+- [ ] **The gateway image is not reproducible.** `api-gateway/Dockerfile`
+  runs `npm install` rather than `npm ci`, so every build resolves the
+  dependency tree afresh and can drift from the tree that was tested. Now
+  that `api-gateway/package-lock.json` is tracked, copy it into the build
+  stage and switch to `npm ci`.
 - [x] **The production bundle now points at the real gateway.**
   `ui-service/Dockerfile` takes `ARG VITE_GATEWAY_URL` / `ENV
   VITE_GATEWAY_URL` before `npm run build`, and `docker-compose.yml` passes

@@ -1,0 +1,21 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/../../_env.sh"
+
+echo "pre-commit: tracked-lockfiles (a clone must build the same tree)"
+
+a_lockfile_is_missing=""
+
+for node_package in $node_packages; do
+    lockfile="$node_package/package-lock.json"
+
+    if ! git ls-files -- "$lockfile" | grep -qx "$lockfile"; then
+        echo "pre-commit: $node_package has no tracked package-lock.json" >&2
+        a_lockfile_is_missing=1
+    fi
+done
+
+if [ -n "$a_lockfile_is_missing" ]; then
+    echo "pre-commit: commit the lockfile so npm ci works in a clone" >&2
+    exit 1
+fi
