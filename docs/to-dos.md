@@ -149,7 +149,7 @@ several endpoints still do not establish ownership of the row they act on.
   document to another learner's folder. Resolve the folder with
   `owned_folder_id` before writing bytes, and remove partial files if either
   storage or the database operation fails.
-- [ ] **Text extraction bypasses file ownership and accepts storage paths.**
+- [x] **Text extraction bypasses file ownership and accepts storage paths.**
   `ExtractionRequest.file_metadata` carries arbitrary `file_id` and
   `extension` strings; `text_from_files` (`text_sources.py`) concatenates
   them into `files/{file_id}.{extension}` and reads the path with no database
@@ -157,7 +157,6 @@ several endpoints still do not establish ownership of the row they act on.
   its contents, and `../` identifiers can escape the storage directory.
   Resolve every id through `owned_file`, use the stored extension, reject
   path segments, and make the documents route take a database session.
-  _(claimed 2026-08-28T19:57Z)_
 - [ ] **`review_flashcard` and `review_test_item` trust the id.** Both
   record a review against a card/item without checking the owner, so one
   learner can corrupt another's schedule.
