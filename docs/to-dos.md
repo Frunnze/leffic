@@ -193,7 +193,7 @@ several endpoints still do not establish ownership of the row they act on.
   `condition: service_healthy`, so the boot race is gone. The services
   themselves still expose no `/health`, so nothing gates the gateway on
   their readiness or reports them unhealthy once running.
-- [ ] **`create_database_if_not_exists` runs at import time.**
+- [x] **`create_database_if_not_exists` runs at import time.**
   `content-management-service/src/shared/database.py` connects to Postgres
   while the module is being imported, so an unavailable database is an import
   crash rather than a retryable startup failure.
