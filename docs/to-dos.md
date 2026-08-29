@@ -160,7 +160,7 @@ several endpoints still do not establish ownership of the row they act on.
 - [x] **`review_flashcard` and `review_test_item` trust the id.** Both
   record a review against a card/item without checking the owner, so one
   learner can corrupt another's schedule.
-- [ ] **Test sessions have no owner boundary.** A folder-scoped
+- [x] **Test sessions have no owner boundary.** A folder-scoped
   `get_test_items` (`assessment_router.py`) calls `owned_scope`, which only
   parses the folder id, and opens a `TestSession` before proving the folder is
   owned. A caller-supplied `test_session` is not checked against the requested
