@@ -2,6 +2,7 @@ from types import TracebackType
 from typing import TYPE_CHECKING, final
 from unittest import mock
 
+import psycopg2
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
@@ -12,7 +13,7 @@ from shared import database
 if TYPE_CHECKING:
     from fastapi import FastAPI
 
-_CONNECT = "shared.database.psycopg2.connect"
+_PSYCOPG2_CONNECT_TARGET = "shared.database.psycopg2.connect"
 _EXISTENCE_QUERY_ONLY = 1
 _EXISTENCE_QUERY_AND_CREATE = 2
 _EXPECTED_ROUTES = (
@@ -122,7 +123,7 @@ def test_create_database_if_not_exists_property_creates_only_when_absent(
 ) -> None:
     connection = RecordingConnection(existing_row)
 
-    with mock.patch(_CONNECT, return_value=connection):
+    with mock.patch(_PSYCOPG2_CONNECT_TARGET, return_value=connection):
         database.create_database_if_not_exists()
 
     expected_statements = _EXISTENCE_QUERY_ONLY
@@ -131,3 +132,68 @@ def test_create_database_if_not_exists_property_creates_only_when_absent(
 
     assert connection.autocommit
     assert len(connection.opened_cursor.statements) == expected_statements
+
+
+_DATABASE_SCHEMES = (
+    "postgresql",
+    "postgresql+psycopg2",
+    "postgres",
+    "sqlite",
+    "mysql",
+    "PostgreSQL",
+    "postgresq",
+    "",
+)
+_URL_ATTRIBUTE = "SQLALCHEMY_DATABASE_URL"
+
+
+def _database_url(scheme: str, remainder: str) -> str:
+    return f"{scheme}://{remainder}"
+
+
+database_urls = st.builds(
+    _database_url,
+    st.sampled_from(_DATABASE_SCHEMES),
+    st.text(max_size=20),
+)
+postgres_urls = st.builds(
+    _database_url,
+    st.sampled_from(("postgresql", "postgresql+psycopg2")),
+    st.text(max_size=20),
+)
+
+
+@settings(max_examples=50, deadline=None)
+@given(database_urls)
+def test_create_postgres_database_if_configured_property_connects_for_postgres(
+    database_url: str,
+) -> None:
+    connection = RecordingConnection(existing_row=(1,))
+
+    with (
+        mock.patch.object(database, _URL_ATTRIBUTE, database_url),
+        mock.patch(
+            _PSYCOPG2_CONNECT_TARGET, return_value=connection
+        ) as connect,
+    ):
+        database.create_postgres_database_if_configured()
+
+    is_postgres_url = database_url.startswith(database._POSTGRES_SCHEME)
+
+    assert bool(connect.call_count) is is_postgres_url
+
+
+@settings(max_examples=25, deadline=None)
+@given(postgres_urls)
+def test_create_postgres_database_if_configured_property_propagates_the_error(
+    database_url: str,
+) -> None:
+    with (
+        mock.patch.object(database, _URL_ATTRIBUTE, database_url),
+        mock.patch(
+            _PSYCOPG2_CONNECT_TARGET,
+            side_effect=psycopg2.OperationalError,
+        ),
+        pytest.raises(psycopg2.OperationalError),
+    ):
+        database.create_postgres_database_if_configured()

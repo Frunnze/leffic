@@ -1,5 +1,6 @@
 import uuid
 from pathlib import Path
+from unittest import mock
 
 from alembic.command import downgrade, upgrade
 from alembic.script import ScriptDirectory
@@ -86,3 +87,30 @@ def test_downgrade_drops_user_id(tmp_path: Path) -> None:
     assert "user_id" in upgraded
     assert "user_id" not in reverted
     assert set(reverted) == _BASE_COLUMNS
+
+
+_PSYCOPG2_CONNECT_TARGET = "psycopg2.connect"
+
+
+def test_the_session_upgrade_opens_no_postgres_connection(
+    tmp_path: Path,
+) -> None:
+    database_url = f"sqlite:///{tmp_path / 'sessions.db'}"
+
+    with mock.patch(_PSYCOPG2_CONNECT_TARGET) as connect:
+        upgrade(alembic_config(database_url), "head")
+
+    assert connect.call_count == 0
+
+
+def test_the_session_downgrade_opens_no_postgres_connection(
+    tmp_path: Path,
+) -> None:
+    database_url = f"sqlite:///{tmp_path / 'sessions_down.db'}"
+    config = alembic_config(database_url)
+    upgrade(config, "head")
+
+    with mock.patch(_PSYCOPG2_CONNECT_TARGET) as connect:
+        downgrade(config, INITIAL_REVISION)
+
+    assert connect.call_count == 0

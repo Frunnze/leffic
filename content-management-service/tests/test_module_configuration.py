@@ -18,22 +18,40 @@ def test_a_missing_jwt_secret_stops_the_service_from_starting() -> None:
     _ = importlib.reload(jwt_secret)
 
 
-def test_a_postgres_url_bootstraps_the_database() -> None:
-    postgres_url = "postgresql://postgres:postgres@localhost:5432/content"
+_POSTGRES_URL = "postgresql://postgres:postgres@localhost:5432/content"
+_OTHER_POSTGRES_URL = "postgresql://reader:secret@db.internal:6543/library"
+_SQLITE_URL = "sqlite://"
+_PSYCOPG2_CONNECT_TARGET = "psycopg2.connect"
 
+
+def _reload_with_database_url(database_url: str) -> tuple[str, mock.Mock]:
     with (
-        mock.patch.dict(os.environ, {"DATABASE_URL": postgres_url}),
-        mock.patch.object(database, "create_engine"),
-        mock.patch(
-            "shared.database.create_database_if_not_exists"
-        ) as bootstrap,
-        mock.patch("psycopg2.connect"),
+        mock.patch.dict(os.environ, {"DATABASE_URL": database_url}),
+        mock.patch(_PSYCOPG2_CONNECT_TARGET) as connect,
     ):
         reloaded = importlib.reload(database)
+        configured_url = cast("str", reloaded.SQLALCHEMY_DATABASE_URL)
 
-        database_url = cast("str", reloaded.SQLALCHEMY_DATABASE_URL)
-
-        assert database_url == postgres_url
-
-    _ = bootstrap
     _ = importlib.reload(database)
+
+    return configured_url, connect
+
+
+def test_a_postgres_url_does_not_bootstrap_the_database_at_import() -> None:
+    configured_url, connect = _reload_with_database_url(_POSTGRES_URL)
+
+    assert configured_url == _POSTGRES_URL
+    assert connect.call_count == 0
+
+
+def test_a_sqlite_url_does_not_bootstrap_the_database_at_import() -> None:
+    configured_url, connect = _reload_with_database_url(_SQLITE_URL)
+
+    assert configured_url == _SQLITE_URL
+    assert connect.call_count == 0
+
+
+def test_the_configured_database_url_survives_the_module_import() -> None:
+    configured_url, _ = _reload_with_database_url(_OTHER_POSTGRES_URL)
+
+    assert configured_url == _OTHER_POSTGRES_URL

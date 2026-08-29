@@ -1,65 +1,16 @@
-from typing import Self
 from unittest import mock
 
 import psycopg2
+import pytest
 from sqlalchemy.orm import Session
 
 from shared import database
+from tests.database_bootstrap_support import (
+    FakeConnection,
+    FakeCursor,
+)
 
 _EXPECTED_STATEMENT_COUNT = 2
-
-
-class FakeCursor:
-    def __init__(self, existing: tuple[int] | None) -> None:
-        super().__init__()
-        self.existing: tuple[int] | None = existing
-        self.statements: list[object] = []
-        self.parameters: list[object] = []
-
-    def __enter__(self) -> Self:
-        return self
-
-    def __exit__(self, *_: object) -> None:
-        return None
-
-    def execute(self, statement: object, *arguments: object) -> None:
-        self.statements.append(statement)
-        self.parameters.extend(arguments)
-
-    def fetchone(self) -> tuple[int] | None:
-        return self.existing
-
-
-class FakeConnection:
-    def __init__(self, cursor: FakeCursor) -> None:
-        super().__init__()
-        self.cursor_object: FakeCursor = cursor
-        self.entered: bool = False
-        self.closed: bool = False
-        self.statements_before_autocommit: int | None = None
-        self._autocommit: bool = False
-
-    def __enter__(self) -> Self:
-        self.entered = True
-        return self
-
-    def __exit__(self, *_: object) -> None:
-        return None
-
-    @property
-    def autocommit(self) -> bool:
-        return self._autocommit
-
-    @autocommit.setter
-    def autocommit(self, enabled: bool) -> None:
-        self._autocommit = enabled
-        self.statements_before_autocommit = len(self.cursor_object.statements)
-
-    def cursor(self) -> FakeCursor:
-        return self.cursor_object
-
-    def close(self) -> None:
-        self.closed = True
 
 
 def test_get_db_yields_a_session_and_closes_it() -> None:
@@ -149,3 +100,62 @@ def test_the_create_statement_names_the_database() -> None:
         "Composed([SQL('CREATE DATABASE '), "
         f"Identifier('{database.db_name}')])"
     )
+
+
+_POSTGRES_URL = "postgresql://postgres:postgres@localhost:5455/content"
+_SQLITE_URL = "sqlite:///./content.db"
+
+
+def _run_configured_bootstrap(
+    database_url: str, connection: FakeConnection
+) -> mock.MagicMock:
+    with (
+        mock.patch.object(
+            database, "SQLALCHEMY_DATABASE_URL", database_url
+        ),
+        mock.patch.object(
+            psycopg2, "connect", return_value=connection
+        ) as connect,
+    ):
+        database.create_postgres_database_if_configured()
+
+    return connect
+
+
+def test_create_postgres_database_if_configured_connects_for_a_postgres_url(
+) -> None:
+    connection = FakeConnection(FakeCursor(existing=None))
+
+    connect = _run_configured_bootstrap(_POSTGRES_URL, connection)
+
+    assert connect.call_count == 1
+
+
+def test_create_postgres_database_if_configured_skips_a_sqlite_url() -> None:
+    connection = FakeConnection(FakeCursor(existing=None))
+
+    connect = _run_configured_bootstrap(_SQLITE_URL, connection)
+
+    assert connect.call_count == 0
+
+
+def test_the_configured_bootstrap_runs_no_statement_for_a_sqlite_url(
+) -> None:
+    cursor = FakeCursor(existing=None)
+
+    _ = _run_configured_bootstrap(_SQLITE_URL, FakeConnection(cursor))
+
+    assert cursor.statements == []
+
+
+def test_an_unreachable_postgres_propagates_the_operational_error() -> None:
+    with (
+        mock.patch.object(
+            database, "SQLALCHEMY_DATABASE_URL", _POSTGRES_URL
+        ),
+        mock.patch.object(
+            psycopg2, "connect", side_effect=psycopg2.OperationalError
+        ),
+        pytest.raises(psycopg2.OperationalError),
+    ):
+        database.create_postgres_database_if_configured()

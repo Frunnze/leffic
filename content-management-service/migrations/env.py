@@ -2,7 +2,11 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 import shared.models  # noqa: F401
-from shared.database import SQLALCHEMY_DATABASE_URL, Base
+from shared.database import (
+    SQLALCHEMY_DATABASE_URL,
+    Base,
+    create_postgres_database_if_configured,
+)
 
 _CONFIGURED_URL = "sqlalchemy.url"
 
@@ -42,6 +46,8 @@ def run_migrations_online() -> None:
         with context.begin_transaction():
             context.run_migrations()
 
+
+create_postgres_database_if_configured()
 
 if context.is_offline_mode():
     run_migrations_offline()

@@ -43,8 +43,12 @@ def create_database_if_not_exists() -> None:
                 )
 
 
-if SQLALCHEMY_DATABASE_URL.startswith(_POSTGRES_SCHEME):
+def create_postgres_database_if_configured() -> None:
+    if not SQLALCHEMY_DATABASE_URL.startswith(_POSTGRES_SCHEME):
+        return
+
     create_database_if_not_exists()
+
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
