@@ -100,15 +100,13 @@ several endpoints still do not establish ownership of the row they act on.
   reaches the `FlexibleUuid` bind, so `create-folder`, `move-unit`,
   `notes-stats`, `flashcards-stats` and the folder read paths answer 404
   instead of raising out of the database layer.
-- [ ] **A non-dict task result is still a 500.** `_finished_result`
-  (`task_status_router.py`) raises an uncaught
-  `TypeError("The task did not finish with a result object")` when a
-  succeeded task's `result` is not a dict, and the three status endpoints
-  let it escape as a 500. The task-status ownership fix below narrows who
-  can reach it — the caller must now hold a valid token for a folder they
-  own — but it does not remove it: an owner whose own task returned a
-  non-dict still gets the 500. Decide what the endpoints should answer
-  instead (a `{"status": ...}` body, or a logged 500) and handle it there.
+- [x] **A non-dict task result is no longer a 500.** `_finished_result`
+  (`task_status_router.py`) substitutes the `FAILURE` status instead of
+  raising `TypeError` when a succeeded task's `result` is not a dict, so
+  `flashcards-status`, `test-task-status` and `note-task-status` answer
+  `200 {"status": "FAILURE"}` — byte-identical to a genuinely failed
+  task — where an owner whose own task returned a non-dict used to get a
+  500.
 - [x] **`GET /file` now proves ownership.** `get_file`
   (`features/file_upload/file_uploader.py`) takes `AuthenticatedUserId`
   and resolves the id through `owned_file`
