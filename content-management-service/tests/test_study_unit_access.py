@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from features.study_units import study_unit_access
 from features.study_units.study_unit_access import (
     _MISSING_FLASHCARD,
-    _MISSING_TEST_ITEM,
+    MISSING_TEST_ITEM,
     owned_flashcard,
     owned_test_item,
 )
@@ -43,7 +43,7 @@ def test_missing_flashcard_detail_is_the_module_constant() -> None:
 
 
 def test_missing_test_item_detail_is_the_module_constant() -> None:
-    assert _MISSING_TEST_ITEM == "Test item does not exist!"
+    assert MISSING_TEST_ITEM == "Test item does not exist!"
 
 
 def test_owned_flashcard_returns_the_owners_card(
@@ -107,7 +107,7 @@ def test_owned_test_item_refuses_a_strangers_item_with_the_detail(
         )
 
     assert refused.value.status_code == NOT_FOUND
-    assert refused.value.detail == _MISSING_TEST_ITEM
+    assert refused.value.detail == MISSING_TEST_ITEM
 
 
 def test_owned_test_item_absent_id_is_the_same_404(
@@ -140,7 +140,7 @@ def test_content_access_is_untouched() -> None:
 
 
 def test_the_two_helpers_refuse_with_different_details() -> None:
-    assert _MISSING_FLASHCARD != _MISSING_TEST_ITEM
+    assert _MISSING_FLASHCARD != MISSING_TEST_ITEM
 
 
 def test_a_flashcard_helper_never_answers_with_a_test_item(

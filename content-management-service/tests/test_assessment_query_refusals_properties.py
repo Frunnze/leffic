@@ -9,10 +9,8 @@ from features.study_units.assessment_queries import (
     MISSING_SESSION,
     MISSING_TEST,
     items_query,
-    owned_scope,
     session_answers,
 )
-from shared.folder_access import MISSING_FOLDER
 from shared.models import TestItem
 from tests.assessment_seeding import (
     NOT_FOUND,
@@ -22,19 +20,7 @@ from tests.assessment_seeding import (
 )
 from tests.property_support import property_world
 
-_CLIENT, _SESSIONS = property_world()
-
-
-@settings(max_examples=50)
-@given(st.uuids(), UNREADABLE)
-def test_owned_scope_property_refuses_a_folder_it_cannot_read(
-    user_id: uuid.UUID, folder_id: str
-) -> None:
-    with pytest.raises(HTTPException) as raised:
-        _ = owned_scope(str(user_id), folder_id)
-
-    assert raised.value.status_code == NOT_FOUND
-    assert raised.value.detail == MISSING_FOLDER
+_, _SESSIONS = property_world()
 
 
 @settings(max_examples=25, deadline=None)

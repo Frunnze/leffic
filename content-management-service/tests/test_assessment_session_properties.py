@@ -7,12 +7,12 @@ from hypothesis import strategies as st
 from features.study_units.assessment_queries import (
     items_query,
     ongoing_session,
-    owned_scope,
     session_answers,
 )
-from shared.models import TestItem
+from shared.models import TestItem, TestSession
 from tests.assessment_seeding import seeded_test
 from tests.property_support import property_world
+from tests.session_ownership_support import ONGOING
 from tests.support import authorization
 
 _OK = 200
@@ -34,15 +34,25 @@ def test_session_answers_property_stays_empty_until_something_is_reviewed(
 
 
 @settings(max_examples=25, deadline=None)
-@given(st.uuids())
-def test_ongoing_session_property_reuses_the_session_it_already_opened(
-    origin: uuid.UUID,
+@given(st.uuids(), st.uuids())
+def test_ongoing_session_property_reuses_one_row_per_owner_and_origin(
+    owner: uuid.UUID, origin: uuid.UUID
 ) -> None:
     with _SESSIONS() as session:
-        first = ongoing_session(session, str(origin))
-        second = ongoing_session(session, str(origin))
+        first = ongoing_session(session, str(owner), str(origin))
+        second = ongoing_session(session, str(owner), str(origin))
+        rows = (
+            session.query(TestSession)
+            .filter(
+                TestSession.user_id == owner,
+                TestSession.origin_id == origin,
+                TestSession.status == ONGOING,
+            )
+            .count()
+        )
 
     assert first == second
+    assert rows == 1
 
 
 @settings(max_examples=25, deadline=None)
@@ -110,19 +120,3 @@ def test_review_test_item_property_scores_only_the_true_option(
     )
 
     assert response.status_code == _OK
-
-
-@settings(max_examples=50)
-@given(st.uuids(), st.one_of(st.none(), st.just("home"), st.uuids()))
-def test_owned_scope_property_reads_home_as_the_caller(
-    user_id: uuid.UUID, folder_id: object
-) -> None:
-    asked = None if folder_id is None else str(folder_id)
-    resolved = owned_scope(str(user_id), asked)
-
-    if asked is None:
-        assert resolved is None
-    elif asked == "home":
-        assert resolved == str(user_id)
-    else:
-        assert resolved == asked

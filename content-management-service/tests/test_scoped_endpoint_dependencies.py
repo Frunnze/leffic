@@ -14,6 +14,7 @@ _SESSION_SCOPED_ROUTES = (
     ("/note", "GET"),
     ("/flashcards", "GET"),
     ("/test-items", "GET"),
+    ("/test-session-results", "GET"),
     ("/flashcards-status/{task_id}", "GET"),
     ("/test-task-status/{task_id}", "GET"),
     ("/note-task-status/{task_id}", "GET"),

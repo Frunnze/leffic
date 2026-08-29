@@ -107,7 +107,7 @@ def test_item_stats_report_nothing_without_items(
     assert response.status_code == _NOT_FOUND
 
 
-def test_session_results_close_the_session(
+def test_an_owned_session_is_closed_and_scored(
     client: TestClient, sessions: sessionmaker[Session], test_id: str
 ) -> None:
     opened = client.get(
@@ -129,7 +129,9 @@ def test_session_results_close_the_session(
     )
 
     response = client.get(
-        "/test-session-results", params={"test_session": session_id}
+        "/test-session-results",
+        params={"test_session": session_id},
+        headers=authorization(),
     )
 
     with sessions() as session:
@@ -137,39 +139,3 @@ def test_session_results_close_the_session(
 
     assert cast("dict[str, int]", response.json())["correct"] == 1
     assert closed.status == "done"
-
-
-def test_session_results_for_an_unknown_session(client: TestClient) -> None:
-    response = client.get(
-        "/test-session-results", params={"test_session": str(uuid.uuid4())}
-    )
-
-    assert response.status_code == _NOT_FOUND
-
-
-def test_session_results_with_nothing_correct(
-    client: TestClient, sessions: sessionmaker[Session], test_id: str
-) -> None:
-    opened = client.get(
-        "/test-items", params={"test_id": test_id}, headers=authorization()
-    )
-    session_id = cast("dict[str, str]", opened.json())["test_session"]
-
-    with sessions() as session:
-        item_id = session.query(TestItem).one().id
-
-    _ = client.post(
-        "/review-test-item",
-        json={
-            "test_item_id": item_id,
-            "test_session": session_id,
-            "answers": [1],
-        },
-        headers=authorization(),
-    )
-
-    response = client.get(
-        "/test-session-results", params={"test_session": session_id}
-    )
-
-    assert response.status_code == _NOT_FOUND

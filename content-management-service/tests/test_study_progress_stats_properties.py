@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import cast
 
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from shared.models import Test, TestItem, TestSession
@@ -13,6 +13,7 @@ from tests.support import authorization
 _OK = 200
 _NOT_FOUND = 404
 _DONE = "done"
+_ONGOING = "ongoing"
 _CLIENT, _SESSIONS = property_world()
 _COUNTS = st.integers(min_value=1, max_value=3)
 
@@ -78,32 +79,61 @@ def test_test_items_stats_property_reports_an_empty_folder_as_missing(
     assert response.status_code == _NOT_FOUND
 
 
+def _opened_session(owner: uuid.UUID) -> uuid.UUID:
+    with _SESSIONS() as session:
+        opened = TestSession(
+            id=uuid.uuid4(),
+            origin_id=uuid.uuid4(),
+            status=_ONGOING,
+            user_id=owner,
+        )
+        session.add(opened)
+        session.commit()
+
+        return opened.id
+
+
+def _session_status(session_id: uuid.UUID) -> str:
+    with _SESSIONS() as session:
+        row = session.get(TestSession, session_id)
+
+        assert row is not None
+
+        return row.status
+
+
 @settings(max_examples=25, deadline=None)
 @given(st.uuids())
 def test_test_session_results_property_closes_the_session_it_reports_on(
     owner: uuid.UUID,
 ) -> None:
-    with _SESSIONS() as session:
-        opened = TestSession(
-            id=uuid.uuid4(), origin_id=str(uuid.uuid4()), status="ongoing"
-        )
-        session.add(opened)
-        session.commit()
-        session_id = opened.id
-
+    session_id = _opened_session(owner)
     response = _CLIENT.get(
         "/test-session-results",
         params={"test_session": str(session_id)},
         headers=authorization(str(owner)),
     )
 
-    with _SESSIONS() as session:
-        closed = session.get(TestSession, session_id)
+    assert _session_status(session_id) == _DONE
+    assert response.status_code == _NOT_FOUND
 
-        assert closed is not None
-        assert closed.status == _DONE
+
+@settings(max_examples=25, deadline=None)
+@given(st.uuids(), st.uuids())
+def test_test_session_results_property_never_closes_a_foreign_session(
+    owner: uuid.UUID, stranger: uuid.UUID
+) -> None:
+    _ = assume(owner != stranger)
+
+    session_id = _opened_session(stranger)
+    response = _CLIENT.get(
+        "/test-session-results",
+        params={"test_session": str(session_id)},
+        headers=authorization(str(owner)),
+    )
 
     assert response.status_code == _NOT_FOUND
+    assert _session_status(session_id) == _ONGOING
 
 
 @settings(max_examples=25, deadline=None)

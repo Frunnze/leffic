@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from features.study_units.study_unit_access import (
     _MISSING_FLASHCARD,
-    _MISSING_TEST_ITEM,
+    MISSING_TEST_ITEM,
     owned_flashcard,
     owned_test_item,
 )
@@ -97,7 +97,7 @@ def test_owned_test_item_property_never_reaches_a_strangers_item(
         with pytest.raises(HTTPException) as refused:
             _ = owned_test_item(session, str(stranger), item_id)
 
-    assert _refusal(refused.value) == (NOT_FOUND, _MISSING_TEST_ITEM)
+    assert _refusal(refused.value) == (NOT_FOUND, MISSING_TEST_ITEM)
 
 
 @_EXAMPLES
@@ -156,4 +156,4 @@ def test_owned_test_item_property_refuses_every_id_no_test_carries(
         with pytest.raises(HTTPException) as refused:
             _ = owned_test_item(session, str(owner), unseeded_id)
 
-    assert _refusal(refused.value) == (NOT_FOUND, _MISSING_TEST_ITEM)
+    assert _refusal(refused.value) == (NOT_FOUND, MISSING_TEST_ITEM)

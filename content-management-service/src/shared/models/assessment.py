@@ -58,6 +58,9 @@ class TestSession(UuidPrimaryKey, Base):
     status: Mapped[str] = mapped_column(
         String, nullable=False
     )  # done/ongoing
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        FlexibleUuid(), nullable=False
+    )
     created_at: Mapped[datetime | None] = mapped_column(
         DateTime, default=datetime.now(UTC), nullable=True
     )

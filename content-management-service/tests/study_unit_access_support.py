@@ -32,7 +32,7 @@ def seeded_world(sessions: sessionmaker[Session]) -> StudyUnitWorld:
     with sessions() as session:
         _, _, card_ids = seeded_deck(session, owner, 1)
         _, test_id, item_ids = seeded_test(session, owner, 1)
-        test_session_id = opened_test_session(session, test_id)
+        test_session_id = opened_test_session(session, owner, test_id)
 
     return StudyUnitWorld(
         owner=owner,
@@ -44,10 +44,16 @@ def seeded_world(sessions: sessionmaker[Session]) -> StudyUnitWorld:
 
 
 def opened_test_session(
-    session: Session, origin_id: uuid.UUID
+    session: Session,
+    user_id: uuid.UUID,
+    origin_id: uuid.UUID,
+    status: str = ONGOING,
 ) -> uuid.UUID:
     opened = TestSession(
-        id=uuid.uuid4(), origin_id=origin_id, status=ONGOING
+        id=uuid.uuid4(),
+        origin_id=origin_id,
+        status=status,
+        user_id=user_id,
     )
     session.add(opened)
     session.commit()

@@ -1,28 +1,14 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Query, Session
 
-from shared.folder_access import MISSING_FOLDER
 from shared.folder_tree import subfolder_ids
 from shared.identifiers import parsed_identifier
 from shared.models import Test, TestItem, TestItemReview, TestSession
 
-HOME_FOLDER = "home"
 MISSING_TEST = "Test does not exist!"
 MISSING_SESSION = "Test session does not exist!"
 
 _ONGOING = "ongoing"
-
-
-def owned_scope(user_id: str, folder_id: str | None) -> str | None:
-    if folder_id is None:
-        return None
-
-    if folder_id == HOME_FOLDER:
-        return user_id
-
-    _ = parsed_identifier(folder_id, MISSING_FOLDER)
-
-    return folder_id
 
 
 def session_answers(
@@ -41,10 +27,11 @@ def session_answers(
     return review.answers if review else None
 
 
-def ongoing_session(db: Session, origin_id: str) -> str:
+def ongoing_session(db: Session, user_id: str, origin_id: str) -> str:
     existing = (
         db.query(TestSession)
         .filter(
+            TestSession.user_id == user_id,
             TestSession.origin_id == origin_id,
             TestSession.status == _ONGOING,
         )
@@ -54,7 +41,9 @@ def ongoing_session(db: Session, origin_id: str) -> str:
     if existing:
         return str(existing.id)
 
-    new_session = TestSession(origin_id=origin_id, status=_ONGOING)
+    new_session = TestSession(
+        origin_id=origin_id, status=_ONGOING, user_id=user_id
+    )
     db.add(new_session)
     db.commit()
 

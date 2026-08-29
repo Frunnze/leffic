@@ -10,7 +10,7 @@ from shared.models import (
 )
 
 _MISSING_FLASHCARD = "Flashcard does not exist!"
-_MISSING_TEST_ITEM = "Test item does not exist!"
+MISSING_TEST_ITEM = "Test item does not exist!"
 
 
 def owned_flashcard(
@@ -47,7 +47,7 @@ def owned_test_item(
     if item is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=_MISSING_TEST_ITEM,
+            detail=MISSING_TEST_ITEM,
         )
 
     return item

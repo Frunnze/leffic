@@ -33,7 +33,9 @@ def _seeded_item(
 ) -> tuple[int, uuid.UUID]:
     _, test_id, item_ids = seeded_test(session, owner, 1)
 
-    return item_ids[0], opened_test_session(session, test_id)
+    return item_ids[0], opened_test_session(
+        session, owner, test_id
+    )
 
 
 @_EXAMPLES
@@ -72,7 +74,9 @@ def test__upserted_review_property_keeps_every_session_apart(
 ) -> None:
     with _SESSIONS() as session:
         item_id, first_session = _seeded_item(session, owner)
-        second_session = opened_test_session(session, uuid.uuid4())
+        second_session = opened_test_session(
+            session, owner, uuid.uuid4()
+        )
 
         _upserted_review(
             session, first_session, item_id, list(answers), accuracy

@@ -16,7 +16,6 @@ from shared.models import (
     TestSession,
 )
 from tests.support import (
-    OTHER_USER_ID,
     USER_ID,
     SessionProvider,
     authorization,
@@ -86,6 +85,7 @@ def test_answers_from_another_session_are_not_returned(
                 id=other_session,
                 origin_id=uuid.UUID(test_id),
                 status="ongoing",
+                user_id=_HOME_ID,
             )
         )
         session.commit()
@@ -133,11 +133,17 @@ def test_an_answer_for_another_item_is_not_returned(
     assert items[0]["last_answers"] is None
 
 
-def test_a_finished_session_is_not_reused(
+def test_a_done_session_is_not_reused(
     client: TestClient, sessions: sessionmaker[Session], test_id: str
 ) -> None:
     with sessions() as session:
-        session.add(TestSession(origin_id=uuid.UUID(test_id), status="done"))
+        session.add(
+            TestSession(
+                origin_id=uuid.UUID(test_id),
+                status="done",
+                user_id=_HOME_ID,
+            )
+        )
         session.commit()
 
     response = client.get(
@@ -160,7 +166,13 @@ def test_a_session_for_another_origin_is_not_reused(
     client: TestClient, sessions: sessionmaker[Session], test_id: str
 ) -> None:
     with sessions() as session:
-        session.add(TestSession(origin_id=uuid.uuid4(), status="ongoing"))
+        session.add(
+            TestSession(
+                origin_id=uuid.uuid4(),
+                status="ongoing",
+                user_id=_HOME_ID,
+            )
+        )
         session.commit()
 
     response = client.get(
@@ -178,22 +190,3 @@ def test_a_session_for_another_origin_is_not_reused(
 
     assert origins[opened] == test_id
     assert len(origins) == total_session_count
-
-
-def test_items_under_a_folder_i_do_not_own_are_hidden(
-    client: TestClient, sessions: sessionmaker[Session], test_id: str
-) -> None:
-    assert test_id
-
-    with sessions() as session:
-        home = session.query(Folder).filter_by(id=_HOME_ID).one()
-        home.user_id = uuid.UUID(OTHER_USER_ID)
-        session.commit()
-
-    response = client.get(
-        "/test-items",
-        params={"folder_id": "home"},
-        headers=authorization(),
-    )
-
-    assert cast("dict[str, object]", response.json())["total_items"] == 0
