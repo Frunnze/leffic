@@ -10,15 +10,12 @@ from features.study_units.assessment_queries import (
     owned_scope,
     session_answers,
 )
-from features.study_units.assessment_router import AssessmentGrading
 from shared.models import TestItem
 from tests.assessment_seeding import seeded_test
 from tests.property_support import property_world
 from tests.support import authorization
 
 _OK = 200
-_CORRECT = 1
-_INCORRECT = 0
 _CLIENT, _SESSIONS = property_world()
 _ITEM_COUNTS = st.integers(min_value=1, max_value=3)
 
@@ -86,14 +83,6 @@ def test_get_test_items_property_never_returns_more_than_a_page(
     assert len(cast("list[object]", body["test_items"])) == min(
         per_page, item_count
     )
-
-
-@settings(max_examples=50)
-@given(st.integers(min_value=-2, max_value=3))
-def test_graded_property_credits_nothing_for_an_item_that_is_gone(
-    answer: int,
-) -> None:
-    assert AssessmentGrading.graded(None, [answer]) == _INCORRECT
 
 
 @settings(max_examples=25, deadline=None)

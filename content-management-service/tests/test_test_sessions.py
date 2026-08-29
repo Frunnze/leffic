@@ -76,6 +76,7 @@ def test_answers_from_another_session_are_not_returned(
             "test_session": session_id,
             "answers": [0],
         },
+        headers=authorization(),
     )
     other_session = uuid.uuid4()
 

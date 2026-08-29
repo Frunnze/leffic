@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from features.study_units.flashcard_editing_router import _owned_flashcard
+from features.study_units.study_unit_access import owned_flashcard
 from shared.models import Flashcard
 from tests.property_support import property_world, seeded_deck
 from tests.support import authorization
@@ -20,19 +20,19 @@ _CONTENTS = st.fixed_dictionaries(
 
 @settings(max_examples=25, deadline=None)
 @given(st.uuids(), st.uuids())
-def test__owned_flashcard_property_never_reaches_a_strangers_card(
+def test_owned_flashcard_property_never_reaches_a_strangers_card(
     owner: uuid.UUID, stranger: uuid.UUID
 ) -> None:
     with _SESSIONS() as session:
         _, _, card_ids = seeded_deck(session, owner, 1)
 
         assert (
-            _owned_flashcard(session, str(owner), card_ids[0]).id
+            owned_flashcard(session, str(owner), card_ids[0]).id
             == card_ids[0]
         )
 
         with pytest.raises(HTTPException) as raised:
-            _ = _owned_flashcard(session, str(stranger), card_ids[0])
+            _ = owned_flashcard(session, str(stranger), card_ids[0])
 
     assert raised.value.status_code == _NOT_FOUND
 

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import cast
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from fsrs.card import CardDict
 from fsrs.review_log import ReviewLogDict
@@ -12,6 +12,7 @@ from sqlalchemy.orm import Query, Session
 
 from features.study_units.clock import utc_today
 from features.study_units.formatting import date_to_str, flashcard_results
+from features.study_units.study_unit_access import owned_flashcard
 from shared.content_access import owned_content
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
 from shared.flashcard_scheduling import (
@@ -29,7 +30,6 @@ from shared.models import (
 flashcard_router = APIRouter()
 
 _DEFAULT_PER_PAGE = 10
-_MISSING_FLASHCARD = "Flashcard does not exist!"
 _MISSING_DECK = "Deck does not exist!"
 
 
@@ -113,17 +113,7 @@ def review_flashcard(
     db: DatabaseSession,
     user_id: AuthenticatedUserId,
 ) -> JSONResponse:
-    # Get card
-    card = (
-        db.query(Flashcard).filter_by(id=request_data.flashcard_id).first()
-    )
-
-    if card is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=_MISSING_FLASHCARD
-        )
-
-    _ = user_id
+    card = owned_flashcard(db, user_id, request_data.flashcard_id)
     new_card, review_log = schedule_flashcard_fsrs(
         cast("CardDict | None", card.fsrs_card), None, request_data.rating
     )

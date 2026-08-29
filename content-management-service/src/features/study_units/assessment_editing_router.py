@@ -1,14 +1,12 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from features.study_units.study_unit_access import owned_test_item
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
 from shared.identifiers import RowId
-from shared.models import Folder, Test, TestItem
 
 assessment_editing_router = APIRouter()
-
-_MISSING_TEST_ITEM = "Test item does not exist!"
 
 
 class UpdateTestItemRequest(BaseModel):
@@ -22,22 +20,7 @@ async def update_test_item(
     user_id: AuthenticatedUserId,
     db: DatabaseSession,
 ) -> JSONResponse:
-    item = (
-        db.query(TestItem)
-        .join(Test)
-        .join(Folder)
-        .filter(
-            TestItem.id == request_data.test_item_id,
-            Folder.user_id == user_id,
-        )
-        .first()
-    )
-
-    if item is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=_MISSING_TEST_ITEM
-        )
-
+    item = owned_test_item(db, user_id, request_data.test_item_id)
     item.content = request_data.content
     db.commit()
 

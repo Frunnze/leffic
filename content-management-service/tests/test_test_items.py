@@ -122,6 +122,7 @@ def test_reviewing_an_item_records_the_answer(
             "test_session": session_id,
             "answers": [0],
         },
+        headers=authorization(),
     )
 
     with sessions() as session:
@@ -147,8 +148,14 @@ def test_reviewing_an_item_twice_updates_the_answer(
         "test_session": session_id,
         "answers": [0],
     }
-    _ = client.post("/review-test-item", json=payload)
-    _ = client.post("/review-test-item", json={**payload, "answers": [1]})
+    _ = client.post(
+        "/review-test-item", json=payload, headers=authorization()
+    )
+    _ = client.post(
+        "/review-test-item",
+        json={**payload, "answers": [1]},
+        headers=authorization(),
+    )
 
     with sessions() as session:
         stored = session.query(TestItemReview).one()
@@ -174,6 +181,7 @@ def test_previous_answers_come_back_with_the_items(
             "test_session": session_id,
             "answers": [0],
         },
+        headers=authorization(),
     )
 
     again = client.get(

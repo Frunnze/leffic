@@ -1,9 +1,11 @@
+import uuid
 from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 from features.study_units.assessment_queries import (
     MISSING_SESSION,
@@ -18,12 +20,12 @@ from features.study_units.formatting import (
     evaluate_accuracy,
     prepare_content,
 )
+from features.study_units.study_unit_access import owned_test_item
 from shared.content_access import owned_content
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
 from shared.identifiers import RowId, parsed_identifier
 from shared.models import (
     Test,
-    TestItem,
     TestItemReview,
 )
 
@@ -32,7 +34,6 @@ assessment_router = APIRouter()
 _DEFAULT_PER_PAGE = 10
 _FIRST_PAGE = 1
 _MISSING_ORIGIN = "Test or folder is required!"
-_UNKNOWN_ITEM_ACCURACY = 0
 
 
 class TestItemsQuery(BaseModel):
@@ -98,60 +99,61 @@ async def get_test_items(
     )
 
 
-class AssessmentGrading:
-    @staticmethod
-    def graded(test_item: TestItem | None, answers: list[object]) -> int:
-        if test_item is None:
-            return _UNKNOWN_ITEM_ACCURACY
-
-        return evaluate_accuracy(
-            answers, test_item.type, test_item.content
-        )
-
-
 class ReviewTestItemRequest(BaseModel):
     test_item_id: RowId
     test_session: str
-    answers: list[object]
+    answers: Annotated[list[object], Field(min_length=1)]
 
 
-@assessment_router.post("/review-test-item")
-async def review_test_item(
-    req_data: ReviewTestItemRequest, db: DatabaseSession
-) -> JSONResponse:
-    session_id = parsed_identifier(
-        req_data.test_session, MISSING_SESSION
-    )
+def _upserted_review(
+    db: Session,
+    session_id: uuid.UUID,
+    item_id: int,
+    answers: list[object],
+    accuracy: int,
+) -> None:
     review = (
         db.query(TestItemReview)
         .filter(
-            TestItemReview.test_item_id == req_data.test_item_id,
+            TestItemReview.test_item_id == item_id,
             TestItemReview.test_session == session_id,
         )
         .first()
     )
 
-    if not review:
+    if review is None:
         db.add(
             TestItemReview(
                 test_session=session_id,
-                test_item_id=req_data.test_item_id,
-                accuracy=AssessmentGrading.graded(
-                    db.get(TestItem, req_data.test_item_id),
-                    req_data.answers,
-                ),
-                answers=req_data.answers,
+                test_item_id=item_id,
+                accuracy=accuracy,
+                answers=answers,
                 reviewed_at=datetime.now(UTC),
             )
         )
-    else:
-        review.answers = req_data.answers
-        review.reviewed_at = datetime.now(UTC)
-        review.accuracy = AssessmentGrading.graded(
-            db.get(TestItem, req_data.test_item_id),
-            req_data.answers,
-        )
 
+        return
+
+    review.answers = answers
+    review.reviewed_at = datetime.now(UTC)
+    review.accuracy = accuracy
+
+
+@assessment_router.post("/review-test-item")
+async def review_test_item(
+    request_data: ReviewTestItemRequest,
+    db: DatabaseSession,
+    user_id: AuthenticatedUserId,
+) -> JSONResponse:
+    session_id = parsed_identifier(request_data.test_session, MISSING_SESSION)
+    item = owned_test_item(db, user_id, request_data.test_item_id)
+    accuracy = evaluate_accuracy(
+        request_data.answers, item.type, item.content
+    )
+
+    _upserted_review(
+        db, session_id, item.id, request_data.answers, accuracy
+    )
     db.commit()
 
     return JSONResponse(content={"msg": "Saved!"})

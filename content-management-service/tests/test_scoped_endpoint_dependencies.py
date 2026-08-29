@@ -17,6 +17,8 @@ _SESSION_SCOPED_ROUTES = (
     ("/flashcards-status/{task_id}", "GET"),
     ("/test-task-status/{task_id}", "GET"),
     ("/note-task-status/{task_id}", "GET"),
+    ("/review-flashcard", "POST"),
+    ("/review-test-item", "POST"),
     ("/upload-files", "POST"),
     ("/extract-text", "POST"),
 )

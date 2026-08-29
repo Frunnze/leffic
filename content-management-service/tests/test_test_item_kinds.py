@@ -2,7 +2,6 @@ from typing import cast
 
 import pytest
 
-from features.study_units.assessment_router import AssessmentGrading
 from features.study_units.formatting import (
     evaluate_accuracy,
     prepare_content,
@@ -134,16 +133,12 @@ def test_a_short_answer_item_without_a_stored_answer_is_incorrect() -> None:
     assert accuracy == 0
 
 
-def test_an_answer_for_an_unknown_item_earns_nothing() -> None:
-    accuracy = AssessmentGrading.graded(None, [0])
-
-    assert accuracy == 0
-
-
 def test_a_short_answer_item_is_graded_on_its_text(
     short_answer_item: TestItem,
 ) -> None:
-    accuracy = AssessmentGrading.graded(short_answer_item, ["The Aegean"])
+    accuracy = evaluate_accuracy(
+        ["The Aegean"], short_answer_item.type, short_answer_item.content
+    )
 
     assert accuracy == 1
 
@@ -151,7 +146,9 @@ def test_a_short_answer_item_is_graded_on_its_text(
 def test_a_wrong_short_answer_is_graded_as_incorrect(
     short_answer_item: TestItem,
 ) -> None:
-    accuracy = AssessmentGrading.graded(short_answer_item, ["The Baltic"])
+    accuracy = evaluate_accuracy(
+        ["The Baltic"], short_answer_item.type, short_answer_item.content
+    )
 
     assert accuracy == 0
 
@@ -159,5 +156,5 @@ def test_a_wrong_short_answer_is_graded_as_incorrect(
 def test_an_option_item_is_graded_on_its_chosen_option() -> None:
     item = TestItem(type="multiple_choice", content=_MULTIPLE_CHOICE)
 
-    assert AssessmentGrading.graded(item, [0]) == 1
-    assert AssessmentGrading.graded(item, [1]) == 0
+    assert evaluate_accuracy([0], item.type, item.content) == 1
+    assert evaluate_accuracy([1], item.type, item.content) == 0

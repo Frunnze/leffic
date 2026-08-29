@@ -76,6 +76,7 @@ def test_item_stats_count_the_correct_ones(
             "test_session": session_id,
             "answers": [0],
         },
+        headers=authorization(),
     )
 
     response = client.get(
@@ -124,6 +125,7 @@ def test_session_results_close_the_session(
             "test_session": session_id,
             "answers": [0],
         },
+        headers=authorization(),
     )
 
     response = client.get(
@@ -163,6 +165,7 @@ def test_session_results_with_nothing_correct(
             "test_session": session_id,
             "answers": [1],
         },
+        headers=authorization(),
     )
 
     response = client.get(
