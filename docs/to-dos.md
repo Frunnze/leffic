@@ -168,7 +168,7 @@ several endpoints still do not establish ownership of the row they act on.
   all, so any known session UUID can be closed. Store or derive the owner,
   bind each session to exactly one owned origin, and enforce that invariant
   on open, resume, answer and result routes.
-- [ ] **The chatbot has no identity at all.** `features/chatbot/chatbot.py`
+- [x] **The chatbot has no identity at all.** `features/chatbot/chatbot.py`
   takes no `AuthenticatedUserId`; it is protected only by the gateway's JWT
   check, so any authenticated user can spend OpenAI budget without limit and
   no usage can be attributed. Add the dependency, then §LLM cost below.
