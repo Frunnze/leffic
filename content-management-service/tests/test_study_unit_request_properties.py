@@ -163,6 +163,7 @@ def test_chat_property_answers_with_whatever_the_model_said(
         response = _CLIENT.post(
             "/chat",
             json={"conversation": [{"role": "user", "content": "hi"}]},
+            headers=authorization(),
         )
 
     assert response.json() == {"answer": answer}
@@ -179,6 +180,7 @@ def test_chat_property_reports_a_model_it_cannot_reach(
         response = _CLIENT.post(
             "/chat",
             json={"conversation": [{"role": "user", "content": said}]},
+            headers=authorization(),
         )
 
     assert response.status_code == _UNAVAILABLE

@@ -5,7 +5,7 @@ from app_factory import create_app
 from shared.claims_extractor import get_user_id_from_jwt
 from shared.database import get_db
 
-_SCOPED_ROUTES = (
+_SESSION_SCOPED_ROUTES = (
     ("/delete-deck/", "DELETE"),
     ("/delete-test/", "DELETE"),
     ("/delete-note/", "DELETE"),
@@ -20,6 +20,8 @@ _SCOPED_ROUTES = (
     ("/upload-files", "POST"),
     ("/extract-text", "POST"),
 )
+
+_CALLER_SCOPED_ROUTES = (*_SESSION_SCOPED_ROUTES, ("/chat", "POST"))
 
 
 class _UnregisteredRouteError(AssertionError):
@@ -45,15 +47,19 @@ def _dependencies_of(path: str, method: str) -> set[object]:
     }
 
 
-@pytest.mark.parametrize(("path", "method"), _SCOPED_ROUTES)
+@pytest.mark.parametrize(("path", "method"), _CALLER_SCOPED_ROUTES)
 def test_a_scoped_endpoint_identifies_its_caller(
     path: str, method: str
 ) -> None:
     assert get_user_id_from_jwt in _dependencies_of(path, method)
 
 
-@pytest.mark.parametrize(("path", "method"), _SCOPED_ROUTES)
+@pytest.mark.parametrize(("path", "method"), _SESSION_SCOPED_ROUTES)
 def test_a_scoped_endpoint_keeps_its_database_session(
     path: str, method: str
 ) -> None:
     assert get_db in _dependencies_of(path, method)
+
+
+def test_chat_depends_on_identity_and_nothing_else() -> None:
+    assert _dependencies_of("/chat", "POST") == {get_user_id_from_jwt}
