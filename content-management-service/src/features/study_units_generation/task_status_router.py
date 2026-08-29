@@ -22,8 +22,8 @@ _SCOPED_TO_THE_CALLER: Final[list[params.Depends]] = [
     Depends(get_user_id_from_jwt),
     Depends(get_db),
 ]
-_UNEXPECTED_RESULT = "The task did not finish with a result object"
-_SUCCEEDED = "SUCCESS"
+_SUCCEEDED: Final[str] = "SUCCESS"
+_FAILED: Final[str] = "FAILURE"
 
 
 def _is_object_dict(value: object) -> TypeGuard[dict[str, object]]:
@@ -42,7 +42,7 @@ def _finished_result(task_id: str) -> tuple[str, dict[str, object] | None]:
     if _is_object_dict(finished):
         return status, finished
 
-    raise TypeError(_UNEXPECTED_RESULT)
+    return _FAILED, None
 
 
 def _as_identifier(row_id: object) -> uuid.UUID | None:

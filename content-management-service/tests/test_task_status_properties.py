@@ -2,7 +2,6 @@ import uuid
 from typing import Final
 from unittest import mock
 
-import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -30,6 +29,17 @@ from tests.property_fakes import FakeAsyncResult
 from tests.support import in_memory_sessions
 
 _SUCCEEDED: Final[str] = "SUCCESS"
+_FAILED: Final[str] = "FAILURE"
+NonMappingStrategy = st.SearchStrategy[object]
+_NOT_A_MAPPING: Final[NonMappingStrategy] = st.one_of(
+    st.none(),
+    st.text(max_size=5),
+    st.integers(),
+    st.lists(st.integers(), max_size=3),
+    st.tuples(st.integers()),
+    st.binary(max_size=5),
+    st.builds(object),
+)
 _UNFINISHED: Final[st.SearchStrategy[str]] = st.sampled_from(
     ["PENDING", "STARTED", "RETRY", "FAILURE"]
 )
@@ -75,17 +85,17 @@ def test__finished_result_property_hands_over_a_finished_mapping(
         assert _finished_result(task_id) == (_SUCCEEDED, finished)
 
 
-@settings(max_examples=25)
-@given(_TASK_IDS, st.one_of(st.text(max_size=5), st.integers(), st.none()))
-def test__finished_result_property_refuses_a_result_that_is_not_a_mapping(
+@settings(max_examples=50)
+@given(_TASK_IDS, _NOT_A_MAPPING)
+def test__finished_result_property_reports_a_failure_for_a_non_mapping(
     task_id: str, finished: object
 ) -> None:
     with mock.patch.object(
         task_status_router,
         "AsyncResult",
         _reporting(_SUCCEEDED, finished, ready=True),
-    ), pytest.raises(TypeError):
-        _ = _finished_result(task_id)
+    ):
+        assert _finished_result(task_id) == (_FAILED, None)
 
 
 @settings(max_examples=25, deadline=None)
