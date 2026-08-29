@@ -219,6 +219,7 @@ several endpoints still do not establish ownership of the row they act on.
 - [ ] **No rate limiting.** The gateway applies none, so login, sign-up,
   upload, generation and chat are all unthrottled — password guessing and
   cost-burning are free.
+  _(claimed 2026-08-29T18:11Z)_
 - [ ] **Uploads are barely constrained.** `client_max_body_size 100m` at the
   gateway is the only limit; `file_uploader.py` trusts the client filename's
   extension, and nothing caps per-user storage or scans content.

@@ -63,15 +63,24 @@ export class AuthApi {
       withToken: false,
       credentials: "include",
     });
-    const payload: unknown = await response.json();
 
     if (!response.ok) {
-      return AuthApi.toSignUpFailure(payload);
+      return AuthApi.toSignUpFailure(await AuthApi.readPayload(response));
     }
+
+    const payload: unknown = await response.json();
 
     Session.store(Json.optionalString(Json.object(payload, "signUp").access_token));
 
     return { ok: true };
+  }
+
+  private static async readPayload(response: Response): Promise<unknown> {
+    try {
+      return await response.json();
+    } catch {
+      return null;
+    }
   }
 
   static async logOut(): Promise<void> {
