@@ -43,8 +43,8 @@ def create_database_if_not_exists() -> None:
                 )
 
 
-def create_postgres_database_if_configured() -> None:
-    if not SQLALCHEMY_DATABASE_URL.startswith(_POSTGRES_SCHEME):
+def create_postgres_database_if_configured(database_url: str) -> None:
+    if not database_url.startswith(_POSTGRES_SCHEME):
         return
 
     create_database_if_not_exists()

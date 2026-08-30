@@ -103,21 +103,17 @@ def test_the_create_statement_names_the_database() -> None:
 
 
 _POSTGRES_URL = "postgresql://postgres:postgres@localhost:5455/content"
+_DRIVER_POSTGRES_URL = "postgresql+psycopg2://postgres@localhost/content"
 _SQLITE_URL = "sqlite:///./content.db"
 
 
 def _run_configured_bootstrap(
     database_url: str, connection: FakeConnection
 ) -> mock.MagicMock:
-    with (
-        mock.patch.object(
-            database, "SQLALCHEMY_DATABASE_URL", database_url
-        ),
-        mock.patch.object(
-            psycopg2, "connect", return_value=connection
-        ) as connect,
-    ):
-        database.create_postgres_database_if_configured()
+    with mock.patch.object(
+        psycopg2, "connect", return_value=connection
+    ) as connect:
+        database.create_postgres_database_if_configured(database_url)
 
     return connect
 
@@ -151,11 +147,27 @@ def test_the_configured_bootstrap_runs_no_statement_for_a_sqlite_url(
 def test_an_unreachable_postgres_propagates_the_operational_error() -> None:
     with (
         mock.patch.object(
-            database, "SQLALCHEMY_DATABASE_URL", _POSTGRES_URL
-        ),
-        mock.patch.object(
             psycopg2, "connect", side_effect=psycopg2.OperationalError
         ),
         pytest.raises(psycopg2.OperationalError),
     ):
-        database.create_postgres_database_if_configured()
+        database.create_postgres_database_if_configured(_POSTGRES_URL)
+
+
+def test_a_sqlite_argument_wins_over_a_postgres_module_url() -> None:
+    connection = FakeConnection(FakeCursor(existing=None))
+
+    with mock.patch.object(
+        database, "SQLALCHEMY_DATABASE_URL", _POSTGRES_URL
+    ):
+        connect = _run_configured_bootstrap(_SQLITE_URL, connection)
+
+    assert connect.call_count == 0
+
+
+def test_a_driver_qualified_postgres_url_connects() -> None:
+    connection = FakeConnection(FakeCursor(existing=None))
+
+    connect = _run_configured_bootstrap(_DRIVER_POSTGRES_URL, connection)
+
+    assert connect.call_count == 1

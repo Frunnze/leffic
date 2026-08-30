@@ -144,7 +144,6 @@ _DATABASE_SCHEMES = (
     "postgresq",
     "",
 )
-_URL_ATTRIBUTE = "SQLALCHEMY_DATABASE_URL"
 
 
 def _database_url(scheme: str, remainder: str) -> str:
@@ -170,13 +169,10 @@ def test_create_postgres_database_if_configured_property_connects_for_postgres(
 ) -> None:
     connection = RecordingConnection(existing_row=(1,))
 
-    with (
-        mock.patch.object(database, _URL_ATTRIBUTE, database_url),
-        mock.patch(
-            _PSYCOPG2_CONNECT_TARGET, return_value=connection
-        ) as connect,
-    ):
-        database.create_postgres_database_if_configured()
+    with mock.patch(
+        _PSYCOPG2_CONNECT_TARGET, return_value=connection
+    ) as connect:
+        database.create_postgres_database_if_configured(database_url)
 
     is_postgres_url = database_url.startswith(database._POSTGRES_SCHEME)
 
@@ -189,11 +185,10 @@ def test_create_postgres_database_if_configured_property_propagates_the_error(
     database_url: str,
 ) -> None:
     with (
-        mock.patch.object(database, _URL_ATTRIBUTE, database_url),
         mock.patch(
             _PSYCOPG2_CONNECT_TARGET,
             side_effect=psycopg2.OperationalError,
         ),
         pytest.raises(psycopg2.OperationalError),
     ):
-        database.create_postgres_database_if_configured()
+        database.create_postgres_database_if_configured(database_url)

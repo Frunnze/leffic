@@ -9,12 +9,22 @@ from shared.database import (
 )
 
 _CONFIGURED_URL = "sqlalchemy.url"
+_MISSING_CONFIGURED_URL = "alembic configured no sqlalchemy.url"
 
 config = context.config
 target_metadata = Base.metadata
 
 if not config.get_main_option(_CONFIGURED_URL, ""):
     config.set_main_option(_CONFIGURED_URL, SQLALCHEMY_DATABASE_URL)
+
+
+def read_configured_database_url() -> str:
+    configured_url = config.get_main_option(_CONFIGURED_URL)
+
+    if configured_url is None:
+        raise RuntimeError(_MISSING_CONFIGURED_URL)
+
+    return configured_url
 
 
 def run_migrations_offline() -> None:
@@ -30,6 +40,8 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
+    create_postgres_database_if_configured(read_configured_database_url())
+
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
@@ -46,8 +58,6 @@ def run_migrations_online() -> None:
         with context.begin_transaction():
             context.run_migrations()
 
-
-create_postgres_database_if_configured()
 
 if context.is_offline_mode():
     run_migrations_offline()

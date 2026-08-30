@@ -1,4 +1,3 @@
-import ast
 from pathlib import Path
 from unittest import mock
 
@@ -8,7 +7,13 @@ from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, inspect
 
 from shared.database import Base
-from tests.migration_support import alembic_config, service_root
+from tests.migration_environment_support import (
+    call_lines_in_function,
+    module_scope_bootstrap_call_count,
+    module_scope_url_fallback_is_present,
+    names_imported_from_the_database_module,
+)
+from tests.migration_support import alembic_config
 
 
 @pytest.fixture
@@ -70,97 +75,59 @@ def test_downgrade_removes_every_model_table(tmp_path: Path) -> None:
 
 
 _BOOTSTRAP_NAME = "create_postgres_database_if_configured"
-_DATABASE_MODULE = "shared.database"
-_OFFLINE_DISPATCH = "is_offline_mode"
+_ENGINE_FACTORY_NAME = "engine_from_config"
+_ONLINE_FUNCTION = "run_migrations_online"
+_OFFLINE_FUNCTION = "run_migrations_offline"
 _PSYCOPG2_CONNECT_TARGET = "psycopg2.connect"
-_MISSING_DISPATCH = "env.py has no offline-mode dispatch"
-
-
-def _environment_tree() -> ast.Module:
-    source = (service_root() / "migrations" / "env.py").read_text(
-        encoding="utf-8"
-    )
-
-    return ast.parse(source)
-
-
-def _names_imported_from_the_database_module() -> set[str]:
-    imported: set[str] = set()
-
-    for node in ast.walk(_environment_tree()):
-        if not isinstance(node, ast.ImportFrom):
-            continue
-
-        if node.module != _DATABASE_MODULE:
-            continue
-
-        for alias in node.names:
-            imported.add(alias.name)
-
-    return imported
-
-
-def _module_scope_bootstrap_calls() -> list[ast.Call]:
-    calls: list[ast.Call] = []
-
-    for node in _environment_tree().body:
-        if not isinstance(node, ast.Expr):
-            continue
-
-        called = node.value
-
-        if not isinstance(called, ast.Call):
-            continue
-
-        is_bootstrap_call = (
-            isinstance(called.func, ast.Name)
-            and called.func.id == _BOOTSTRAP_NAME
-        )
-
-        if is_bootstrap_call:
-            calls.append(called)
-
-    return calls
-
-
-def _offline_dispatch_line() -> int:
-    for node in _environment_tree().body:
-        if not isinstance(node, ast.If):
-            continue
-
-        dispatch_test = node.test
-
-        if not isinstance(dispatch_test, ast.Call):
-            continue
-
-        dispatched = dispatch_test.func
-
-        if (
-            isinstance(dispatched, ast.Attribute)
-            and dispatched.attr == _OFFLINE_DISPATCH
-        ):
-            return node.lineno
-
-    raise AssertionError(_MISSING_DISPATCH)
+_MODULE_URL_ATTRIBUTE = "shared.database.SQLALCHEMY_DATABASE_URL"
+_POSTGRES_MODULE_URL = (
+    "postgresql://postgres:postgres@localhost:5455/content"
+)
 
 
 def test_the_migration_environment_imports_the_postgres_bootstrap() -> None:
-    imported = _names_imported_from_the_database_module()
+    imported = names_imported_from_the_database_module()
 
     assert _BOOTSTRAP_NAME in imported
     assert "SQLALCHEMY_DATABASE_URL" in imported
     assert "Base" in imported
 
 
-def test_the_migration_environment_calls_the_bootstrap_at_module_scope(
+def test_the_migration_environment_never_bootstraps_at_module_scope(
 ) -> None:
-    assert len(_module_scope_bootstrap_calls()) == 1
+    assert module_scope_bootstrap_call_count() == 0
 
 
-def test_the_bootstrap_runs_before_the_offline_mode_dispatch() -> None:
-    call = _module_scope_bootstrap_calls()[0]
+def test_the_online_migration_run_bootstraps_exactly_once() -> None:
+    bootstrap_lines = call_lines_in_function(
+        _ONLINE_FUNCTION, _BOOTSTRAP_NAME
+    )
 
-    assert call.lineno < _offline_dispatch_line()
+    assert len(bootstrap_lines) == 1
+
+
+def test_the_online_bootstrap_runs_before_the_engine_is_built() -> None:
+    bootstrap_lines = call_lines_in_function(
+        _ONLINE_FUNCTION, _BOOTSTRAP_NAME
+    )
+    engine_lines = call_lines_in_function(
+        _ONLINE_FUNCTION, _ENGINE_FACTORY_NAME
+    )
+
+    assert bootstrap_lines[0] < engine_lines[0]
+
+
+def test_the_offline_migration_run_never_bootstraps() -> None:
+    bootstrap_lines = call_lines_in_function(
+        _OFFLINE_FUNCTION, _BOOTSTRAP_NAME
+    )
+
+    assert bootstrap_lines == []
+
+
+def test_the_migration_environment_keeps_the_configured_url_fallback(
+) -> None:
+    assert module_scope_url_fallback_is_present()
 
 
 def test_a_sqlite_upgrade_opens_no_postgres_connection(
@@ -193,6 +160,34 @@ def test_an_offline_sqlite_upgrade_opens_no_postgres_connection(
     database_url = f"sqlite:///{tmp_path / 'offline.db'}"
 
     with mock.patch(_PSYCOPG2_CONNECT_TARGET) as connect:
+        upgrade(alembic_config(database_url), "head", sql=True)
+
+    assert connect.call_count == 0
+
+
+def test_an_online_sqlite_upgrade_ignores_a_postgres_module_url(
+    tmp_path: Path,
+) -> None:
+    database_url = f"sqlite:///{tmp_path / 'online_module.db'}"
+
+    with (
+        mock.patch(_MODULE_URL_ATTRIBUTE, _POSTGRES_MODULE_URL),
+        mock.patch(_PSYCOPG2_CONNECT_TARGET) as connect,
+    ):
+        upgrade(alembic_config(database_url), "head")
+
+    assert connect.call_count == 0
+
+
+def test_an_offline_sqlite_upgrade_ignores_a_postgres_module_url(
+    tmp_path: Path,
+) -> None:
+    database_url = f"sqlite:///{tmp_path / 'offline_module.db'}"
+
+    with (
+        mock.patch(_MODULE_URL_ATTRIBUTE, _POSTGRES_MODULE_URL),
+        mock.patch(_PSYCOPG2_CONNECT_TARGET) as connect,
+    ):
         upgrade(alembic_config(database_url), "head", sql=True)
 
     assert connect.call_count == 0
