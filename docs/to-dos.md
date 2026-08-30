@@ -216,9 +216,16 @@ several endpoints still do not establish ownership of the row they act on.
   `PYSEC-2026-2281` because the required Starlette upgrade is blocked by the
   current FastAPI route-wiring tests. Upgrade FastAPI/Starlette, adapt those
   tests and remove every exception before exposing the service.
-- [ ] **No rate limiting.** The gateway applies none, so login, sign-up,
-  upload, generation and chat are all unthrottled — password guessing and
-  cost-burning are free.
+- [x] **The gateway now throttles authentication and paid work.**
+  `api-gateway/nginx.conf` carries three `limit_req_zone`s: `auth_limit`
+  at 10r/m over a `$authentication_limit_key` that is empty for everything
+  but `/api/user/`, `cost_limit` at 30r/m over a
+  `$generation_cost_limit_key` matching `chat`, `extract-text`,
+  `upload-files` and `generate-study-units`, and `general_limit` at 20r/s
+  keyed on `$binary_remote_addr`. Refusals answer `429` via
+  `limit_req_status`. The selector maps tolerate the spellings nginx
+  normalises — percent-encoded letters, `./` segments and repeated
+  slashes — so a paid route cannot be reached uncounted.
   _(claimed 2026-08-29T18:11Z)_
 - [ ] **Uploads are barely constrained.** `client_max_body_size 100m` at the
   gateway is the only limit; `file_uploader.py` trusts the client filename's
