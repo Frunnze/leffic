@@ -15,7 +15,7 @@ index.html
 ISO-690-UTM.csl
 .gitignore
 test.ipynb
-*to-dos.md
+to-dos.md
 .mutmut-cache
 .claude/
 docs/design/
