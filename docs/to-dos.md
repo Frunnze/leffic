@@ -197,6 +197,20 @@ several endpoints still do not establish ownership of the row they act on.
   `content-management-service/src/shared/database.py` connects to Postgres
   while the module is being imported, so an unavailable database is an import
   crash rather than a retryable startup failure.
+- [x] **The alembic bootstrap still opens Postgres at env-load time.**
+  `content-management-service/migrations/env.py` calls
+  `create_postgres_database_if_configured()` at module scope, guarded on the
+  module-level `SQLALCHEMY_DATABASE_URL` rather than the URL alembic was
+  configured to migrate, and before the `context.is_offline_mode()` dispatch.
+  An alembic run given a sqlite target still connects to Postgres, and
+  `alembic upgrade head --sql` — an offline render that should never open a
+  socket — needs a reachable database, so the import-time connection was
+  relocated rather than removed. The five "opens no postgres connection"
+  tests cannot catch it: `tests/conftest.py` pins `DATABASE_URL` to
+  `sqlite://` before `env.py` loads, so they pass with the call deleted
+  entirely. Guard on the URL alembic is actually migrating, run the bootstrap
+  only on the online path, and give the tests an oracle that does not depend
+  on conftest's pinning.
 - [ ] **No backups.** Postgres and the `files` volume have no dump,
   snapshot or restore procedure, and no restore has ever been rehearsed.
 - [ ] **The browser origin is hardcoded to localhost in three places.**
