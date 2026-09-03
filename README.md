@@ -42,6 +42,10 @@ The web app is on <http://localhost:3009>, the gateway on
 Set `OPENAI_API_KEY`, `JWT_SECRET_KEY` and the Postgres credentials from
 `docker-compose.yml`.
 
+The refresh cookie carries `Secure` by default. The local stack serves
+plain HTTP, so Compose sets `REFRESH_COOKIE_SECURE=false`; leave it unset
+wherever the gateway terminates TLS.
+
 ## Architecture
 
 Seven deployables and four datastores. No service calls another over

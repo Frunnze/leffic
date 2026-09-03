@@ -12,6 +12,7 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from features.authentication import cookie_security
 from features.authentication.access import (
     create_access_token,
     create_refresh_token,
@@ -41,6 +42,7 @@ def _issue_refresh_cookie(response: Response, user_id: str) -> None:
         ),
         httponly=True,  # Prevent JavaScript access
         samesite="strict",
+        secure=cookie_security.REFRESH_COOKIE_SECURE,
     )
 
 
@@ -169,6 +171,7 @@ def logout_user(response: Response) -> dict[str, str]:
         key=_REFRESH_COOKIE,
         httponly=True,
         samesite="strict",
+        secure=cookie_security.REFRESH_COOKIE_SECURE,
         path="/",
     )
     response.status_code = status.HTTP_200_OK

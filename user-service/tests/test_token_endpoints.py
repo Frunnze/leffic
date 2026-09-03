@@ -14,6 +14,7 @@ from shared.database import Base, get_db
 from shared.jwt_secret import ALGORITHM, SECRET_KEY
 
 _OK = 200
+_TLS_ORIGIN = "https://testserver"
 _UNAUTHORIZED = 401
 
 _EMAIL = "learner@example.com"
@@ -46,7 +47,7 @@ def client() -> Iterator[TestClient]:
     app = create_app()
     app.dependency_overrides[get_db] = SessionProvider(session_factory)
 
-    with TestClient(app) as test_client:
+    with TestClient(app, base_url=_TLS_ORIGIN) as test_client:
         yield test_client
 
     Base.metadata.drop_all(bind=engine)

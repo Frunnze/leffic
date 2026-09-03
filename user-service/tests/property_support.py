@@ -18,6 +18,8 @@ from tests.support import SessionProvider
 PHRASE = "correct horse battery staple"
 _CONFLICT = 409
 
+TLS_ORIGIN = "https://testserver"
+
 
 def property_client() -> TestClient:
     engine = create_engine(
@@ -31,7 +33,7 @@ def property_client() -> TestClient:
         sessionmaker(bind=engine)
     )
 
-    return TestClient(app)
+    return TestClient(app, base_url=TLS_ORIGIN)
 
 
 @contextmanager

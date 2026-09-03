@@ -88,7 +88,7 @@ def test_sign_up_sets_a_refresh_cookie(client: TestClient) -> None:
     assert "refresh_token=" in cookie
     assert "HttpOnly" in cookie
     assert "SameSite=strict" in cookie
-    assert "Secure" not in cookie
+    assert "Secure" in cookie
 
 
 def test_the_refresh_cookie_is_a_token_for_this_user(

@@ -16,4 +16,4 @@ setuptools==83.0.0
 youtube-transcript-api
 beautifulsoup4
 fsrs
-pypdf==6.15.0
+pypdf==6.16.2

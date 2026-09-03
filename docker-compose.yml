@@ -10,6 +10,7 @@ x-user-service-environment: &user-service-environment
   - DB_HOST=postgres
   - DB_PORT=5432
   - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+  - REFRESH_COOKIE_SECURE=${REFRESH_COOKIE_SECURE:-false}
   - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
 
 x-content-service: &content-service
