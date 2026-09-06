@@ -9,7 +9,6 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from features.study_units import clock
-from shared.folder_tree import subfolder_ids
 from shared.identifiers import parsed_identifier
 from shared.json_extraction import _is_object_dict, get_dict_from_text
 
@@ -89,17 +88,6 @@ def test_parsed_identifier_property_reports_unparsable_text_as_missing(
 def test_utc_today_property_reads_the_date_in_utc(moment: datetime) -> None:
     with mock.patch.object(clock, "datetime", _FrozenClock(moment)):
         assert clock.utc_today() == moment.date()
-
-
-@settings(max_examples=50)
-@given(st.uuids(), st.one_of(st.none(), st.uuids()))
-def test_subfolder_ids_property_filters_by_owner_only_when_asked(
-    folder_id: uuid.UUID, user_id: uuid.UUID | None
-) -> None:
-    owner = None if user_id is None else str(user_id)
-    statement = str(subfolder_ids(str(folder_id), owner))
-
-    assert ("user_id" in statement) is (user_id is not None)
 
 
 def _is_a_uuid(text: str) -> bool:

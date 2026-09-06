@@ -1,17 +1,20 @@
+import inspect
 import uuid
 from collections.abc import Iterator
 from pathlib import Path
-from typing import NamedTuple
+from typing import NamedTuple, cast
 from unittest import mock
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
+from features.file_system.folder_router import _files_storage_ids
 from shared import file_storage
 from shared.models import File, Folder
 from tests.access_support import (
     HOME_ID,
+    OTHER_HOME_ID,
     OwnedContent,
     scoped_client,
     seeded_content,
@@ -22,12 +25,14 @@ from tests.support import authorization, in_memory_sessions
 
 _EXTENSION = "pdf"
 _OK = 200
+_EXPECTED_STORAGE_PARAMETERS = ("db", "folder_id", "user_id")
 
 
 class NestedTree(NamedTuple):
     buried_file_id: str
     sibling_file_id: str
     sibling_folder_id: str
+    foreign_file_id: str
 
 
 @pytest.fixture
@@ -62,7 +67,10 @@ def tree(sessions: sessionmaker[Session], owned: OwnedContent) -> NestedTree:
         session.commit()
 
         deepest = Folder(parent_id=middle.id, name="Deepest", user_id=HOME_ID)
-        session.add(deepest)
+        grafted = Folder(
+            parent_id=middle.id, name="Theirs", user_id=OTHER_HOME_ID
+        )
+        session.add_all([deepest, grafted])
         session.commit()
 
         buried = File(
@@ -71,13 +79,17 @@ def tree(sessions: sessionmaker[Session], owned: OwnedContent) -> NestedTree:
         outside = File(
             folder_id=sibling.id, name="outside", extension=_EXTENSION
         )
-        session.add_all([buried, outside])
+        foreign = File(
+            folder_id=grafted.id, name="foreign", extension=_EXTENSION
+        )
+        session.add_all([buried, outside, foreign])
         session.commit()
 
         return NestedTree(
             buried_file_id=str(buried.id),
             sibling_file_id=str(outside.id),
             sibling_folder_id=str(sibling.id),
+            foreign_file_id=str(foreign.id),
         )
 
 
@@ -137,3 +149,23 @@ def test_a_folder_outside_the_deleted_subtree_survives(
         tree.sibling_folder_id,
     }
     assert surviving_ids(sessions, File) == {tree.sibling_file_id}
+
+
+def test__files_storage_ids_takes_the_owner() -> None:
+    parameters = inspect.signature(_files_storage_ids).parameters
+
+    assert tuple(parameters) == _EXPECTED_STORAGE_PARAMETERS
+    assert cast("object", parameters["folder_id"].annotation) is str
+    assert cast("object", parameters["user_id"].annotation) is str
+
+
+def test_a_foreign_folders_file_stays_in_storage(
+    client: TestClient,
+    owned: OwnedContent,
+    tree: NestedTree,
+    tmp_path: Path,
+) -> None:
+    foreign = _stored(tmp_path, tree.foreign_file_id)
+
+    assert _delete_folder(client, owned.folder_id, tmp_path) == _OK
+    assert foreign.exists()

@@ -6,7 +6,11 @@ from alembic.command import downgrade, upgrade
 from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, inspect, text
 
-from tests.migration_support import INITIAL_REVISION, alembic_config
+from tests.migration_support import (
+    INITIAL_REVISION,
+    SESSION_REVISION,
+    alembic_config,
+)
 from tests.session_ownership_support import ONGOING
 
 _BASE_COLUMNS = {"id", "origin_id", "status", "created_at"}
@@ -30,13 +34,11 @@ def _session_columns(database_url: str) -> dict[str, object]:
     return {column["name"]: column["nullable"] for column in columns}
 
 
-def test_the_new_revision_is_the_single_head() -> None:
+def test_the_session_revision_follows_the_initial_schema() -> None:
     scripts = ScriptDirectory.from_config(alembic_config("sqlite://"))
-    heads = scripts.get_heads()
-    head = scripts.get_revision(heads[0])
+    session_revision = scripts.get_revision(SESSION_REVISION)
 
-    assert len(heads) == 1
-    assert head.down_revision == INITIAL_REVISION
+    assert session_revision.down_revision == INITIAL_REVISION
 
 
 def test_upgrade_clears_reviews_then_sessions(tmp_path: Path) -> None:

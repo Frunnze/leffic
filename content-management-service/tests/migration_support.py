@@ -6,6 +6,7 @@ _ALEMBIC_INI_NAME = "alembic.ini"
 _MISSING_ALEMBIC_INI = "No alembic.ini above this test file"
 
 INITIAL_REVISION = "c750ff70652b"
+SESSION_REVISION = "8f2a41c9de17"
 
 
 def service_root() -> Path:

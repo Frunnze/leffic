@@ -44,12 +44,10 @@ def _available_folder_name(
         .all()
     )
 
-    # Count folders with the same name
     same_name_folders_num = sum(
         1 for sibling in siblings if numbered_name.match(sibling.name)
     )
 
-    # Set the name
     if same_name_folders_num:
         return f"{folder_name} {same_name_folders_num + 1}"
 
@@ -84,7 +82,6 @@ async def create_folder(
         db, parent_folder_id, request_data.folder_name
     )
 
-    # Create the row
     new_folder = Folder(
         parent_id=uuid.UUID(parent_folder_id),
         name=folder_name,
@@ -104,10 +101,12 @@ async def create_folder(
     )
 
 
-def _files_storage_ids(db: Session, folder_id: str) -> list[str]:
+def _files_storage_ids(
+    db: Session, folder_id: str, user_id: str
+) -> list[str]:
     files = (
         db.query(File)
-        .where(File.folder_id.in_(subfolder_ids(folder_id)))
+        .where(File.folder_id.in_(subfolder_ids(folder_id, user_id)))
         .all()
     )
 
@@ -126,13 +125,11 @@ async def delete_folder(
             detail=_PROTECTED_HOME,
         )
 
-    files_storage_ids = _files_storage_ids(db, str(folder.id))
+    files_storage_ids = _files_storage_ids(db, str(folder.id), user_id)
 
-    # Delete the main folder
     db.delete(folder)
     db.commit()
 
-    # Delete the files
     for file_storage_id in files_storage_ids:
         delete_file_from_storage(file_storage_id)
 

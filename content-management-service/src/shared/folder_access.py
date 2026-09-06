@@ -8,6 +8,7 @@ from shared.identifiers import parsed_identifier
 from shared.models import Folder
 
 _HOME_FOLDER = "home"
+_HOME_FOLDER_NAME = "Home"
 MISSING_FOLDER = "Folder does not exist!"
 
 
@@ -64,15 +65,19 @@ def owned_folder(
 
 
 def ensured_home_folder(db: Session, user_id: str) -> Folder:
-    home = db.query(Folder).filter_by(id=user_id).first()
+    owner = uuid.UUID(user_id)
+    home = db.query(Folder).filter_by(id=owner).first()
 
-    if home is not None:
-        return home
+    if home is None:
+        created = Folder(id=owner, name=_HOME_FOLDER_NAME, user_id=owner)
+        db.add(created)
+        db.commit()
 
-    created = Folder(
-        id=uuid.UUID(user_id), name="Home", user_id=uuid.UUID(user_id)
-    )
-    db.add(created)
-    db.commit()
+        return created
 
-    return created
+    if home.user_id != owner:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=MISSING_FOLDER
+        )
+
+    return home

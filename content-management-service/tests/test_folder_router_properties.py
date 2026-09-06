@@ -95,7 +95,9 @@ def test__files_storage_ids_property_names_one_id_per_stored_file(
 ) -> None:
     with _SESSIONS() as session:
         folder_id = seeded_folder(session, owner, {"file": file_count})
-        stored = _files_storage_ids(session, str(folder_id))
+        stored = _files_storage_ids(
+            session, str(folder_id), str(owner)
+        )
 
     assert len(stored) == file_count
     assert all(name.endswith(".pdf") for name in stored)

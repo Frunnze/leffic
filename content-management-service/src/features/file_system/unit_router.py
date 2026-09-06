@@ -118,7 +118,7 @@ def _move_folder(
     db: Session, user_id: str, unit_id: str, destination_id: str
 ) -> None:
     folder = owned_folder(db, user_id, unit_id, _MISSING_UNIT)
-    subtree = db.execute(subfolder_ids(unit_id)).scalars().all()
+    subtree = db.execute(subfolder_ids(unit_id, user_id)).scalars().all()
 
     if uuid.UUID(destination_id) in subtree:
         raise HTTPException(

@@ -1,7 +1,12 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import (
+    Constraint,
+    ForeignKey,
+    ForeignKeyConstraint,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from shared.database import Base
@@ -15,10 +20,19 @@ if TYPE_CHECKING:
     from shared.models.note import Note
 
 _CASCADE_ORPHANS = "all, delete-orphan"
+_PARENT_FOREIGN_KEY = "Folder.parent_id"
 
 
 class Folder(NamedRecord, Base):
     __tablename__: str = "folders"
+    __table_args__: tuple[Constraint, ...] = (
+        UniqueConstraint("id", "user_id", name="one_owner_per_folder"),
+        ForeignKeyConstraint(
+            ["parent_id", "user_id"],
+            ["folders.id", "folders.user_id"],
+            name="subfolder_shares_the_owner",
+        ),
+    )
 
     parent_id: Mapped[uuid.UUID | None] = mapped_column(
         FlexibleUuid(),
@@ -31,10 +45,16 @@ class Folder(NamedRecord, Base):
     )
 
     folder: Mapped["Folder | None"] = relationship(
-        "Folder", remote_side="Folder.id", back_populates="subfolders"
+        "Folder",
+        remote_side="Folder.id",
+        back_populates="subfolders",
+        foreign_keys=_PARENT_FOREIGN_KEY,
     )
     subfolders: Mapped[list["Folder"]] = relationship(
-        "Folder", back_populates="folder", cascade=_CASCADE_ORPHANS
+        "Folder",
+        back_populates="folder",
+        cascade=_CASCADE_ORPHANS,
+        foreign_keys=_PARENT_FOREIGN_KEY,
     )
 
     files: Mapped[list["File"]] = relationship(
