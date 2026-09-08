@@ -10,13 +10,13 @@ import {
   CLIENT_ADDRESS_KEY,
   GENERAL_ZONE_WORD,
   GENERATION_COST_ZONE_WORD,
+  GENERATION_WATCHER_POLL,
   evaluatedKey,
   requiredApplication,
   requiredZone,
 } from "./rate-limit-support";
 
 const GENERATION_WATCHER_CEILING_PER_SECOND = 4;
-const GENERATION_WATCHER_POLL = "/api/content/flashcards-status/7";
 const SELECTOR_FED_ZONE_WORDS = [
   AUTHENTICATION_ZONE_WORD,
   GENERATION_COST_ZONE_WORD,

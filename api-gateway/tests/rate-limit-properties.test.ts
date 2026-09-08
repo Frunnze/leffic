@@ -2,21 +2,43 @@ import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { mappedValueFor } from "./nginx-selector-support";
 import {
+  AUTHENTICATION_LIMITED_ROUTES,
   AUTHENTICATION_ZONE_WORD,
   CLIENT_ADDRESS_BYTES,
   GENERAL_ZONE_WORD,
+  GENERATION_COST_LIMITED_ROUTES,
   GENERATION_COST_ZONE_WORD,
+  UNCOUNTED_ROUTES,
   evaluatedKey,
   requiredApplication,
   requiredZone,
   selectorOf,
+  selectorValueFor,
 } from "./rate-limit-support";
+import {
+  isClassifiablePath,
+  normalisedRequestPath,
+} from "./uri-normalisation-support";
 
 const ZONE_WORDS = [
   AUTHENTICATION_ZONE_WORD,
   GENERATION_COST_ZONE_WORD,
   GENERAL_ZONE_WORD,
 ];
+
+const SELECTOR_ZONE_WORDS = [
+  AUTHENTICATION_ZONE_WORD,
+  GENERATION_COST_ZONE_WORD,
+];
+
+const EVERY_KNOWN_ROUTE = AUTHENTICATION_LIMITED_ROUTES
+  .concat(GENERATION_COST_LIMITED_ROUTES)
+  .concat(UNCOUNTED_ROUTES);
+
+const PATH_SEPARATOR = "/";
+const SEPARATOR_POOL = ["/", "//", "///", "/./", "//./"];
+const CONTENT_WORD_LETTERS = ["a", "c", "h", "t", "-", "s"];
+const MAXIMUM_WORD_LENGTH = 12;
 
 const LIMITED_ROUTE_MARKERS = [
   "/api/user/",
@@ -26,23 +48,54 @@ const LIMITED_ROUTE_MARKERS = [
   "upload-files",
 ];
 
-function namesLimitedRoute(requestUri: string): boolean {
+function namesLimitedRoute(classificationPath: string): boolean {
   return LIMITED_ROUTE_MARKERS.some((marker) => {
-    return requestUri.indexOf(marker) !== -1;
+    return classificationPath.indexOf(marker) !== -1;
   });
 }
 
+function spelledWithSeparator(route: string, separator: string): string {
+  return route.split(PATH_SEPARATOR).join(separator);
+}
+
+const zoneWordArbitrary = fc.constantFrom(...SELECTOR_ZONE_WORDS);
+const routeArbitrary = fc.constantFrom(...EVERY_KNOWN_ROUTE);
+const separatorArbitrary = fc.constantFrom(...SEPARATOR_POOL);
+
+const contentWordArbitrary = fc
+  .array(fc.constantFrom(...CONTENT_WORD_LETTERS), {
+    maxLength: MAXIMUM_WORD_LENGTH,
+  })
+  .map((letters) => letters.join(""));
+
 describe("rate-limit selector properties", () => {
   it("mappedValueFor property invents no value the map never declared", () => {
-    const authentication = selectorOf(AUTHENTICATION_ZONE_WORD);
-    const declared = authentication.entries.map((entry) => entry.value);
-
     fc.assert(
-      fc.property(fc.string(), (requestUri) => {
-        const value = mappedValueFor(authentication, requestUri);
+      fc.property(zoneWordArbitrary, fc.string(), (zoneWord, probedPath) => {
+        const selectorMap = selectorOf(zoneWord);
+        const declared = selectorMap.entries.map((entry) => entry.value);
 
-        expect(declared.concat([""])).toContain(value);
+        expect(declared.concat([""])).toContain(
+          mappedValueFor(selectorMap, probedPath),
+        );
       }),
+    );
+  });
+
+  it("selectorValueFor property reads one value for every spelling", () => {
+    fc.assert(
+      fc.property(
+        zoneWordArbitrary,
+        routeArbitrary,
+        separatorArbitrary,
+        (zoneWord, route, separator) => {
+          const requestUri = spelledWithSeparator(route, separator);
+
+          expect(selectorValueFor(zoneWord, requestUri)).toBe(
+            selectorValueFor(zoneWord, route),
+          );
+        },
+      ),
     );
   });
 
@@ -51,9 +104,22 @@ describe("rate-limit selector properties", () => {
       fc.property(fc.string(), (tail) => {
         const requestUri = `/${tail}`;
 
-        fc.pre(!namesLimitedRoute(requestUri));
+        fc.pre(isClassifiablePath(requestUri));
+        fc.pre(!namesLimitedRoute(normalisedRequestPath(requestUri)));
 
         expect(evaluatedKey(AUTHENTICATION_ZONE_WORD, requestUri)).toBe("");
+        expect(evaluatedKey(GENERATION_COST_ZONE_WORD, requestUri)).toBe("");
+      }),
+    );
+  });
+
+  it("evaluatedKey property spares a content path that is not paid", () => {
+    fc.assert(
+      fc.property(contentWordArbitrary, (word) => {
+        const requestUri = `/api/content/${word}`;
+
+        fc.pre(GENERATION_COST_LIMITED_ROUTES.indexOf(requestUri) === -1);
+
         expect(evaluatedKey(GENERATION_COST_ZONE_WORD, requestUri)).toBe("");
       }),
     );

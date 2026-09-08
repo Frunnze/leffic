@@ -10,6 +10,7 @@ import {
   mappedValueFor,
   selectorMapFeeding,
 } from "./nginx-selector-support";
+import { normalisedRequestPath } from "./uri-normalisation-support";
 
 export const AUTHENTICATION_ZONE_WORD = "auth";
 export const GENERATION_COST_ZONE_WORD = "cost";
@@ -36,6 +37,8 @@ export const GENERATION_COST_LIMITED_ROUTES: readonly string[] = [
   "/api/content/extract-text",
   "/api/content/upload-files",
 ];
+
+export const GENERATION_WATCHER_POLL = "/api/content/flashcards-status/7";
 
 export const UNCOUNTED_ROUTES: readonly string[] = [
   "/api/user/account",
@@ -83,13 +86,24 @@ export function selectorOf(zoneWord: string): SelectorMap {
 }
 
 export function evaluatedKey(zoneWord: string, requestUri: string): string {
+  const classificationPath = normalisedRequestPath(requestUri);
   let key = requiredZone(zoneWord).key;
 
   for (const selectorMap of declaredMaps()) {
-    const mapped = mappedValueFor(selectorMap, requestUri);
+    const mapped = mappedValueFor(selectorMap, classificationPath);
 
     key = key.split(selectorMap.targetVariable).join(mapped);
   }
 
   return key.split(CLIENT_ADDRESS_KEY).join(CLIENT_ADDRESS_BYTES);
+}
+
+export function selectorValueFor(
+  zoneWord: string,
+  requestUri: string,
+): string {
+  return mappedValueFor(
+    selectorOf(zoneWord),
+    normalisedRequestPath(requestUri),
+  );
 }

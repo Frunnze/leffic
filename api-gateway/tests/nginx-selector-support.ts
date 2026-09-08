@@ -66,27 +66,31 @@ export function selectorMapFeeding(zoneName: string): SelectorMap | null {
   return feeding[0] ?? null;
 }
 
-function patternMatches(pattern: string, requestUri: string): boolean {
+function patternMatches(
+  pattern: string,
+  classificationPath: string,
+): boolean {
   if (pattern.indexOf("~") === 0) {
-    return new RegExp(pattern.slice(1)).test(requestUri);
+    return new RegExp(pattern.slice(1)).test(classificationPath);
   }
 
-  return pattern === requestUri;
+  return pattern === classificationPath;
 }
 
 export function mappedValueFor(
   selectorMap: SelectorMap,
-  requestUri: string,
+  classificationPath: string,
 ): string {
   const exact = selectorMap.entries.find((entry) => {
-    return entry.pattern.indexOf("~") !== 0 && entry.pattern === requestUri;
+    return entry.pattern.indexOf("~") !== 0
+      && entry.pattern === classificationPath;
   });
 
   if (exact !== undefined) return exact.value;
 
   const matched = selectorMap.entries.find((entry) => {
     return entry.pattern.indexOf("~") === 0
-      && patternMatches(entry.pattern, requestUri);
+      && patternMatches(entry.pattern, classificationPath);
   });
 
   if (matched !== undefined) return matched.value;

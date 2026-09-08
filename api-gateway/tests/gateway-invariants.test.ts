@@ -18,10 +18,17 @@ const EXPECTED_RESPONSE_HEADERS = [
 ];
 
 const MAXIMUM_CONFIGURATION_LINES = 200;
+const MAXIMUM_LINE_LENGTH = 80;
 const HTTP_LEVEL = "http";
 const SERVER_LEVEL = "http/server";
 const PREFLIGHT_GUARD_COUNT = 4;
 const JWT_GUARD_COUNT = 3;
+
+function overlongConfigurationLines(): readonly string[] {
+  return gatewayConfigurationText().split("\n").filter((line) => {
+    return line.length > MAXIMUM_LINE_LENGTH;
+  });
+}
 
 function occurrences(pattern: RegExp): number {
   return (gatewayConfigurationText().match(pattern) ?? []).length;
@@ -44,6 +51,10 @@ describe("gateway configuration invariants", () => {
     const lines = gatewayConfigurationText().split("\n").length;
 
     expect(lines).toBeLessThan(MAXIMUM_CONFIGURATION_LINES);
+  });
+
+  it("keeps every gateway configuration line inside eighty columns", () => {
+    expect(overlongConfigurationLines()).toEqual([]);
   });
 
   it("declares every shared rate-limit counter once for all servers", () => {

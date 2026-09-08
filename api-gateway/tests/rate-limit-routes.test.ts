@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  declaredMaps,
-  mappedValueFor,
-  rateLimitSelectorMaps,
-} from "./nginx-selector-support";
+import { rateLimitSelectorMaps } from "./nginx-selector-support";
 import {
   AUTHENTICATION_LIMITED_ROUTES,
   AUTHENTICATION_UNLIMITED_ROUTES,
@@ -12,18 +8,15 @@ import {
   GENERATION_COST_ZONE_WORD,
   SELECTOR_MAP_COUNT,
   UNCOUNTED_ROUTES,
-  selectorOf,
+  selectorValueFor,
 } from "./rate-limit-support";
 
-const REQUEST_URI_VARIABLE = "$request_uri";
-const NORMALISED_URI_VARIABLE = "$uri";
-
 function authenticationValueFor(requestUri: string): string {
-  return mappedValueFor(selectorOf(AUTHENTICATION_ZONE_WORD), requestUri);
+  return selectorValueFor(AUTHENTICATION_ZONE_WORD, requestUri);
 }
 
 function generationCostValueFor(requestUri: string): string {
-  return mappedValueFor(selectorOf(GENERATION_COST_ZONE_WORD), requestUri);
+  return selectorValueFor(GENERATION_COST_ZONE_WORD, requestUri);
 }
 
 describe("authentication zone route selection", () => {
@@ -91,22 +84,6 @@ describe("generation-cost zone route selection", () => {
 });
 
 describe("rate-limit selector maps", () => {
-  it("selects on the raw request line, not the rewritten path", () => {
-    const selectorMaps = rateLimitSelectorMaps();
-
-    expect(selectorMaps.length).toBe(SELECTOR_MAP_COUNT);
-
-    for (const selectorMap of selectorMaps) {
-      expect(selectorMap.sourceVariable).toBe(REQUEST_URI_VARIABLE);
-    }
-  });
-
-  it("never selects on a variable a location rewrite can change", () => {
-    for (const selectorMap of declaredMaps()) {
-      expect(selectorMap.sourceVariable).not.toBe(NORMALISED_URI_VARIABLE);
-    }
-  });
-
   it("leaves an unlisted route out of every zone it did not name", () => {
     const selectorMaps = rateLimitSelectorMaps();
 

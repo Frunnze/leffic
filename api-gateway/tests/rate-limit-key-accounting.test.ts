@@ -1,13 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { mappedValueFor } from "./nginx-selector-support";
 import {
   AUTHENTICATION_ZONE_WORD,
   GENERATION_COST_ZONE_WORD,
+  GENERATION_WATCHER_POLL,
   evaluatedKey,
-  selectorOf,
+  selectorValueFor,
 } from "./rate-limit-support";
-
-const GENERATION_WATCHER_POLL = "/api/content/flashcards-status/7";
 
 describe("a request counts only when its whole key is non-empty", () => {
   it("leaves the refresh-token route out of the auth zone", () => {
@@ -42,16 +40,13 @@ describe("a request counts only when its whole key is non-empty", () => {
 
   it("counts a login attempt nginx normalises back to the login route", () => {
     expect(
-      mappedValueFor(selectorOf(AUTHENTICATION_ZONE_WORD), "//api/user/login"),
+      selectorValueFor(AUTHENTICATION_ZONE_WORD, "//api/user/login"),
     ).not.toBe("");
   });
 
   it("counts a login attempt written with a percent-encoded letter", () => {
     expect(
-      mappedValueFor(
-        selectorOf(AUTHENTICATION_ZONE_WORD),
-        "/api/user/%6cogin",
-      ),
+      selectorValueFor(AUTHENTICATION_ZONE_WORD, "/api/user/%6cogin"),
     ).not.toBe("");
   });
 });
