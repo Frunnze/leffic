@@ -2,14 +2,6 @@ from pathlib import Path
 
 from check_support import link_real_python, repository, run_check
 
-CROWDED_CLASS = (
-    "class Crowded:\n"
-    "    def a(self):\n        return 1\n"
-    "    def b(self):\n        return 2\n"
-    "    def c(self):\n        return 3\n"
-    "    def d(self):\n        return 4\n"
-    "    def e(self):\n        return 5\n"
-)
 NESTED_DEFINITION = (
     "def outer(value):\n"
     "    def inner(other):\n        return other\n"
@@ -22,18 +14,6 @@ def _written(tmp_path: Path, relative: str, source: str) -> None:
     path = tmp_path / relative
     path.parent.mkdir(parents=True, exist_ok=True)
     _ = path.write_text(source, encoding="utf-8")
-
-
-def test_class_methods_sees_a_file_never_added_to_git(
-    tmp_path: Path,
-) -> None:
-    repository(tmp_path)
-    link_real_python(tmp_path)
-    _written(tmp_path, "user-service/src/wide.py", CROWDED_CLASS)
-    finished = run_check(tmp_path, "class-methods")
-
-    assert finished.returncode == 1
-    assert "Crowded has 5 methods" in finished.stderr
 
 
 def test_nested_definitions_sees_a_file_never_added_to_git(

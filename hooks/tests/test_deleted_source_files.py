@@ -50,16 +50,6 @@ def test_nested_definitions_survives_a_deleted_source_file(
     assert "Traceback" not in finished.stderr
 
 
-def test_class_methods_survives_a_deleted_source_file(
-    tmp_path: Path,
-) -> None:
-    _committed_repository(tmp_path)
-    finished = run_check(tmp_path, "class-methods")
-
-    assert finished.returncode == 0
-    assert "Traceback" not in finished.stderr
-
-
 def test_property_tests_survives_a_deleted_source_file(
     tmp_path: Path,
 ) -> None:

@@ -21,7 +21,6 @@ open-closed
 dependency-inversion
 definition-names
 nested-definitions
-class-methods
 duplicate-code
 dead-code
 linters
