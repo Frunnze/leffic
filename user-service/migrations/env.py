@@ -3,15 +3,27 @@ from sqlalchemy import engine_from_config, pool
 
 import features.account.models  # noqa: F401
 import shared.models  # noqa: F401
-from shared.database import SQLALCHEMY_DATABASE_URL, Base
+from database_provisioning import create_postgres_database_if_configured
+from shared.database import Base
+from shared.database_settings import SQLALCHEMY_DATABASE_URL
 
 _CONFIGURED_URL = "sqlalchemy.url"
+_MISSING_CONFIGURED_URL = "alembic configured no sqlalchemy.url"
 
 config = context.config
 target_metadata = Base.metadata
 
 if not config.get_main_option(_CONFIGURED_URL, ""):
     config.set_main_option(_CONFIGURED_URL, SQLALCHEMY_DATABASE_URL)
+
+
+def read_configured_database_url() -> str:
+    configured_url = config.get_main_option(_CONFIGURED_URL)
+
+    if configured_url is None:
+        raise RuntimeError(_MISSING_CONFIGURED_URL)
+
+    return configured_url
 
 
 def run_migrations_offline() -> None:
@@ -27,6 +39,8 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
+    create_postgres_database_if_configured(read_configured_database_url())
+
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",

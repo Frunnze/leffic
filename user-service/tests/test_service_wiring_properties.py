@@ -7,10 +7,11 @@ from fastapi import FastAPI
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
+import database_provisioning
 from app_factory import create_app
 from shared import database
 
-_CONNECT = "shared.database.psycopg2.connect"
+_CONNECT = "database_provisioning.psycopg2.connect"
 _EXPECTED_ROUTES = (
     "/sign-up",
     "/login",
@@ -117,9 +118,28 @@ def test_create_database_if_not_exists_property_creates_only_when_absent(
     connection = RecordingConnection((1,) if already_there else None)
 
     with mock.patch(_CONNECT, return_value=connection):
-        database.create_database_if_not_exists()
+        database_provisioning.create_database_if_not_exists()
 
     assert connection.autocommit
     assert len(connection.opened_cursor.statements) == (
         1 if already_there else 2
     )
+
+
+@settings(max_examples=25)
+@given(
+    scheme=st.sampled_from(
+        ["postgresql", "sqlite", "mysql", "postgres"]
+    )
+)
+def test_create_postgres_database_if_configured_property_connects_for_postgres(
+    scheme: str,
+) -> None:
+    connection = RecordingConnection((1,))
+
+    with mock.patch(_CONNECT, return_value=connection) as connect:
+        database_provisioning.create_postgres_database_if_configured(
+            f"{scheme}://somewhere/users"
+        )
+
+    assert connect.called is (scheme == "postgresql")

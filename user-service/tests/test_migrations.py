@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest import mock
 
 import pytest
 from alembic.command import downgrade, upgrade
@@ -96,3 +97,14 @@ def test_downgrade_removes_every_model_table(tmp_path: Path) -> None:
     remaining = set(inspect(engine).get_table_names())
 
     assert remaining & set(Base.metadata.tables) == set()
+
+
+def test_a_sqlite_migration_opens_no_postgres_connection(
+    tmp_path: Path,
+) -> None:
+    database_url = f"sqlite:///{tmp_path / 'guarded.db'}"
+
+    with mock.patch("psycopg2.connect") as connect:
+        upgrade(_alembic_config(database_url), "head")
+
+    assert not connect.called
