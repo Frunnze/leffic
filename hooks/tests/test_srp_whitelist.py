@@ -168,8 +168,9 @@ def test_hook_reads_adjacent_whitelist_and_instructs_the_agent(tmp_path):
     assert result.returncode == 0, result.stderr
     assert "whitelisted=1" in result.stdout
     assert (
-        "Agent: analyze whether each identified SRP violation is real" in result.stdout
+        "Agent: first identify whether each finding is a real SRP violation"
+        in result.stdout
     )
-    assert "Fix real violations" in result.stdout
-    assert "false positives" in result.stdout
+    assert "Fix only the real violations" in result.stdout
+    assert "never refactor it" in result.stdout
     assert "hooks/checks/single-responsibility/whitelist.txt" in result.stdout

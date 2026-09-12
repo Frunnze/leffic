@@ -3,8 +3,8 @@ set -e
 . "$(dirname "$0")/../../_env.sh"
 
 echo "pre-commit: single responsibility (SRP coefficient >= 0.5 blocks)"
-echo "pre-commit: Agent: analyze whether each identified SRP violation is real."
-echo "pre-commit: Fix real violations. For false positives, add the exact finding and a reason to $(dirname "$0")/whitelist.txt"
+echo "pre-commit: Agent: first identify whether each finding is a real SRP violation."
+echo "pre-commit: Fix only the real violations. If a finding is not one, never refactor it - whitelist it: add the exact finding and a reason to $(dirname "$0")/whitelist.txt"
 
 if [ -z "$source_directories$node_source_directories" ]; then
     echo "pre-commit: SRP coefficient=0.0000 threshold=0.5 files=0"

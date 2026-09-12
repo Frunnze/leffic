@@ -121,9 +121,10 @@ def print_report(report: dict) -> None:
             )
     if report["failed"]:
         print(
-            "pre-commit: follow SRP - Agent: analyze whether each finding is real. "
-            "Fix real violations. For false positives, add the exact finding "
-            f"and a reason to {report['whitelist_path']}",
+            "pre-commit: follow SRP - Agent: first identify whether each "
+            "finding is a real SRP violation. Fix only the real violations. "
+            "If a finding is not one, never refactor it - whitelist it: add "
+            f"the exact finding and a reason to {report['whitelist_path']}",
             file=sys.stderr,
         )
 

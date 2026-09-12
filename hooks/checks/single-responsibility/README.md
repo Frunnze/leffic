@@ -81,9 +81,10 @@ measured against a representative, human-labelled SRP dataset for this repo.
 
 ## Review findings and whitelist false positives
 
-The check tells the agent to analyze whether each identified violation is real.
-Fix real violations. If inspection establishes a false positive, add that exact
-finding and a concrete reason to [whitelist.txt](whitelist.txt) beside this check.
+The check tells the agent to first identify whether each finding is a real
+violation. Fix only the real ones. A finding that is not a real violation is
+never refactored - whitelist it instead: add that exact finding and a concrete
+reason to [whitelist.txt](whitelist.txt) beside this check.
 The file starts with no active exceptions. It accepts one JSON object per line,
 with blank lines and `#` comments allowed:
 
