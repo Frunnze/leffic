@@ -2,7 +2,7 @@ from pathlib import Path
 
 from check_support import repository, run_check, stage_file
 
-MAXIMUM = 200
+MAXIMUM = 300
 OVERLONG = "user-service/src/wide.py"
 
 
@@ -24,7 +24,7 @@ def test_flags_an_overlong_file_without_a_trailing_newline(
 
     assert finished.returncode == 1
     assert OVERLONG in finished.stderr
-    assert "201 lines" in finished.stderr
+    assert "301 lines" in finished.stderr
 
 
 def test_flags_an_overlong_file_with_a_trailing_newline(
@@ -35,7 +35,7 @@ def test_flags_an_overlong_file_with_a_trailing_newline(
     finished = run_check(tmp_path, "file-length")
 
     assert finished.returncode == 1
-    assert "201 lines" in finished.stderr
+    assert "301 lines" in finished.stderr
 
 
 def test_accepts_a_file_exactly_at_the_limit(tmp_path: Path) -> None:
