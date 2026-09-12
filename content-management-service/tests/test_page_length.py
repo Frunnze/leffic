@@ -4,7 +4,7 @@ from unittest import mock
 import requests
 from youtube_transcript_api import NoTranscriptFound
 
-from features.study_units_generation.link_extractor import (
+from features.study_units_generation.webpage_extractor import (
     extract_link_main_content,
 )
 from tests.support import FakeHTTPError
@@ -17,7 +17,7 @@ _OTHER_TEXT = "E" * 260
 _HUGE_TEXT = "F" * 400
 _VIDEO_ID = "dQw4w9WgXcQ"
 _TRANSCRIPT_API_LIST = (
-    "features.study_units_generation.link_extractor.YouTubeTranscriptApi.list"
+    "features.study_units_generation.youtube_transcript.YouTubeTranscriptApi.list"
 )
 
 

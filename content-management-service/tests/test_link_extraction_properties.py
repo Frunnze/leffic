@@ -6,15 +6,17 @@ from bs4 import BeautifulSoup, Tag
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from features.study_units_generation.link_extractor import (
-    _any_transcript,
+from features.study_units_generation.webpage_extractor import (
     _elements,
-    _joined_transcript,
     _long_enough_text,
     _main_content_candidates,
-    _preferred_transcript,
     _text_length,
     extract_link_main_content,
+)
+from features.study_units_generation.youtube_transcript import (
+    _any_transcript,
+    _joined_transcript,
+    _preferred_transcript,
     extract_video_id,
     get_youtube_transcript_auto,
 )
@@ -24,7 +26,9 @@ if TYPE_CHECKING:
     from youtube_transcript_api import Transcript, TranscriptList
 
 _MINIMUM_CONTENT_LENGTH = 200
-_REQUESTS_GET = "features.study_units_generation.link_extractor.requests.get"
+_REQUESTS_GET = (
+    "features.study_units_generation.webpage_extractor.requests.get"
+)
 _LANGUAGES = ("en",)
 _VIDEO_IDS = st.text(
     alphabet=st.characters(min_codepoint=97, max_codepoint=122),

@@ -3,10 +3,6 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field, model_validator
 
-from features.study_units_generation.link_extractor import (
-    extract_link_main_content,
-    get_youtube_transcript_auto,
-)
 from features.study_units_generation.pdf_pages import (
     PageSelectionError,
     PdfPageSelection,
@@ -14,13 +10,26 @@ from features.study_units_generation.pdf_pages import (
 from features.study_units_generation.text_extractor import (
     text_extractor_factory,
 )
+from features.study_units_generation.webpage_extractor import (
+    extract_link_main_content,
+)
+from features.study_units_generation.youtube_transcript import (
+    get_youtube_transcript_auto,
+)
 from shared.pdf_conversion import PdfConversion
 
 _FILES_DIRECTORY = "files"
 _YOUTUBE_HOST = "youtube.com"
 _PDF_EXTENSION = "pdf"
 _PAGED_EXTENSIONS = (
-    "pdf", "doc", "docx", "odt", "rtf", "ppt", "pptx", "odp",
+    "pdf",
+    "doc",
+    "docx",
+    "odt",
+    "rtf",
+    "ppt",
+    "pptx",
+    "odp",
 )
 _NOT_PAGED = "Only a document with pages can be read"
 _BACKWARDS_RANGE = "The last page comes before the first"
@@ -96,9 +105,7 @@ def _readable_document(
     return sliced, _PDF_EXTENSION
 
 
-def _text_from_bytes(
-    file_bytes: bytes, document: StoredDocument
-) -> str:
+def _text_from_bytes(file_bytes: bytes, document: StoredDocument) -> str:
     readable, extension = _readable_document(file_bytes, document)
     text_extractor = text_extractor_factory.get_text_extractor(extension)
 

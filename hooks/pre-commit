@@ -16,6 +16,7 @@ tracked-lockfiles
 secrets
 reproducible-images
 file-length
+single-responsibility
 feature-isolation
 open-closed
 dependency-inversion

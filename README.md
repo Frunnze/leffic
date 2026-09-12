@@ -118,6 +118,15 @@ root folder is the folder whose id equals their user id.
 - py-fsrs
 - Docker Compose
 
+## Development checks
+
+Run `./install.sh` to install development tooling and enable Git hooks.
+The [single-responsibility check](hooks/checks/single-responsibility/README.md)
+scores Python and TypeScript code from 0 to 1 and blocks commits at **0.5 or
+higher**, combining structural, cohesion and dependency signals. Its JSON
+report includes the metrics behind every score. Review each finding: fix real
+violations, and record explained false positives in the check's `whitelist.txt`.
+
 ## License
 
 This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License.  

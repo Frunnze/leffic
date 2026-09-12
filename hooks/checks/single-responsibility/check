@@ -1,0 +1,23 @@
+#!/bin/sh
+set -e
+. "$(dirname "$0")/../../_env.sh"
+
+echo "pre-commit: single responsibility (SRP coefficient >= 0.5 blocks)"
+echo "pre-commit: Agent: analyze whether each identified SRP violation is real."
+echo "pre-commit: Fix real violations. For false positives, add the exact finding and a reason to $(dirname "$0")/whitelist.txt"
+
+if [ -z "$source_directories$node_source_directories" ]; then
+    echo "pre-commit: SRP coefficient=0.0000 threshold=0.5 files=0"
+    exit 0
+fi
+
+require_binary "$python_binary" python
+
+if [ -n "$node_source_directories" ]; then
+    require_binary "$node_binary" node
+    require_binary "$typescript_module" typescript
+fi
+
+"$python_binary" "$(dirname "$0")/srp_check.py" \
+    --node "${node_binary:-node}" --typescript "$typescript_module" \
+    $source_directories $node_source_directories

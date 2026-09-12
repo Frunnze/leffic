@@ -1,0 +1,7 @@
+# Reviewed SRP false positives only. No findings are whitelisted by default.
+# Analyze each finding first: fix real violations; whitelist false positives
+# with a concrete reason. One JSON object per line; blank lines/comments are OK.
+# Paths are exact, relative to the command's working directory (repository root
+# for the hook), or absolute. kind and name must match the JSON report exactly.
+# Example (commented out, so it does not suppress anything):
+# {"path":"src/example.py","kind":"module","name":"<module>","reason":"Explain why these groups have one reason to change."}
