@@ -15,7 +15,6 @@ Ranked from the best enforced to the least.
 | Type safety - make illegal states unrepresentable | `strict-typing` (basedpyright `typeCheckingMode = "all"`, `npm run typecheck`), `linters` (eslint `strictTypeChecked`) | High |
 | Modularity - high cohesion, low coupling | `feature-isolation` (siblings meet only in `shared`), `file-length`, `single-responsibility` | High |
 | Explicit dependencies | `unused-deps` (declare what you import, drop what you don't) | High |
-| Reproducible builds | `tracked-lockfiles`, `reproducible-images` | High |
 | Separation of config from code (Twelve-Factor III) | `secrets` (gitleaks over the staged diff) | High |
 | Testability - every unit reachable and exercised | `property-tests` (one `test_<function>_property_<guarantee>` per definition), `coverage` (100% branch, shuffled), `nested-definitions` | High |
 | Robustness against untrusted input | `api-contract` (generated requests must not crash an endpoint), `security-patterns` (semgrep dataflow) | High |

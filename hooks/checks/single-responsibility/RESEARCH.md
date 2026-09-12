@@ -328,7 +328,7 @@ These fixtures test intended behavior and regressions. They do not provide a
 statistical precision, recall, F1 score or calibrated reliability estimate.
 
 The broader hook regression run passed 317 tests using
-`.venv/bin/pytest -q hooks/tests --ignore=hooks/tests/test_untracked_lockfiles.py`.
+`.venv/bin/pytest -q hooks/tests`.
 That excludes the unrelated lockfile module, which also tests Docker builds and
 Git branch/task state; it is not a claim that every repository test or every
 pre-commit check was executed. The file-length check,
