@@ -16,7 +16,7 @@ export default function FlashcardsPage(props: FlashcardsPageProps): JSX.Element 
     <AppShell fillsViewport>
       <div class="review-page">
         <ReviewBar title="Flashcards" onClose={() => { navigate(-1); }} />
-        <div class="review">
+        <div class="stage review">
           <FlashcardsReview scope={props.scope} scopeId={params.id} />
         </div>
       </div>

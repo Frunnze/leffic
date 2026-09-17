@@ -18,7 +18,7 @@ export default function AssessmentPage(
     <AppShell fillsViewport>
       <div class="review-page">
         <ReviewBar title="Test" onClose={() => { navigate(-1); }} />
-        <div class="test-stage">
+        <div class="stage test-stage">
           <AssessmentReview scope={props.scope} scopeId={params.id} />
         </div>
       </div>

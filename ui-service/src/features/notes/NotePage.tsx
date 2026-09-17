@@ -48,7 +48,7 @@ export default function NotePage(): JSX.Element {
 
   return (
     <AppShell>
-      <div class="notes-stage">
+      <div class="stage notes-stage">
         <Show
           when={note()}
           fallback={

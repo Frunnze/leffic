@@ -9,7 +9,7 @@ from shared.models import (
     Note,
     Test,
 )
-from shared.models.mixins import GeneratedContent
+from shared.models.mixins import FolderContent, GeneratedContent
 
 ContentEntry = dict[str, str]
 
@@ -28,14 +28,19 @@ def entries_in(
     db: Session, folder_id: str, user_id: str
 ) -> list[ContentEntry]:
     owner_id = uuid.UUID(user_id)
-    entries: list[ContentEntry] = []
-    entries.extend(_subfolders(db, folder_id, owner_id))
-    entries.extend(_flashcard_decks(db, folder_id, owner_id))
-    entries.extend(_tests(db, folder_id, owner_id))
-    entries.extend(_files(db, folder_id, owner_id))
-    entries.extend(_notes(db, folder_id, owner_id))
+    flashcard_decks = _generated_entries(
+        db, folder_id, owner_id, FlashcardDeck, "flashcard_deck"
+    )
+    tests = _generated_entries(db, folder_id, owner_id, Test, "test")
+    notes = _generated_entries(db, folder_id, owner_id, Note, "note")
 
-    return entries
+    return [
+        *_subfolders(db, folder_id, owner_id),
+        *flashcard_decks,
+        *tests,
+        *_files(db, folder_id, owner_id),
+        *notes,
+    ]
 
 
 def _subfolders(
@@ -58,44 +63,35 @@ def _subfolders(
     ]
 
 
-def _flashcard_decks(
-    db: Session, folder_id: str, owner_id: uuid.UUID
-) -> list[ContentEntry]:
-    rows = (
-        db.query(FlashcardDeck)
+def _rows_in_folder[ContentT: FolderContent](
+    db: Session,
+    model: type[ContentT],
+    folder_id: str,
+    owner_id: uuid.UUID,
+) -> list[ContentT]:
+    return (
+        db.query(model)
         .join(Folder)
         .filter(Folder.id == folder_id, Folder.user_id == owner_id)
         .all()
     )
+
+
+def _generated_entries(
+    db: Session,
+    folder_id: str,
+    owner_id: uuid.UUID,
+    model: type[GeneratedContent],
+    entry_type: str,
+) -> list[ContentEntry]:
+    rows = _rows_in_folder(db, model, folder_id, owner_id)
 
     return [
         {
             "id": str(row.id),
             "name": row.name,
             "created_at": str(row.created_at),
-            "type": "flashcard_deck",
-            **_source_of(row),
-        }
-        for row in rows
-    ]
-
-
-def _tests(
-    db: Session, folder_id: str, owner_id: uuid.UUID
-) -> list[ContentEntry]:
-    rows = (
-        db.query(Test)
-        .join(Folder)
-        .filter(Folder.id == folder_id, Folder.user_id == owner_id)
-        .all()
-    )
-
-    return [
-        {
-            "id": str(row.id),
-            "name": row.name,
-            "created_at": str(row.created_at),
-            "type": "test",
+            "type": entry_type,
             **_source_of(row),
         }
         for row in rows
@@ -105,12 +101,7 @@ def _tests(
 def _files(
     db: Session, folder_id: str, owner_id: uuid.UUID
 ) -> list[ContentEntry]:
-    rows = (
-        db.query(File)
-        .join(Folder)
-        .filter(Folder.id == folder_id, Folder.user_id == owner_id)
-        .all()
-    )
+    rows = _rows_in_folder(db, File, folder_id, owner_id)
 
     return [
         {
@@ -119,28 +110,6 @@ def _files(
             "created_at": str(row.created_at),
             "extension": str(row.extension),
             "type": "file",
-        }
-        for row in rows
-    ]
-
-
-def _notes(
-    db: Session, folder_id: str, owner_id: uuid.UUID
-) -> list[ContentEntry]:
-    rows = (
-        db.query(Note)
-        .join(Folder)
-        .filter(Folder.id == folder_id, Folder.user_id == owner_id)
-        .all()
-    )
-
-    return [
-        {
-            "id": str(row.id),
-            "name": row.name,
-            "created_at": str(row.created_at),
-            "type": "note",
-            **_source_of(row),
         }
         for row in rows
     ]

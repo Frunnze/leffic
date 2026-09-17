@@ -137,7 +137,7 @@ export function AssessmentReview(props: AssessmentReviewProps): JSX.Element {
   };
 
   return (
-    <div class="test-inner">
+    <div class="stage-inner">
       <Show when={currentPage()}>
         {(page) => (
           <Switch>

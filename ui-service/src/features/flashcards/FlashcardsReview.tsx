@@ -111,7 +111,7 @@ export function FlashcardsReview(props: FlashcardsReviewProps): JSX.Element {
   };
 
   return (
-    <div class="review-inner">
+    <div class="stage-inner">
       <Show when={totalToReview() > 0}>
         <Meter
           leadingLabel={`Reviewed ${reviewedCount()} of ${totalToReview()}`}

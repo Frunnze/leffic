@@ -1,25 +1,7 @@
 #!/bin/sh
 set -e
-. "$(dirname "$0")/../../_env.sh"
-
-import_statement='import[^;]*;'
 
 echo "pre-commit: duplicate code (write it once)"
 echo "pre-commit: follow DRY - extract the repeat, do not copy it"
 
-if [ -n "$node_packages" ]; then
-    require_binary "$jscpd_binary" jscpd
-
-    for node_package in $node_packages; do
-        if ! (cd "$node_package" && "$jscpd_binary" src \
-            --threshold 0 \
-            --format "typescript,tsx" \
-            --ignore-pattern "$import_statement" \
-            --reporters console \
-            --silent); then
-            echo "pre-commit: duplicated code in $node_package - reuse it," >&2
-            echo "pre-commit: do not copy it" >&2
-            exit 1
-        fi
-    done
-fi
+"$(dirname "$0")/jscpd.sh"

@@ -1,12 +1,6 @@
 .notes-stage {
-  display: flex;
   align-items: flex-start;
-  justify-content: center;
   min-height: 100%;
-  padding: var(--space-4);
-  padding-left: calc(var(--rail-inline) + var(--space-4));
-  padding-bottom: calc(var(--rail-block) + var(--space-4));
-  background: var(--surface-2);
 }
 
 .note-card {
