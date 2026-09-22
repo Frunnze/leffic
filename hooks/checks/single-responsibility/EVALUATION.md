@@ -1,108 +1,119 @@
-# Detection and portability regression comparison
+# Evaluation
 
-## Current policy and extractor split
+## What the previous implementation did on this repository
 
-The commit threshold is now **0.5**, with score calculations unchanged. Before
-the split, the combined `link_extractor.py` module was the only repository
-finding at this cutoff, scoring `0.509261363636`. It now has separate
-`youtube_transcript.py` and `webpage_extractor.py` modules, coordinated by
-`text_sources.py`. The 201-file scan passes at `0.408333333333`, with no active
-whitelist exceptions. The extraction and text-source tests pass (57 tests).
+The coefficient blended implementation burden, disconnected member components,
+client populations, effect-slice workflows and a God Class conjunction. Scanning
+the four declared source trees produced:
 
-The historical comparison tables below used the previous **0.8** gate. Their
-Pass/Block expectations refer to that policy; they do not describe the stricter
-current cutoff. Exact false positives can now be documented in `whitelist.txt`
-after review, while preserving their raw scores and evidence in JSON.
+| Measurement | Value |
+|---|---:|
+| Units scored | 1,283 |
+| Units scoring exactly `0.0` | 1,200 |
+| Highest unit score | `0.4025` |
+| Units at or above the `0.5` gate | 0 |
+| Callables reaching the two effect domains the formula required | 0 of 969 |
+| Callables with observable effect flow | 0 of 969 |
+| Units with a measurable `tight_cohesion` | 0 |
 
-## Original detection comparison
+Nothing could block, and the ranking was not meaningful. The three
+highest-scoring units were a 17-line module of two functions, a 3-function
+prompt-loading module and a file of Solid event handlers — all scoring `0.4`
+because their members share no state. `json.ts`, with eleven unconnected members,
+scored `0.0`, because the separation term required at least one member to touch
+an import and none did.
 
-Compared the checker snapshot at the start of this improvement (127 passing
-SRP tests) with the updated checker on 16 generated source projects. Both
-versions received the same project files, Python interpreter, TypeScript
-compiler and unchanged inclusive 0.8 blocking threshold.
+## What the entity rule does on this repository
 
-The baseline missed 8 expected blocking cases and blocked 1 expected passing
-case. The updated checker matched the expected outcome in all 16 cases.
-These are synthetic regression scenarios with expectations derived from the
-documented detection policy. They are not an independently human-labelled
-business-responsibility dataset and do not establish general precision,
-recall, or calibration across real projects.
+Same four source trees, same working-tree scan:
 
-| Scenario | Expected | Before | After |
-|---|---|---:|---:|
-| Python: independent pure calculation groups | Block | 0.0000 | 0.8000 |
-| Python: calculation groups with a shared client | Pass | 0.0000 | 0.4250 |
-| Python: independent direct I/O implementations | Block | 0.8998 | 0.8998 |
-| Python: one I/O concern | Pass | 0.5660 | 0.5660 |
-| TypeScript: independent pure calculation groups | Block | 0.0000 | 0.8000 |
-| TypeScript: calculation groups with a shared client | Pass | 0.0000 | 0.4250 |
-| TypeScript: independent direct I/O implementations | Block | 0.8954 | 0.8954 |
-| TypeScript: one I/O concern | Pass | 0.5660 | 0.5660 |
-| Python: Annotated dependency | Block | 0.5748 | 0.8998 |
-| Python: local module named httpx | Pass | 0.8998 | 0.5748 |
-| Python: class re-exported through a package | Block | 0.4750 | 0.8000 |
-| TypeScript: constructor-injected dependency | Block | 0.5704 | 0.8954 |
-| TypeScript: default-exported class | Block | 0.4750 | 0.8000 |
-| TypeScript: configured module path alias | Block | 0.4750 | 0.8000 |
-| Python: imported dependency type, independent work | Block | 0.5748 | 0.8998 |
-| Python: imported dependency type, shared workflow | Pass | 0.5748 | 0.7900 |
+| Measurement | Value |
+|---|---:|
+| Files analyzed | 203 |
+| Units scored | 1,286 |
+| Units reaching 0 entities | 969 |
+| Units reaching 1 entity | 277 |
+| Units reaching 2 entities | 34 |
+| Units reaching 3 entities | 4 |
+| Units reaching 4 entities | 2 |
+| **Blocking findings** | **40** (3.1%) |
+| Distinct files with a finding | 12 |
 
-Scores are rounded for display; decisions use twelve decimal places.
+Findings by kind: 30 callables, 9 modules, 1 class. By service:
+content-management 19, user-service 11, ui-service 10. Entities observed across
+the scan: persistence 157, network 137, authentication 42, process 13,
+filesystem 12, ai 4.
 
-## Helper-call follow-up
+### The findings
 
-Compared the 204-test snapshot with the helper-summary implementation on 18
-additional generated projects, using the same interpreter/compiler and 0.8
-threshold. This table scores the target callable or class; a coordinator's
-implementation helper can have its own separate finding. Each row was run in
-both Python and TypeScript, with the same displayed scores in both languages.
+| Entities | Unit |
+|---:|---|
+| 4 | `study_units_generation/extraction_router.py` module and `extract_text` — filesystem, network, persistence, process |
+| 3 | `file_upload/file_uploader.py` module and `get_file` — filesystem, persistence, process |
+| 3 | `extraction_router._extracted_text` — filesystem, network, process |
+| 3 | `study_units_generation/text_sources.py` module — filesystem, network, process |
+| 2 | `generation_router.py` and four of its callables — authentication, persistence |
+| 2 | `task_status_router.py` and `_owned_task_id` — authentication, persistence |
+| 2 | `text_sources` file readers, `file_uploader._converted_to_pdf`, `shared/pdf_conversion.PdfConversion` — filesystem, process |
+| 2 | `assessment/AssessmentReview.tsx`, six callables — network, persistence |
 
-| Target scenario (Python and TypeScript each) | Expected | Before | After |
-|---|---|---:|---:|
-| Independent jobs through local helpers | Block | 0.2410 | 0.8910 |
-| Helper return value feeds the next helper | Pass | 0.2410 | 0.7900 |
-| Independent jobs through imported helpers | Block | 0.2410 | 0.8910 |
-| Independent jobs through nested helpers | Block | 0.2410 | 0.8910 |
-| Class method calls separate module helpers | Block | 0.2410 | 0.8910 |
-| Small coordinator calls a complex implementation | Pass | 0.0000 | 0.6500 |
-| Original helper bindings reassigned to pure functions | Pass | 0.2410 | 0.2410 |
-| Shared helper module, separate owner client populations | Block | 0.0000 | 0.8000 |
-| Shared helper module, a client uses both groups | Pass | 0.0000 | 0.5500 |
+Spot-checking the evidence:
 
-All 10 previously missed target findings are detected; all 8 expected passing
-targets remain below threshold. These remain synthetic policy regressions,
-with the same accuracy limitations as the first comparison.
+- `generate_study_units` — `hmac.new`, `hmac.new.hexdigest` and six distinct
+  SQLAlchemy session operations. Task-signing policy and storage policy change
+  for different reasons. Real.
+- `AssessmentReview` — `global.fetch` and `global.localStorage.getItem`. Real.
+- `PdfConversion.converted` — `tempfile.TemporaryDirectory` and `subprocess.run`.
+  One job by any reasonable reading, two entities by this rule. This is the
+  intended whitelist case.
 
-## Coverage beyond the comparison
+The whitelist starts empty; no finding is suppressed by default.
 
-The full SRP suite now passes 278 tests. The additional tests exercise
-Python packages and namespaces without src directories, explicit import
-roots, nullable and forward-reference types, type aliases, constructor
-injection, mutable-field counterexamples, TypeScript .mts/.cts and runtime
-extension mapping, inherited and explicit tsconfig files, named/default/star
-re-exports, default-arrow wrappers, static CommonJS imports, ambiguous exports,
-cycles, shadowed imports and callbacks, and local library-name collisions.
-Helper regressions add transitive/recursive I/O summaries, nested and member
-calls, local aliases, arrow and named function expressions, uncalled references,
-reassigned/duplicate definitions, operation deduplication, caller burden
-isolation, shared receiver workflows and segregated/shared owner clients.
-Current policy tests cover the inclusive 0.5 boundary, the extractor split, and
-exact whitelist entries with reasons, retained evidence and error handling.
+## Detection comparison
 
-A test copies the entire checker into an unrelated temporary project and
-runs it using that project's TypeScript installation. This verifies that
-the standalone engine works independently of the repository hook wrapper.
+Both implementations on the same fixtures, same interpreter and compiler:
 
-The 201-file repository scan passes with coefficient 0.408333333333 at threshold 0.5.
-Python lint/format checks and JavaScript/shell syntax checks also pass.
+| Scenario | Previous | Entity rule |
+|---|---|---|
+| 17-line module, two unrelated pure functions | `0.4000` | `0.0000` pass |
+| 11 unconnected pure helpers, no imports | `0.0000` | `0.0000` pass |
+| Function calling `httpx` and `pathlib` | blocks on burden | blocks, 2 entities |
+| Function calling `httpx` four times | `0.5660` blocks | `0.2500` pass |
+| Network result written to disk (one workflow) | capped below gate | blocks, 2 entities |
+| Small coordinator over a downloader and a writer | `0.6500` | blocks, 2 entities |
+| Class whose methods each reach one distinct entity | needed 2 clients each | blocks, 2 entities |
+| Composition root wiring modules, no operations | `0.4000` on separation | `0.0000` pass |
+| Injected `httpx.Client` through `Annotated`/nullable/alias | `0.8998` | blocks, 2 entities |
+| Local module named `httpx` | `0.5748` | pass, not the library |
+| Unknown package with `write` and `send` | `0.0000` | `0.0000` pass |
 
-Run the regression suite:
+Two deliberate reversals are visible. A long function with one concern no longer
+blocks: length is the file-length check's business. A chained network-to-disk
+pipeline now does block: the previous workflow guard treated it as one
+responsibility, and under this rule it is two.
+
+These are policy regressions on fixtures written for the policy. They are not a
+precision or recall measurement against human-labelled SRP violations, and none
+has been performed. See [the research report](RESEARCH.md) for what the
+literature does and does not support.
+
+## Suite
 
 ```sh
 .venv/bin/pytest -q hooks/tests/test_srp_*.py
 ```
 
-The scenarios are covered by test_srp_computation.py, test_srp_types.py,
-test_srp_projects.py, test_srp_portability.py, test_srp_delegation*.py and the
-existing scoring/flow tests. See the README for standalone usage and remaining
-analysis limits.
+225 tests pass at this revision. Four test modules covering removed evidence
+families — member-component cohesion, client segregation, effect-slice workflows
+and independent pure-computation groups — were deleted with the code they tested.
+`test_srp_entities.py` covers the rule itself, including four Hypothesis
+properties: entities are unique and sorted, unresolved names never become
+entities, the coefficient never decreases as entities are added and stays in
+`[0, 1]`, and it crosses the threshold exactly at two entities.
+
+The remaining modules retain their coverage of the machinery the rule still
+depends on: Python and TypeScript adapters, import roots and namespace layouts,
+tsconfig inheritance and path aliases, default, star and CommonJS import forms,
+re-export cycles and ambiguity, dependency-type resolution, helper delegation
+across files and scopes, paths with spaces, overlapping input spellings, missing
+tooling, deterministic JSON and the whitelist.

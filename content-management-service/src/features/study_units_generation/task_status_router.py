@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, params
 from features.study_units_generation.celery_app import celery_app
 from features.study_units_generation.task_ownership import (
     MISSING_TASK,
-    verified_task_id,
+    InjectedTaskTokenVerifier,
 )
 from shared.claims_extractor import get_user_id_from_jwt
 from shared.database import get_db
@@ -75,9 +75,14 @@ def _test_name(db: DatabaseSession, test_id: object) -> str | None:
 
 
 def _owned_task_id(
-    task_id: str, user_id: AuthenticatedUserId, db: DatabaseSession
+    task_id: str,
+    user_id: AuthenticatedUserId,
+    db: DatabaseSession,
+    task_token_verifier: InjectedTaskTokenVerifier,
 ) -> str:
-    celery_task_id, folder_id = verified_task_id(task_id)
+    celery_task_id, folder_id = task_token_verifier.verified_task_id(
+        task_id
+    )
     _ = owned_folder(db, user_id, folder_id, MISSING_TASK)
 
     return celery_task_id

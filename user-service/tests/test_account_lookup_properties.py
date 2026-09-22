@@ -6,10 +6,14 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from features.account.account_lookup import account, confirmed_account
+from features.account.bcrypt_fernet_cryptography import (
+    BcryptFernetCryptography,
+)
 from tests.property_support import PHRASE, seeded_user
 
 _NOT_FOUND = 404
 _UNAUTHORIZED = 401
+_CRYPTOGRAPHY = BcryptFernetCryptography()
 
 
 @settings(max_examples=25, deadline=None)
@@ -41,7 +45,9 @@ def test_confirmed_account_property_accepts_the_real_password(
     identifier: uuid.UUID,
 ) -> None:
     with seeded_user(identifier) as session:
-        confirmed = confirmed_account(session, str(identifier), PHRASE)
+        confirmed = confirmed_account(
+            session, str(identifier), PHRASE, _CRYPTOGRAPHY
+        )
 
     assert confirmed.id == identifier
 
@@ -56,6 +62,8 @@ def test_confirmed_account_property_refuses_a_wrong_password(
             return
 
         with pytest.raises(HTTPException) as raised:
-            _ = confirmed_account(session, str(identifier), attempt)
+            _ = confirmed_account(
+                session, str(identifier), attempt, _CRYPTOGRAPHY
+            )
 
     assert raised.value.status_code == _UNAUTHORIZED

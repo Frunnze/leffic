@@ -1,13 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
 import fc from "fast-check";
+import { AccountApi } from "../src/features/settings/account-api";
 import { AssessmentApi } from "../src/features/assessment/assessment-api";
 import { FlashcardsApi } from "../src/features/flashcards/flashcards-api";
 import { App } from "../src/App";
 import { AskProvider } from "../src/shared/chatbot/AskContext";
 import { NotesApi } from "../src/shared/notes/notes-api";
 import { StatsApi } from "../src/features/folder/stats-api";
-import { GenerationProvider } from "../src/features/folder/import/GenerationContext";
+import {
+  GenerationProvider,
+} from "../src/features/folder/import/GenerationContext";
 import { ToastProvider } from "../src/shared/notifications/ToastContext";
 import { UnitsApi } from "../src/features/folder/units-api";
 import { NOTE, NOTHING_DUE, stubAccount } from "./pages-support";
@@ -78,6 +81,22 @@ describe("App", () => {
         "Mitosis",
       ),
     );
+    rendered.unmount();
+  });
+
+  it("routes the settings page to the real account", async () => {
+    stubAccount();
+    const choosing = vi
+      .spyOn(AccountApi, "chooseTheme")
+      .mockResolvedValue("light");
+    const rendered = renderAppAt("/settings");
+
+    await waitFor(() => screen.getByRole("button", { name: "Appearance" }));
+    fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
+    await waitFor(() => screen.getByLabelText("Light"));
+    fireEvent.change(screen.getByLabelText("Light"));
+
+    await waitFor(() => expect(choosing).toHaveBeenCalledWith("light"));
     rendered.unmount();
   });
 

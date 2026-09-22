@@ -10,8 +10,15 @@ sys.path.insert(0, str(CHECK))
 
 from python_facts import python_facts
 from srp_check import analyze, report_for
-from srp_cohesion import owner_score
-from srp_metrics import THRESHOLD, CallableFacts, callable_score
+from srp_cohesion import entity_members, members_of, owner_score
+from srp_effects import effect_domains
+from srp_entities import external_entities, reason_coefficient
+from srp_metrics import (
+    THRESHOLD,
+    CallableFacts,
+    callable_score,
+    entity_reasons,
+)
 
 __all__ = [
     "CHECK",
@@ -19,9 +26,15 @@ __all__ = [
     "CallableFacts",
     "analyze",
     "callable_score",
+    "effect_domains",
+    "entity_members",
+    "entity_reasons",
+    "external_entities",
+    "members_of",
     "mixed_function",
     "owner_score",
     "python_facts",
+    "reason_coefficient",
     "report_for",
     "run_project",
     "run_report",
@@ -90,25 +103,25 @@ def unit_named(report: dict, name: str) -> dict:
 
 def split_class(suffix: str = ".py", cohesive: bool = False) -> str:
     if suffix == ".py":
-        source = "class Worker:\n"
+        source = "import httpx\nfrom pathlib import Path\n\n\nclass Worker:\n"
         for i in range(4):
-            field = "left" if cohesive or i < 2 else "right"
-            source += (
-                f"    def task_{i}(self):\n"
-                f"        value = self.{field}.read()\n"
-                f"        self.{field}.write(value)\n"
-                "        return value\n"
+            body = (
+                "        return httpx.get(name).text\n"
+                if cohesive or i < 2
+                else "        return Path(name).read_text()\n"
             )
+            source += f"    def task_{i}(self, name):\n" + body
         return source
-    source = "class Worker {\n"
+    source = (
+        'import axios from "axios";\nimport * as fs from "node:fs";\n\nclass Worker {\n'
+    )
     for i in range(4):
-        field = "left" if cohesive or i < 2 else "right"
-        source += (
-            f"  task_{i}() {{\n"
-            f"    const value = this.{field}.read();\n"
-            f"    this.{field}.write(value);\n"
-            "    return value;\n  }\n"
+        body = (
+            "    return axios.get(name);\n"
+            if cohesive or i < 2
+            else "    return fs.readFileSync(name);\n"
         )
+        source += f"  task_{i}(name) {{\n" + body + "  }\n"
     return source + "}\n"
 
 

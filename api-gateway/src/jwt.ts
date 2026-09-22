@@ -1,10 +1,11 @@
 import crypto from 'crypto';
 
-const VALID = 'ok';
-const INVALID = 'invalid';
 const BEARER_PREFIX = 'bearer ';
 const MILLISECONDS_PER_SECOND = 1000;
 const SIGNING_ALGORITHM = 'sha256';
+const PREFLIGHT_METHOD = 'OPTIONS';
+const PREFLIGHT_STATUS = 204;
+const REFUSED_TOKEN_STATUS = 401;
 
 type SignedToken = {
     signingInput: string;
@@ -71,25 +72,41 @@ function hasExpired(encodedClaims: string): boolean {
     return Date.now() / MILLISECONDS_PER_SECOND >= claims.exp;
 }
 
-function status(request: NginxHTTPRequest): string {
+function hasVerifiedToken(request: NginxHTTPRequest): boolean {
     const secret = process.env['JWT_SECRET_KEY'];
 
     if (secret === undefined || secret.length === 0) {
         request.error('JWT_SECRET_KEY is not set');
-        return INVALID;
+        return false;
     }
 
     const token = bearerToken(request.headersIn.Authorization);
 
-    if (token === null) return INVALID;
+    if (token === null) return false;
 
     const signed = signedToken(token);
 
-    if (signed === null) return INVALID;
-    if (!signatureMatches(signed, secret)) return INVALID;
-    if (hasExpired(signed.encodedClaims)) return INVALID;
+    if (signed === null) return false;
+    if (!signatureMatches(signed, secret)) return false;
 
-    return VALID;
+    return !hasExpired(signed.encodedClaims);
 }
 
-export default { status };
+function guardPublicRoute(request: NginxHTTPRequest): void {
+    if (request.method === PREFLIGHT_METHOD) {
+        request.return(PREFLIGHT_STATUS);
+    }
+}
+
+function guardProtectedRoute(request: NginxHTTPRequest): void {
+    if (request.method === PREFLIGHT_METHOD) {
+        request.return(PREFLIGHT_STATUS);
+        return;
+    }
+
+    if (!hasVerifiedToken(request)) {
+        request.return(REFUSED_TOKEN_STATUS);
+    }
+}
+
+export default { guardPublicRoute, guardProtectedRoute };

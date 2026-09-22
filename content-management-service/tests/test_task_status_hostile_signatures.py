@@ -6,10 +6,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
 from features.study_units_generation import task_status_router
-from features.study_units_generation.task_ownership import (
-    MISSING_TASK,
-    signed_task_id,
-)
+from features.study_units_generation.task_ownership import MISSING_TASK
 from tests.access_support import (
     HOME_ID,
     OwnedContent,
@@ -28,6 +25,7 @@ from tests.task_token_support import (
     NOT_FOUND,
     SERVER_ERROR_FLOOR,
     STATUS_PATHS,
+    TASK_TOKENS,
     PendingAsyncResult,
     answered_details,
 )
@@ -64,7 +62,7 @@ def celery(monkeypatch: pytest.MonkeyPatch) -> PendingAsyncResult:
 
 def _signed_over(folder_segments: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(
-        signed_task_id(CELERY_TASK_ID, segment)
+        TASK_TOKENS.signed_task_id(CELERY_TASK_ID, segment)
         for segment in folder_segments
     )
 
@@ -73,7 +71,7 @@ def _signed_task_segments(
     task_segments: tuple[str, ...], folder_id: str
 ) -> tuple[str, ...]:
     return tuple(
-        signed_task_id(task_segment, folder_id)
+        TASK_TOKENS.signed_task_id(task_segment, folder_id)
         for task_segment in task_segments
     )
 

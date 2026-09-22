@@ -7,10 +7,9 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
-from features.study_units_generation import (
-    extraction_router as router_module,
-)
+from features.study_units_generation.link_text import WebLinkText
 from features.study_units_generation.pdf_pages import PageSelectionError
+from features.study_units_generation.text_sources import StoredDocumentText
 from tests.access_support import scoped_client
 from tests.extraction_support import (
     BAD_REQUEST,
@@ -61,7 +60,7 @@ def test_a_topic_is_not_extracted_but_written_into_a_note(
 
 def test_a_link_is_read_into_text(client: TestClient) -> None:
     with mock.patch.object(
-        router_module, "text_from_link", return_value=_PAGE_TEXT
+        WebLinkText, "text_from_link", return_value=_PAGE_TEXT
     ) as from_link:
         code, body = extract(
             client, {"link_metadata": _LINK}, authorization(USER_ID)
@@ -78,7 +77,7 @@ def test_a_file_is_read_into_text(
     file_id = stored_file_id(sessions, USER_ID, tmp_path)
 
     with mock.patch.object(
-        router_module, "text_from_files", return_value=_PAGE_TEXT
+        StoredDocumentText, "text_from_files", return_value=_PAGE_TEXT
     ) as from_files:
         code, body = extract(
             client, file_entries(file_id), authorization(USER_ID)
@@ -144,7 +143,7 @@ def test_a_page_range_that_the_document_cannot_serve_is_refused(
     }
 
     with mock.patch.object(
-        router_module,
+        StoredDocumentText,
         "text_from_files",
         mock.Mock(side_effect=PageSelectionError(_TOO_FEW_PAGES)),
     ):

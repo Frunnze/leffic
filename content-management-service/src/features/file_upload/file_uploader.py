@@ -1,10 +1,18 @@
 import shutil
 import uuid
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Protocol
 from uuid import uuid4
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+    status,
+)
 from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 
@@ -12,8 +20,9 @@ from shared.content_access import owned_content
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
 from shared.file_storage import delete_file_from_storage, storage_name
 from shared.folder_access import owned_folder_id
+from shared.libreoffice_exporter import provide_pdf_conversion
 from shared.models import File as StoredFile
-from shared.pdf_conversion import ConversionError, PdfConversion
+from shared.pdf_conversion import ConversionError
 
 file_uploader = APIRouter()
 
@@ -26,8 +35,16 @@ _FILE_NOT_FOUND = "File not found"
 _MISSING_FILE = "File does not exist!"
 _MAXIMUM_STORAGE_NAME_BYTES = 255
 
+
+class StoredFileConversion(Protocol):
+    def converted_file(self, source_path: Path, extension: str) -> bytes: ...
+
+
 UploadedFiles = Annotated[list[UploadFile], File(...)]
 FolderId = Annotated[str | None, Form(...)]
+PdfConversionDependency = Annotated[
+    StoredFileConversion, Depends(provide_pdf_conversion)
+]
 
 
 def save_file_to_storage(file: UploadFile, unique_name: str) -> None:
@@ -118,6 +135,7 @@ async def get_file(
     file_extension: str,
     user_id: AuthenticatedUserId,
     db: DatabaseSession,
+    pdf_conversion: PdfConversionDependency,
 ) -> Response:
     owned = owned_content(db, user_id, StoredFile, file_id, _MISSING_FILE)
     input_path = Path(_FILES_DIRECTORY) / f"{owned.id}.{file_extension}"
@@ -135,7 +153,9 @@ async def get_file(
         )
 
     return Response(
-        content=_converted_to_pdf(input_path, file_extension),
+        content=_converted_to_pdf(
+            pdf_conversion, input_path, file_extension
+        ),
         media_type=_PDF_MEDIA_TYPE,
         headers={
             "Content-Disposition": (
@@ -145,9 +165,13 @@ async def get_file(
     )
 
 
-def _converted_to_pdf(input_path: Path, file_extension: str) -> bytes:
+def _converted_to_pdf(
+    pdf_conversion: StoredFileConversion,
+    input_path: Path,
+    file_extension: str,
+) -> bytes:
     try:
-        return PdfConversion.converted(input_path.read_bytes(), file_extension)
+        return pdf_conversion.converted_file(input_path, file_extension)
     except ConversionError as failure:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

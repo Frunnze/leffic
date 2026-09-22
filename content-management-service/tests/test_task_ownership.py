@@ -9,13 +9,9 @@ import pytest
 from fastapi import HTTPException
 
 from features.study_units_generation import task_ownership
-from features.study_units_generation.task_ownership import (
-    MISSING_TASK,
-    signed_task_id,
-    verified_task_id,
-)
+from features.study_units_generation.task_ownership import MISSING_TASK
 from shared.jwt_secret import SECRET_KEY
-from tests.task_token_support import DIGEST_LENGTH, NOT_FOUND
+from tests.task_token_support import DIGEST_LENGTH, NOT_FOUND, TASK_TOKENS
 
 _FORBIDDEN_PREFIXES: Final[tuple[str, ...]] = (
     "celery",
@@ -89,7 +85,7 @@ def test_missing_task_detail_is_the_single_constant() -> None:
 
 
 def test_signed_task_id_has_three_dot_separated_parts() -> None:
-    parts = signed_task_id(_TASK_ID, _FOLDER_ID).split(".")
+    parts = TASK_TOKENS.signed_task_id(_TASK_ID, _FOLDER_ID).split(".")
 
     assert len(parts) == _TOKEN_PART_COUNT
     assert parts[0] == _TASK_ID
@@ -99,7 +95,7 @@ def test_signed_task_id_has_three_dot_separated_parts() -> None:
 
 
 def test_signature_is_domain_separated_from_plain_hmac() -> None:
-    digest = signed_task_id(_TASK_ID, _FOLDER_ID).split(".")[2]
+    digest = TASK_TOKENS.signed_task_id(_TASK_ID, _FOLDER_ID).split(".")[2]
     unprefixed = {
         _plain_hmac_digest(_TASK_ID + _FOLDER_ID),
         _plain_hmac_digest(f"{_TASK_ID}.{_FOLDER_ID}"),
@@ -115,17 +111,16 @@ def test_verified_task_id_uses_constant_time_comparison(
     spy = _ComparisonSpy(hmac.compare_digest)
     monkeypatch.setattr(hmac, "compare_digest", spy)
 
-    assert verified_task_id(signed_task_id(_TASK_ID, _FOLDER_ID)) == (
-        _TASK_ID,
-        _FOLDER_ID,
-    )
+    minted = TASK_TOKENS.signed_task_id(_TASK_ID, _FOLDER_ID)
+
+    assert TASK_TOKENS.verified_task_id(minted) == (_TASK_ID, _FOLDER_ID)
     assert spy.call_count >= 1
 
 
 @pytest.mark.parametrize("token", _MALFORMED_TOKENS)
 def test_malformed_tokens_are_404(token: str) -> None:
     with pytest.raises(HTTPException) as refusal:
-        _ = verified_task_id(token)
+        _ = TASK_TOKENS.verified_task_id(token)
 
     assert refusal.value.status_code == NOT_FOUND
     assert refusal.value.detail == MISSING_TASK
@@ -142,13 +137,13 @@ def test_verification_touches_no_database_or_celery() -> None:
 
 
 def test_verified_task_id_returns_both_identifiers() -> None:
-    minted = signed_task_id(_TASK_ID, _FOLDER_ID)
+    minted = TASK_TOKENS.signed_task_id(_TASK_ID, _FOLDER_ID)
 
-    assert verified_task_id(minted) == (_TASK_ID, _FOLDER_ID)
+    assert TASK_TOKENS.verified_task_id(minted) == (_TASK_ID, _FOLDER_ID)
 
 
 def test_signed_task_id_is_stable_for_the_same_inputs() -> None:
-    first = signed_task_id(_TASK_ID, _FOLDER_ID)
-    second = signed_task_id(_TASK_ID, _FOLDER_ID)
+    first = TASK_TOKENS.signed_task_id(_TASK_ID, _FOLDER_ID)
+    second = TASK_TOKENS.signed_task_id(_TASK_ID, _FOLDER_ID)
 
     assert first == second

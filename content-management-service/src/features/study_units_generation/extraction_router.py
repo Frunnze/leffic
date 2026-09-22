@@ -1,15 +1,17 @@
-from fastapi import APIRouter, status
+from typing import Annotated, Protocol
+
+from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from features.study_units_generation.link_text import WebLinkText
 from features.study_units_generation.pdf_pages import PageSelectionError
 from features.study_units_generation.text_sources import (
     FileMetadata,
     MissingDocumentError,
     StoredDocument,
-    text_from_files,
-    text_from_link,
+    provide_stored_document_text,
 )
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
 from shared.file_access import owned_file
@@ -26,6 +28,20 @@ class ExtractionRequest(BaseModel):
     file_metadata: list[FileMetadata] | None = None
     link_metadata: str | None = None
     topic_metadata: str | None = None
+
+
+class DocumentTextSource(Protocol):
+    def text_from_files(self, documents: list[StoredDocument]) -> str: ...
+
+
+class LinkTextSource(Protocol):
+    def text_from_link(self, link: str) -> str: ...
+
+
+DocumentText = Annotated[
+    DocumentTextSource, Depends(provide_stored_document_text)
+]
+LinkText = Annotated[LinkTextSource, Depends(WebLinkText)]
 
 
 def _resolved_documents(
@@ -51,13 +67,16 @@ def _resolved_documents(
 
 
 def _extracted_text(
-    documents: list[StoredDocument], link: str | None
+    documents: list[StoredDocument],
+    link: str | None,
+    document_text: DocumentTextSource,
+    link_text: LinkTextSource,
 ) -> str:
     if documents:
-        return text_from_files(documents)
+        return document_text.text_from_files(documents)
 
     if link:
-        return text_from_link(link)
+        return link_text.text_from_link(link)
 
     return ""
 
@@ -67,6 +86,8 @@ async def extract_text(
     request_data: ExtractionRequest,
     user_id: AuthenticatedUserId,
     db: DatabaseSession,
+    document_text: DocumentText,
+    link_text: LinkText,
 ) -> dict[str, str] | JSONResponse:
     if request_data.topic_metadata:
         return JSONResponse(
@@ -80,7 +101,7 @@ async def extract_text(
 
     try:
         extracted_text = _extracted_text(
-            documents, request_data.link_metadata
+            documents, request_data.link_metadata, document_text, link_text
         )
     except (
         PageSelectionError,

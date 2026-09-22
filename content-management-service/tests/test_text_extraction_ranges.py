@@ -7,10 +7,10 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
-from features.study_units_generation import (
-    extraction_router as router_module,
+from features.study_units_generation.text_sources import (
+    StoredDocument,
+    StoredDocumentText,
 )
-from features.study_units_generation.text_sources import StoredDocument
 from tests.access_support import scoped_client
 from tests.extraction_support import OK, extract, stored_file_id
 from tests.support import USER_ID, authorization, in_memory_sessions
@@ -36,7 +36,7 @@ def _requested_pages(
     }
 
     with mock.patch.object(
-        router_module, "text_from_files", return_value=_PAGE_TEXT
+        StoredDocumentText, "text_from_files", return_value=_PAGE_TEXT
     ) as from_files:
         code, _ = extract(client, payload, authorization(USER_ID))
 

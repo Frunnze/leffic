@@ -1,5 +1,5 @@
 import pytest
-from srp_support import mixed_function, run_project, run_report, unit_named
+from srp_support import THRESHOLD, mixed_function, run_project, run_report, unit_named
 
 
 def helper_source(suffix):
@@ -46,14 +46,14 @@ def delegated_source(suffix, chained=False):
 
 @pytest.mark.parametrize("suffix", [".py", ".ts", ".tsx"])
 @pytest.mark.parametrize("chained", [False, True])
-def test_local_helpers_preserve_effects_and_workflow(tmp_path, suffix, chained):
+def test_local_helpers_preserve_entities(tmp_path, suffix, chained):
     source = helper_source(suffix) + delegated_source(suffix, chained)
     unit = unit_named(run_report(tmp_path, source, suffix), "<module>.work")
 
-    assert (unit["coefficient"] >= 0.8) is not chained
+    assert unit["coefficient"] >= THRESHOLD
+    assert unit["entities"] == ["filesystem", "network"]
     assert unit["direct_effect_domains"] == {}
     assert set(unit["delegated_effect_domains"]) == {"network", "filesystem"}
-    assert unit["effect_flow"]["shared_workflow"] is chained
     assert all("via resolved helpers" in reason for reason in unit["reasons"][:2])
 
 
@@ -76,7 +76,7 @@ def test_imported_helpers_and_reexports_preserve_effects(tmp_path, suffix, chain
     )
     unit = unit_named(run_project(tmp_path), "<module>.work")
 
-    assert (unit["coefficient"] >= 0.8) is not chained
+    assert unit["coefficient"] >= THRESHOLD
     targets = [
         target for block in unit["metrics"]["flow"] for target in block["callees"]
     ]
@@ -90,7 +90,7 @@ def test_imported_helpers_and_reexports_preserve_effects(tmp_path, suffix, chain
 
 
 @pytest.mark.parametrize("suffix", [".py", ".ts"])
-def test_small_coordinator_does_not_inherit_helper_complexity(tmp_path, suffix):
+def test_a_coordinator_inherits_helper_entities_but_not_their_size(tmp_path, suffix):
     if suffix == ".py":
         source = mixed_function().replace("def work():", "def implementation():")
         source += "def coordinate():\n    return implementation()\n"
@@ -101,11 +101,10 @@ def test_small_coordinator_does_not_inherit_helper_complexity(tmp_path, suffix):
         source += "function coordinate() { return implementation(); }\n"
     unit = unit_named(run_report(tmp_path, source, suffix), "<module>.coordinate")
 
-    assert unit["coefficient"] < 0.8
+    assert unit["coefficient"] >= THRESHOLD
     assert unit["metrics"]["statements"] == 1
     assert unit["metrics"]["complexity"] == 1
     assert set(unit["delegated_effect_domains"]) == {"network", "filesystem"}
-    assert not unit["effect_flow"]["independent_effects"]
 
 
 @pytest.mark.parametrize("suffix", [".py", ".ts"])
@@ -146,7 +145,7 @@ def test_transitive_and_recursive_helpers_reach_a_stable_summary(tmp_path, suffi
         run_report(tmp_path, source + delegated_source(suffix), suffix), "<module>.work"
     )
 
-    assert unit["coefficient"] >= 0.8
+    assert unit["coefficient"] >= THRESHOLD
     assert len(unit["delegated_effect_domains"]["network"]) == 2
 
 
@@ -158,7 +157,7 @@ def test_shadowed_local_helper_is_not_followed(tmp_path, suffix):
     unit = unit_named(run_report(tmp_path, source, suffix), "<module>.work")
 
     assert unit["effect_domains"] == {}
-    assert unit["coefficient"] < 0.8
+    assert unit["coefficient"] < THRESHOLD
 
 
 @pytest.mark.parametrize("suffix", [".py", ".ts"])

@@ -1,5 +1,11 @@
 import pytest
-from srp_support import run_project, run_report, unit_named, write_split_project
+from srp_support import (
+    THRESHOLD,
+    run_project,
+    run_report,
+    unit_named,
+    write_split_project,
+)
 from test_srp_delegation import delegated_source, helper_source
 
 
@@ -21,7 +27,7 @@ def test_class_methods_can_call_module_helpers(tmp_path, suffix):
         "<module>.Worker.work",
     )
 
-    assert unit["coefficient"] >= 0.8
+    assert unit["coefficient"] >= THRESHOLD
     assert set(unit["delegated_effect_domains"]) == {"network", "filesystem"}
 
 
@@ -42,7 +48,7 @@ def test_nested_helpers_are_resolved_in_their_enclosing_scope(tmp_path, suffix):
         )
     unit = unit_named(run_report(tmp_path, source, suffix), "<module>.work")
 
-    assert unit["coefficient"] >= 0.8
+    assert unit["coefficient"] >= THRESHOLD
     assert set(unit["metrics"]["links"]) == {
         "<module>.work.transfer",
         "<module>.work.store",
@@ -50,7 +56,7 @@ def test_nested_helpers_are_resolved_in_their_enclosing_scope(tmp_path, suffix):
 
 
 @pytest.mark.parametrize("suffix", [".py", ".ts"])
-def test_member_helper_effects_do_not_break_receiver_workflow(tmp_path, suffix):
+def test_member_helper_effects_reach_the_calling_method(tmp_path, suffix):
     if suffix == ".py":
         source = (
             "import httpx\nfrom pathlib import Path\nclass Worker:\n"
@@ -78,8 +84,7 @@ def test_member_helper_effects_do_not_break_receiver_workflow(tmp_path, suffix):
     unit = unit_named(run_report(tmp_path, source, suffix), "<module>.Worker.work")
 
     assert set(unit["effect_domains"]) == {"network", "filesystem"}
-    assert unit["effect_flow"]["shared_workflow"]
-    assert unit["coefficient"] < 0.8
+    assert unit["coefficient"] >= THRESHOLD
 
 
 @pytest.mark.parametrize("suffix", [".py", ".ts"])
@@ -115,9 +120,8 @@ def test_separate_effect_groups_survive_a_shared_helper_module(
         )
     owner = unit_named(run_project(tmp_path), "<module>.Worker")
 
-    assert owner["metrics"]["components"] == 1
-    assert set(owner["metrics"]["effect_groups"]) == {"network", "filesystem"}
-    assert (owner["coefficient"] >= 0.8) is not shared_client
+    assert owner["entities"] == ["filesystem", "network"]
+    assert owner["coefficient"] >= THRESHOLD
 
 
 @pytest.mark.parametrize("suffix", [".py", ".ts"])
@@ -162,7 +166,7 @@ def test_local_aliases_follow_the_resolved_binding(tmp_path, suffix, shadowed):
     )
 
     assert ("network" in unit["effect_domains"]) is not shadowed
-    assert (unit["coefficient"] >= 0.8) is not shadowed
+    assert (unit["coefficient"] >= THRESHOLD) is not shadowed
 
 
 @pytest.mark.parametrize("suffix", [".py", ".ts"])
@@ -174,7 +178,7 @@ def test_wrappers_do_not_multiply_distinct_operation_evidence(tmp_path, suffix):
     )
 
     assert len(unit["effect_domains"]["network"]) == 1
-    assert unit["coefficient"] < 0.8
+    assert unit["entities"] == ["filesystem", "network"]
 
 
 @pytest.mark.parametrize("suffix", [".py", ".ts"])

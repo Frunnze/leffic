@@ -6,7 +6,6 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from features.study_units_generation import task_status_router
-from features.study_units_generation.task_ownership import signed_task_id
 from features.study_units_generation.task_status_router import (
     _owned_task_id,
     get_flashcard_status,
@@ -15,6 +14,7 @@ from features.study_units_generation.task_status_router import (
 from tests.folder_seeding import seeded_folder
 from tests.property_fakes import FakeAsyncResult
 from tests.support import in_memory_sessions
+from tests.task_token_support import TASK_TOKENS
 
 _SUCCEEDED: Final[str] = "SUCCESS"
 _UNFINISHED: Final[st.SearchStrategy[str]] = st.sampled_from(
@@ -42,9 +42,10 @@ def test_get_note_task_status_property_describes_a_finished_note(
     with _SESSIONS() as session:
         folder_id = seeded_folder(session, owner, {})
         owned = _owned_task_id(
-            task_id=signed_task_id(task_id, str(folder_id)),
+            task_id=TASK_TOKENS.signed_task_id(task_id, str(folder_id)),
             user_id=str(owner),
             db=session,
+            task_token_verifier=TASK_TOKENS,
         )
 
         with mock.patch.object(
@@ -67,9 +68,10 @@ def test_get_flashcard_status_property_reports_only_a_status_while_running(
     with _SESSIONS() as session:
         folder_id = seeded_folder(session, owner, {})
         owned = _owned_task_id(
-            task_id=signed_task_id(task_id, str(folder_id)),
+            task_id=TASK_TOKENS.signed_task_id(task_id, str(folder_id)),
             user_id=str(owner),
             db=session,
+            task_token_verifier=TASK_TOKENS,
         )
 
         with mock.patch.object(

@@ -1,8 +1,7 @@
-import subprocess
+import tempfile
 import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
-from unittest import mock
 
 import pytest
 from hypothesis import given, settings
@@ -14,14 +13,15 @@ from features.study_units_generation.pdf_pages import (
 )
 from shared.models.columns import FlexibleUuid
 from shared.pdf_conversion import ConversionError, PdfConversion
-from tests.pdf_support import LibreOfficeStub, PdfDocuments
+from tests.pdf_support import CopyingExporter, PdfDocuments, SilentExporter
 
 if TYPE_CHECKING:
     from sqlalchemy import Dialect
 
 _EXTENSIONS = st.sampled_from(["docx", "odt", "pptx", "rtf"])
 _PAGE_COUNTS = st.integers(min_value=1, max_value=6)
-_SUBPROCESS_RUN = "shared.pdf_conversion.subprocess.run"
+_DOCUMENTS = st.binary(max_size=64)
+_NO_OUTPUT = "LibreOffice produced no PDF"
 
 
 @settings(max_examples=50)
@@ -40,49 +40,41 @@ def test_process_bind_param_property_reads_a_uuid_in_any_spelling(
     assert column.process_bind_param(None, dialect) is None
 
 
-@settings(max_examples=50)
-@given(_EXTENSIONS, st.text(alphabet="abc", min_size=1, max_size=6))
-def test__command_property_always_writes_a_pdf_into_the_given_directory(
-    extension: str, directory: str
+@settings(max_examples=25, deadline=None)
+@given(_EXTENSIONS, _DOCUMENTS)
+def test_converted_property_hands_back_exactly_what_was_exported(
+    extension: str, document: bytes
 ) -> None:
-    source = Path(f"/work/document.{extension}")
-    command = PdfConversion._command(source, directory)
+    conversion = PdfConversion(CopyingExporter())
 
-    assert command[0] == "libreoffice"
-    assert "--headless" in command
-    assert command[command.index("--convert-to") + 1] == "pdf"
-    assert command[command.index("--outdir") + 1] == directory
-    assert command[-1] == str(source)
+    assert conversion.converted(document, extension) == document
 
 
-@settings(max_examples=10, deadline=None)
-@given(_EXTENSIONS, _PAGE_COUNTS)
-def test_converted_property_hands_back_a_pdf_of_the_written_pages(
-    extension: str, page_count: int
+@settings(max_examples=25, deadline=None)
+@given(_EXTENSIONS, _DOCUMENTS)
+def test_converted_property_refuses_when_no_pdf_was_exported(
+    extension: str, document: bytes
 ) -> None:
-    stub = LibreOfficeStub(page_count)
+    conversion = PdfConversion(SilentExporter())
 
-    with mock.patch(_SUBPROCESS_RUN, stub):
-        produced = PdfConversion.converted(b"anything", extension)
-
-    assert PdfDocuments.page_count(produced) == page_count
-    assert stub.converted_sources == [f"document.{extension}"]
+    with pytest.raises(ConversionError, match=_NO_OUTPUT):
+        _ = conversion.converted(document, extension)
 
 
-@settings(max_examples=10, deadline=None)
-@given(st.integers(min_value=1, max_value=9))
-def test__written_pdf_property_reports_whatever_libreoffice_complained(
-    return_code: int,
+@settings(max_examples=25, deadline=None)
+@given(_EXTENSIONS, _DOCUMENTS)
+def test_converted_file_property_converts_the_stored_bytes(
+    extension: str, document: bytes
 ) -> None:
-    failure = subprocess.CompletedProcess(
-        args=[], returncode=return_code, stderr=b"it went wrong"
-    )
+    conversion = PdfConversion(CopyingExporter())
 
-    with (
-        mock.patch(_SUBPROCESS_RUN, return_value=failure),
-        pytest.raises(ConversionError, match="it went wrong"),
-    ):
-        _ = PdfConversion.converted(b"anything", "docx")
+    with tempfile.TemporaryDirectory() as storage:
+        stored = Path(storage) / f"stored.{extension}"
+        _ = stored.write_bytes(document)
+
+        converted = conversion.converted_file(stored, extension)
+
+    assert converted == conversion.converted(document, extension)
 
 
 @settings(max_examples=25, deadline=None)

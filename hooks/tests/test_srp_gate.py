@@ -36,30 +36,21 @@ def test_check_is_executable_and_registered_early():
     ],
 )
 @pytest.mark.parametrize("at_threshold", [False, True])
-def test_hook_enforces_point_five_in_every_declared_package(
+def test_hook_enforces_two_entities_in_every_declared_package(
     tmp_path, relative, suffix, at_threshold
 ):
     repository(tmp_path)
     link_real_python(tmp_path)
     link_typescript(tmp_path)
-    source = split_class(suffix)
-    if at_threshold:
-        source = source.replace(
-            "return value",
-            "result = str(value)\n        return result"
-            if suffix == ".py"
-            else "const result = String(value);\n    return result",
-        )
-    stage_file(tmp_path, relative, source)
+    stage_file(tmp_path, relative, split_class(suffix, cohesive=not at_threshold))
     result = run_check(tmp_path, "single-responsibility")
 
     assert result.returncode == int(at_threshold)
-    score = "0.5000" if at_threshold else "0.4750"
-    assert f"coefficient={score}" in result.stdout
+    assert f"coefficient={'0.5000' if at_threshold else '0.2500'}" in result.stdout
     assert "threshold=0.5" in result.stdout
     if at_threshold:
-        assert f"{relative}:1:" in result.stderr
-        assert "independent member groups" in result.stderr
+        assert f"{relative}:" in result.stderr
+        assert "2 reasons to change (filesystem, network)" in result.stderr
         assert "follow SRP" in result.stderr
     else:
         assert result.stderr == ""

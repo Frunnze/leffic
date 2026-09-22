@@ -17,6 +17,8 @@ export const GENERATION_COST_ZONE_WORD = "cost";
 export const GENERAL_ZONE_WORD = "general";
 
 export const CLIENT_ADDRESS_KEY = "$binary_remote_addr";
+export const AUTHENTICATION_SELECTOR_VARIABLE = "$authentication_limit_key";
+export const GENERATION_COST_SELECTOR_VARIABLE = "$generation_cost_limit_key";
 export const SELECTOR_MAP_COUNT = 2;
 
 export const CLIENT_ADDRESS_BYTES = "\x7f\x00\x00\x01";

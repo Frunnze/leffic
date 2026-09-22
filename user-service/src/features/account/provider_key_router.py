@@ -8,8 +8,12 @@ from sqlalchemy.orm import Session
 
 from features.account import key_sealing
 from features.account.account_lookup import confirmed_account
+from features.account.bcrypt_fernet_cryptography import (
+    BcryptFernetCryptography,
+)
 from features.account.claims_extractor import get_user_id_from_jwt
 from features.account.models import ProviderKey
+from features.account.password_cryptography import PasswordCryptography
 from shared.database import get_db
 from shared.password_hashing import Password
 
@@ -17,6 +21,9 @@ provider_key_router = APIRouter(prefix="/account/provider-keys")
 
 DatabaseSession = Annotated[Session, Depends(get_db)]
 AuthenticatedUserId = Annotated[str, Depends(get_user_id_from_jwt)]
+Cryptography = Annotated[
+    PasswordCryptography, Depends(BcryptFernetCryptography)
+]
 
 _SUPPORTED_PROVIDERS = ("openai", "gemini")
 _UNKNOWN_PROVIDER = "That AI provider is not supported."
@@ -64,6 +71,7 @@ async def save_provider_key(
     request_data: ProviderKeyRequest,
     user_id: AuthenticatedUserId,
     db: DatabaseSession,
+    cryptography: Cryptography,
 ) -> JSONResponse:
     if request_data.provider not in _SUPPORTED_PROVIDERS:
         raise HTTPException(
@@ -79,9 +87,9 @@ async def save_provider_key(
             detail=_BLANK_KEY,
         )
 
-    _ = confirmed_account(db, user_id, request_data.password)
+    _ = confirmed_account(db, user_id, request_data.password, cryptography)
     salt = key_sealing.new_salt()
-    sealed = key_sealing.seal(key, request_data.password, salt)
+    sealed = cryptography.seal_key(key, request_data.password, salt)
     hint = key_sealing.hint_for(key)
     existing = _saved_key(db, user_id, request_data.provider)
 
@@ -118,8 +126,9 @@ async def open_provider_key(
     request_data: OpenKeyRequest,
     user_id: AuthenticatedUserId,
     db: DatabaseSession,
+    cryptography: Cryptography,
 ) -> JSONResponse:
-    _ = confirmed_account(db, user_id, request_data.password)
+    _ = confirmed_account(db, user_id, request_data.password, cryptography)
     saved_key = _saved_key(db, user_id, provider)
 
     if saved_key is None:
@@ -127,7 +136,7 @@ async def open_provider_key(
             status_code=status.HTTP_404_NOT_FOUND, detail=_MISSING_KEY
         )
 
-    opened = key_sealing.unseal(
+    opened = cryptography.open_key(
         saved_key.sealed_key, request_data.password, saved_key.salt
     )
 

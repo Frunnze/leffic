@@ -8,6 +8,7 @@ import LandingPage from "./features/landing/LandingPage";
 import LoginPage from "./features/authentication/LoginPage";
 import NotePage from "./features/notes/NotePage";
 import SettingsPage from "./features/settings/SettingsPage";
+import { AccountApi } from "./features/settings/account-api";
 import SignUpPage from "./features/authentication/SignUpPage";
 import { Toasts } from "./shared/notifications/Toasts";
 import { useToasts } from "./shared/notifications/ToastContext";
@@ -30,14 +31,20 @@ export function App(): JSX.Element {
           path="/folder/:id/flashcards"
           component={() => <FlashcardsPage scope="folder" />}
         />
-        <Route path="/test/:id" component={() => <AssessmentPage scope="test" />} />
+        <Route
+          path="/test/:id"
+          component={() => <AssessmentPage scope="test" />}
+        />
         <Route
           path="/folder/:id/test"
           component={() => <AssessmentPage scope="folder" />}
         />
         <Route path="/note/:id" component={NotePage} />
         <Route path="/file/:id/:extension" component={FilePage} />
-        <Route path="/settings" component={SettingsPage} />
+        <Route
+          path="/settings"
+          component={() => <SettingsPage account={AccountApi} />}
+        />
       </Router>
 
       <Toasts toasts={toasts.toasts()} onDismiss={toasts.dismiss} />

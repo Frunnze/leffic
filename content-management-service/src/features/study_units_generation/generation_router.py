@@ -23,7 +23,10 @@ from features.study_units_generation.study_unit_types import (
     requested_names,
 )
 from features.study_units_generation.task_ownership import (
-    signed_task_id,
+    InjectedTaskTokenSigner,
+)
+from features.study_units_generation.task_token_contracts import (
+    TaskTokenSigner,
 )
 from shared.dependencies import AuthenticatedUserId, DatabaseSession
 from shared.folder_access import ensured_home_folder, owned_folder_id
@@ -72,6 +75,7 @@ async def generate_study_units(
     request_data: GenerationRequest,
     user_id: AuthenticatedUserId,
     db: DatabaseSession,
+    task_token_signer: InjectedTaskTokenSigner,
 ) -> dict[str, object] | JSONResponse:
     folder_id = request_data.folder_id
 
@@ -84,8 +88,10 @@ async def generate_study_units(
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
+    target_folder_id = owned_folder_id(db, user_id, folder_id)
+
     return _queued_tasks(
-        request_data, owned_folder_id(db, user_id, folder_id), db
+        request_data, target_folder_id, db, task_token_signer
     )
 
 
@@ -93,6 +99,7 @@ def _queued_tasks(
     request_data: GenerationRequest,
     folder_id: str,
     db: DatabaseSession,
+    task_token_signer: TaskTokenSigner,
 ) -> dict[str, object]:
     queued: dict[str, object] = {}
     source = StudyUnitSource(
@@ -108,13 +115,21 @@ def _queued_tasks(
             source_kind=request_data.source_kind,
             source_reference=request_data.source_reference,
         )
-        queued["note_task_id"] = signed_task_id(note_task.id, folder_id)
+        queued["note_task_id"] = task_token_signer.signed_task_id(
+            note_task.id, folder_id
+        )
 
     if request_data.flashcards:
-        queued.update(_queued_flashcards(request_data, folder_id, db, source))
+        queued_flashcards = _queued_flashcards(
+            request_data, folder_id, db, source, task_token_signer
+        )
+        queued.update(queued_flashcards)
 
     if request_data.test:
-        queued.update(_queued_test(request_data, folder_id, db, source))
+        queued_test = _queued_test(
+            request_data, folder_id, db, source, task_token_signer
+        )
+        queued.update(queued_test)
 
     return queued
 
@@ -124,6 +139,7 @@ def _queued_flashcards(
     folder_id: str,
     db: DatabaseSession,
     source: StudyUnitSource,
+    task_token_signer: TaskTokenSigner,
 ) -> dict[str, object]:
     wanted = request_data.flashcards or FlashcardsMetadata()
     deck_id = create_flashcard_deck(db, folder_id, source)
@@ -143,7 +159,9 @@ def _queued_flashcards(
                 amount=wanted.amount,
             ),
         )
-        task_ids.append(signed_task_id(flashcard_task.id, folder_id))
+        task_ids.append(
+            task_token_signer.signed_task_id(flashcard_task.id, folder_id)
+        )
 
     return {"flashcard_deck_id": deck_id, "flashcard_task_ids": task_ids}
 
@@ -153,6 +171,7 @@ def _queued_test(
     folder_id: str,
     db: DatabaseSession,
     source: StudyUnitSource,
+    task_token_signer: TaskTokenSigner,
 ) -> dict[str, object]:
     wanted = request_data.test or TestMetadata()
     test_id = create_test(db, folder_id, source)
@@ -168,6 +187,8 @@ def _queued_test(
             item_type=item_type,
             amount=wanted.amount,
         )
-        task_ids.append(signed_task_id(test_task.id, folder_id))
+        task_ids.append(
+            task_token_signer.signed_task_id(test_task.id, folder_id)
+        )
 
     return {"test_id": test_id, "test_task_ids": task_ids}

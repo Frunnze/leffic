@@ -1,7 +1,10 @@
 # Reviewed SRP false positives only. No findings are whitelisted by default.
-# Analyze each finding first: fix real violations; whitelist false positives
-# with a concrete reason. One JSON object per line; blank lines/comments are OK.
+# A finding means the unit reaches two or more external entities, so it has two
+# or more reasons to change. Analyze each one first: split the real violations;
+# whitelist a false positive with a concrete reason explaining why those
+# entities are one reason to change. One JSON object per line; blank lines and
+# comments are OK.
 # Paths are exact, relative to the command's working directory (repository root
 # for the hook), or absolute. kind and name must match the JSON report exactly.
 # Example (commented out, so it does not suppress anything):
-# {"path":"src/example.py","kind":"module","name":"<module>","reason":"Explain why these groups have one reason to change."}
+# {"path":"src/example.py","kind":"module","name":"<module>","reason":"Explain why these entities are one reason to change."}

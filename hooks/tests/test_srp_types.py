@@ -1,5 +1,5 @@
 import pytest
-from srp_support import mixed_function, run_report, unit_named
+from srp_support import THRESHOLD, mixed_function, run_report, unit_named
 
 
 @pytest.mark.parametrize(
@@ -21,7 +21,7 @@ def test_python_explicit_dependency_types_keep_mixed_work_visible(tmp_path, anno
     )
     unit = unit_named(run_report(tmp_path, source), "<module>.work")
 
-    assert unit["coefficient"] >= 0.8
+    assert unit["coefficient"] >= THRESHOLD
     assert unit["effect_domains"]["network"] == [
         "httpx.Client.get",
         "httpx.Client.post",
@@ -38,7 +38,8 @@ def test_python_annotated_aliases_resolve_without_executing_metadata(tmp_path):
         .replace("httpx.post(", "client.post(")
     )
     assert (
-        unit_named(run_report(tmp_path, source), "<module>.work")["coefficient"] >= 0.8
+        unit_named(run_report(tmp_path, source), "<module>.work")["coefficient"]
+        >= THRESHOLD
     )
 
 
@@ -70,7 +71,7 @@ def test_typescript_typed_dependency_parameters(tmp_path, annotation):
     )
     unit = unit_named(run_report(tmp_path, source, ".ts"), "<module>.work")
 
-    assert unit["coefficient"] >= 0.8
+    assert unit["coefficient"] >= THRESHOLD
     assert unit["effect_domains"]["network"] == [
         "axios.AxiosInstance.get",
         "axios.AxiosInstance.post",
@@ -135,8 +136,7 @@ def test_dependency_fields_expose_independent_mixed_implementations(
         )
     unit = unit_named(run_report(tmp_path, source, suffix), "<module>.Worker.work")
 
-    assert unit["coefficient"] >= 0.8
-    assert unit["effect_flow"]["independent_effects"]
+    assert unit["coefficient"] >= THRESHOLD
 
 
 @pytest.mark.parametrize("suffix", [".py", ".ts"])

@@ -10,16 +10,10 @@ from features.study_units_generation.pdf_pages import (
 from features.study_units_generation.text_extractor import (
     text_extractor_factory,
 )
-from features.study_units_generation.webpage_extractor import (
-    extract_link_main_content,
-)
-from features.study_units_generation.youtube_transcript import (
-    get_youtube_transcript_auto,
-)
+from shared.libreoffice_exporter import provide_pdf_conversion
 from shared.pdf_conversion import PdfConversion
 
 _FILES_DIRECTORY = "files"
-_YOUTUBE_HOST = "youtube.com"
 _PDF_EXTENSION = "pdf"
 _PAGED_EXTENSIONS = (
     "pdf",
@@ -73,60 +67,58 @@ def get_file_from_storage(storage_name: str) -> bytes:
         raise MissingDocumentError from unreadable
 
 
-def text_from_files(documents: list[StoredDocument]) -> str:
-    extracted_text = ""
+class StoredDocumentText:
+    def __init__(self, pdf_conversion: PdfConversion) -> None:
+        self._pdf_conversion: PdfConversion = pdf_conversion
 
-    for document in documents:
-        file_bytes = get_file_from_storage(document.storage_name)
-        extracted_text += _text_from_bytes(file_bytes, document)
+    def text_from_files(self, documents: list[StoredDocument]) -> str:
+        extracted_text = ""
 
-    return extracted_text
+        for document in documents:
+            file_bytes = get_file_from_storage(document.storage_name)
+            extracted_text += self._text_from_bytes(file_bytes, document)
+
+        return extracted_text
+
+    def _readable_document(
+        self, file_bytes: bytes, document: StoredDocument
+    ) -> tuple[bytes, str]:
+        asked = document.pages
+        extension = document.extension.lower()
+
+        if asked is None:
+            return file_bytes, document.extension
+
+        if extension not in _PAGED_EXTENSIONS:
+            raise PageSelectionError(_NOT_PAGED)
+
+        if extension == _PDF_EXTENSION:
+            paginated = file_bytes
+        else:
+            paginated = self._pdf_conversion.converted(file_bytes, extension)
+
+        sliced = PdfPageSelection.sliced(paginated, asked.first, asked.last)
+
+        return sliced, _PDF_EXTENSION
+
+    def _text_from_bytes(
+        self, file_bytes: bytes, document: StoredDocument
+    ) -> str:
+        readable, extension = self._readable_document(file_bytes, document)
+        text_extractor = text_extractor_factory.get_text_extractor(extension)
+
+        if text_extractor is None:
+            return ""
+
+        with tempfile.NamedTemporaryFile(
+            suffix=document.storage_name
+        ) as temp_file:
+            _ = temp_file.write(readable)
+            temp_file.flush()
+            extracted = text_extractor.extract_text(temp_file.name, extension)
+
+        return f"{extracted}\n" if extracted else ""
 
 
-def _readable_document(
-    file_bytes: bytes, document: StoredDocument
-) -> tuple[bytes, str]:
-    asked = document.pages
-    extension = document.extension.lower()
-
-    if asked is None:
-        return file_bytes, document.extension
-
-    if extension not in _PAGED_EXTENSIONS:
-        raise PageSelectionError(_NOT_PAGED)
-
-    if extension == _PDF_EXTENSION:
-        paginated = file_bytes
-    else:
-        paginated = PdfConversion.converted(file_bytes, extension)
-
-    sliced = PdfPageSelection.sliced(paginated, asked.first, asked.last)
-
-    return sliced, _PDF_EXTENSION
-
-
-def _text_from_bytes(file_bytes: bytes, document: StoredDocument) -> str:
-    readable, extension = _readable_document(file_bytes, document)
-    text_extractor = text_extractor_factory.get_text_extractor(extension)
-
-    if text_extractor is None:
-        return ""
-
-    with tempfile.NamedTemporaryFile(
-        suffix=document.storage_name
-    ) as temp_file:
-        _ = temp_file.write(readable)
-        temp_file.flush()
-        extracted = text_extractor.extract_text(temp_file.name, extension)
-
-    return f"{extracted}\n" if extracted else ""
-
-
-def text_from_link(link: str) -> str:
-    if _YOUTUBE_HOST in link:
-        transcript = get_youtube_transcript_auto(link)
-
-        if transcript:
-            return transcript
-
-    return extract_link_main_content(link) or ""
+def provide_stored_document_text() -> StoredDocumentText:
+    return StoredDocumentText(provide_pdf_conversion())

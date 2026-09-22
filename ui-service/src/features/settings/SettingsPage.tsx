@@ -2,7 +2,6 @@ import { For, Show, createSignal, type JSX } from "solid-js";
 import { AccountPanel } from "./AccountPanel";
 import { AppShell } from "../../shared/ui/AppShell";
 import { DeleteAccountPanel } from "./DeleteAccountPanel";
-import { AccountApi } from "./account-api";
 import { ProviderKeysPanel } from "./ProviderKeysPanel";
 import { Theme, type ThemeChoice } from "../../shared/ui/theme";
 import { ThemePanel } from "./ThemePanel";
@@ -16,13 +15,23 @@ type Section = {
   readonly panel: () => JSX.Element;
 };
 
-export default function SettingsPage(): JSX.Element {
+type ThemeKeepingAccount = {
+  chooseTheme(theme: ThemeChoice): Promise<ThemeChoice>;
+};
+
+type SettingsPageProps = {
+  readonly account: ThemeKeepingAccount;
+};
+
+export default function SettingsPage(
+  props: SettingsPageProps,
+): JSX.Element {
   const toasts = useToasts();
   const [section, setSection] = createSignal<SectionName>("account");
 
   const chooseTheme = async (choice: ThemeChoice): Promise<void> => {
     Theme.apply(choice);
-    await AccountApi.chooseTheme(choice);
+    await props.account.chooseTheme(choice);
   };
 
   const announceSuccess = (message: string): void => {
@@ -81,7 +90,9 @@ export default function SettingsPage(): JSX.Element {
                   <button
                     class="settings-nav-item"
                     type="button"
-                    aria-current={section() === entry.name ? "page" : undefined}
+                    aria-current={
+                      section() === entry.name ? "page" : undefined
+                    }
                     onClick={() => setSection(entry.name)}
                   >
                     {entry.label}

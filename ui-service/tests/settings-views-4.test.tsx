@@ -4,6 +4,7 @@ import { AccountApi } from "../src/features/settings/account-api";
 import { AskProvider } from "../src/shared/chatbot/AskContext";
 import SettingsPage from "../src/features/settings/SettingsPage";
 import { ToastProvider } from "../src/shared/notifications/ToastContext";
+import { Theme } from "../src/shared/ui/theme";
 import { renderAt } from "./router-support";
 import { SettingsToasts } from "./settings-views-support";
 
@@ -18,7 +19,7 @@ describe("SettingsPage", () => {
     renderAt("/settings", "/settings", () => (
       <ToastProvider>
         <AskProvider>
-          <SettingsPage />
+          <SettingsPage account={AccountApi} />
           <SettingsToasts />
         </AskProvider>
       </ToastProvider>
@@ -28,7 +29,9 @@ describe("SettingsPage", () => {
   it("opens on the account section", async () => {
     renderSettings();
 
-    await waitFor(() => expect(screen.getByLabelText("Username")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByLabelText("Username")).toBeTruthy(),
+    );
     expect(
       screen
         .getByRole("button", { name: "Account" })
@@ -40,6 +43,7 @@ describe("SettingsPage", () => {
     const choosing = vi
       .spyOn(AccountApi, "chooseTheme")
       .mockResolvedValue("light");
+    const painting = vi.spyOn(Theme, "apply");
     renderSettings();
 
     fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
@@ -47,6 +51,7 @@ describe("SettingsPage", () => {
     fireEvent.change(screen.getByLabelText("Light"));
 
     await waitFor(() => expect(choosing).toHaveBeenCalledWith("light"));
+    expect(painting).toHaveBeenCalledWith("light");
   });
 
   it("announces a saved username", async () => {

@@ -1,10 +1,8 @@
-import subprocess
 import tempfile
 from pathlib import Path
+from typing import Protocol
 
-_PDF_EXTENSION = "pdf"
 _SOURCE_STEM = "document"
-_CONVERSION_TIMEOUT_SECONDS = 120
 _NO_OUTPUT = "LibreOffice produced no PDF"
 
 
@@ -12,46 +10,31 @@ class ConversionError(Exception):
     pass
 
 
+class PdfExporter(Protocol):
+    def export_pdf(
+        self, source_path: Path, output_directory: str
+    ) -> Path: ...
+
+
 class PdfConversion:
-    @staticmethod
-    def converted(document: bytes, extension: str) -> bytes:
+    def __init__(self, pdf_exporter: PdfExporter) -> None:
+        self._pdf_exporter: PdfExporter = pdf_exporter
+
+    def converted(self, document: bytes, extension: str) -> bytes:
         with tempfile.TemporaryDirectory() as work_directory:
             source_path = (
                 Path(work_directory) / f"{_SOURCE_STEM}.{extension}"
             )
             _ = source_path.write_bytes(document)
 
-            return PdfConversion._written_pdf(source_path, work_directory)
+            exported_path = self._pdf_exporter.export_pdf(
+                source_path, work_directory
+            )
 
-    @staticmethod
-    def _written_pdf(source_path: Path, output_directory: str) -> bytes:
-        result = subprocess.run(
-            PdfConversion._command(source_path, output_directory),
-            capture_output=True,
-            check=False,
-            timeout=_CONVERSION_TIMEOUT_SECONDS,
-        )
+            if not exported_path.exists():
+                raise ConversionError(_NO_OUTPUT)
 
-        if result.returncode != 0:
-            raise ConversionError(result.stderr.decode())
+            return exported_path.read_bytes()
 
-        converted_path = (
-            Path(output_directory) / f"{_SOURCE_STEM}.{_PDF_EXTENSION}"
-        )
-
-        if not converted_path.exists():
-            raise ConversionError(_NO_OUTPUT)
-
-        return converted_path.read_bytes()
-
-    @staticmethod
-    def _command(source_path: Path, output_directory: str) -> list[str]:
-        return [
-            "libreoffice",
-            "--headless",
-            "--convert-to",
-            _PDF_EXTENSION,
-            "--outdir",
-            output_directory,
-            str(source_path),
-        ]
+    def converted_file(self, source_path: Path, extension: str) -> bytes:
+        return self.converted(source_path.read_bytes(), extension)

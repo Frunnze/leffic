@@ -10,8 +10,8 @@ import {
   statusOf,
 } from "./jwt-support";
 
-describe("status", () => {
-  it("status property accepts every token signed with the shared secret", () => {
+describe("hasVerifiedToken", () => {
+  it("hasVerifiedToken property accepts tokens signed with the secret", () => {
     fc.assert(
       fc.property(fc.dictionary(fc.string(), fc.integer()), (claims) => {
         const token = signedWith({ ...claims, exp: FAR_FUTURE });
@@ -21,7 +21,7 @@ describe("status", () => {
     );
   });
 
-  it("status property refuses every token signed with another secret", () => {
+  it("hasVerifiedToken property refuses a token from another secret", () => {
     fc.assert(
       fc.property(fc.string({ minLength: 1 }), (otherSecret) => {
         fc.pre(otherSecret !== SECRET);

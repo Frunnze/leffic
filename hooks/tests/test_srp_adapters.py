@@ -5,6 +5,7 @@ import sys
 import pytest
 from srp_support import (
     CHECK,
+    THRESHOLD,
     mixed_function,
     run_report,
     unit_named,
@@ -62,8 +63,8 @@ def test_nested_functions_are_measured_in_their_own_scope(tmp_path, suffix):
         )
     report = run_report(tmp_path, source, suffix)
 
-    assert unit_named(report, "<module>.outer")["coefficient"] < 0.8
-    assert unit_named(report, "<module>.outer.work")["coefficient"] >= 0.8
+    assert unit_named(report, "<module>.outer")["coefficient"] < THRESHOLD
+    assert unit_named(report, "<module>.outer.work")["coefficient"] >= THRESHOLD
 
 
 @pytest.mark.parametrize("suffix", [".py", ".ts"])
@@ -166,4 +167,4 @@ def test_json_order_is_deterministic_and_maximum_is_not_diluted(tmp_path):
     second = subprocess.run(command, capture_output=True, text=True, check=False)
 
     assert first.stdout == second.stdout
-    assert json.loads(first.stdout)["coefficient"] == 0.8
+    assert json.loads(first.stdout)["coefficient"] == 0.5

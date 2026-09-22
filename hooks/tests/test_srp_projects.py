@@ -21,7 +21,7 @@ def test_python_flat_packages_and_namespaces_without_src(tmp_path, package):
             )
         )
 
-    assert unit_named(run_project(tmp_path), "<module>.Worker")["coefficient"] == 0.8
+    assert unit_named(run_project(tmp_path), "<module>.Worker")["coefficient"] == 0.5
 
 
 def test_python_reexported_class_aliases_preserve_clients(tmp_path):
@@ -37,7 +37,7 @@ def test_python_reexported_class_aliases_preserve_clients(tmp_path):
             )
         )
 
-    assert unit_named(run_project(tmp_path), "<module>.Worker")["coefficient"] == 0.8
+    assert unit_named(run_project(tmp_path), "<module>.Worker")["coefficient"] == 0.5
 
 
 def test_explicit_root_resolves_individually_selected_namespace_files(tmp_path):
@@ -85,11 +85,11 @@ def test_typescript_modules_resolve_across_folders_and_module_extensions(
         )
         client.rename(tmp_path / "clients" / client.name)
 
-    assert unit_named(run_project(tmp_path), "<module>.Worker")["coefficient"] == 0.8
+    assert unit_named(run_project(tmp_path), "<module>.Worker")["coefficient"] == 0.5
 
 
 @pytest.mark.parametrize("form", ["default", "renamed", "star", "forward_default"])
-def test_typescript_export_forms_preserve_client_evidence(tmp_path, form):
+def test_typescript_export_forms_are_resolved(tmp_path, form):
     write_split_project(tmp_path, ".ts")
     worker = tmp_path / "worker.ts"
     if form in {"default", "forward_default"}:
@@ -113,7 +113,7 @@ def test_typescript_export_forms_preserve_client_evidence(tmp_path, form):
             source = source.replace("{Worker}", "{Public as Worker}")
         client.write_text(source)
 
-    assert unit_named(run_project(tmp_path), "<module>.Worker")["coefficient"] == 0.8
+    assert unit_named(run_project(tmp_path), "<module>.Worker")["coefficient"] == 0.5
 
 
 def test_typescript_paths_respect_inherited_tsconfig(tmp_path):
@@ -130,11 +130,11 @@ def test_typescript_paths_respect_inherited_tsconfig(tmp_path):
         client.write_text(client.read_text().replace("./worker", "@domain/worker"))
     report = run_project(tmp_path)
 
-    assert unit_named(report, "<module>.Worker")["coefficient"] == 0.8
+    assert unit_named(report, "<module>.Worker")["coefficient"] == 0.5
     assert report["typescript_configs"] == [str(tmp_path / "tsconfig.json")]
 
 
-def test_ambiguous_reexports_and_cycles_cannot_supply_positive_evidence(tmp_path):
+def test_ambiguous_reexports_and_cycles_terminate_without_inventing_entities(tmp_path):
     write_split_project(tmp_path, ".ts")
     (tmp_path / "other.ts").write_text((tmp_path / "worker.ts").read_text())
     (tmp_path / "public.ts").write_text(
@@ -144,4 +144,7 @@ def test_ambiguous_reexports_and_cycles_cannot_supply_positive_evidence(tmp_path
     for client in tmp_path.glob("client*.ts"):
         client.write_text(client.read_text().replace("./worker", "./public"))
 
-    assert not run_project(tmp_path)["failed"]
+    assert unit_named(run_project(tmp_path), "<module>.Worker")["entities"] == [
+        "filesystem",
+        "network",
+    ]

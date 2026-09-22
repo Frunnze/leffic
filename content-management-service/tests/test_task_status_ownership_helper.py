@@ -8,10 +8,7 @@ from hypothesis import strategies as st
 from sqlalchemy.orm import Session, sessionmaker
 
 from features.study_units_generation import task_status_router
-from features.study_units_generation.task_ownership import (
-    MISSING_TASK,
-    signed_task_id,
-)
+from features.study_units_generation.task_ownership import MISSING_TASK
 from features.study_units_generation.task_status_router import (
     _owned_task_id,
     get_flashcard_status,
@@ -24,6 +21,7 @@ from tests.task_token_support import (
     CELERY_TASK_ID,
     NOT_FOUND,
     PENDING,
+    TASK_TOKENS,
     PendingAsyncResult,
     RefusingAsyncResult,
     forged_token,
@@ -54,6 +52,7 @@ def test_another_user_cannot_resolve_a_token_for_that_folder(
             task_id=owned_token(owned.folder_id),
             user_id=OTHER_USER_ID,
             db=session,
+            task_token_verifier=TASK_TOKENS,
         )
 
     assert refusal.value.status_code == NOT_FOUND
@@ -68,6 +67,7 @@ def test_a_forged_token_is_refused_before_the_folder_is_queried(
             task_id=forged_token(owned.folder_id),
             user_id=USER_ID,
             db=session,
+            task_token_verifier=TASK_TOKENS,
         )
 
     assert refusal.value.detail == MISSING_TASK
@@ -86,6 +86,7 @@ def test_the_flashcard_handler_reports_pending_for_its_owner(
                 task_id=owned_token(owned.folder_id),
                 user_id=USER_ID,
                 db=session,
+                task_token_verifier=TASK_TOKENS,
             ),
             db=session,
         )
@@ -107,6 +108,7 @@ def test_the_test_handler_reports_pending_for_its_owner(
                 task_id=owned_token(owned.folder_id),
                 user_id=USER_ID,
                 db=session,
+                task_token_verifier=TASK_TOKENS,
             ),
             db=session,
         )
@@ -128,6 +130,7 @@ def test_the_note_handler_reports_pending_for_its_owner(
                 task_id=owned_token(owned.folder_id),
                 user_id=USER_ID,
                 db=session,
+                task_token_verifier=TASK_TOKENS,
             )
         )
 
@@ -145,6 +148,7 @@ def test_a_refused_token_never_reaches_celery(
             task_id=forged_token(owned.folder_id),
             user_id=USER_ID,
             db=session,
+            task_token_verifier=TASK_TOKENS,
         )
 
     assert refusal.value.detail == MISSING_TASK
@@ -158,11 +162,14 @@ def test__owned_task_id_property_unwraps_a_token_its_owner_minted(
     sessions = in_memory_sessions()
     owned = seeded_content(sessions, HOME_ID)
 
+    minted = TASK_TOKENS.signed_task_id(celery_task_id, owned.folder_id)
+
     with sessions() as session:
         resolved = _owned_task_id(
-            task_id=signed_task_id(celery_task_id, owned.folder_id),
+            task_id=minted,
             user_id=USER_ID,
             db=session,
+            task_token_verifier=TASK_TOKENS,
         )
 
     assert resolved == celery_task_id

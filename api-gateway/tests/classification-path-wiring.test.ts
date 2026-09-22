@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { ConfigDirective, directivesNamed } from "./nginx-config-support";
+import {
+  ConfigDirective,
+  argumentText,
+  directivesNamed,
+} from "./nginx-config-support";
 import {
   declaredMaps,
   rateLimitSelectorMaps,
 } from "./nginx-selector-support";
 import {
+  AUTHENTICATION_SELECTOR_VARIABLE,
   AUTHENTICATION_ZONE_WORD,
+  CLIENT_ADDRESS_KEY,
+  GENERATION_COST_SELECTOR_VARIABLE,
   GENERATION_COST_ZONE_WORD,
   SELECTOR_MAP_COUNT,
   evaluatedKey,
@@ -20,6 +27,38 @@ const SINGLE_ASSIGNMENT = 1;
 const PLAIN_LOGIN_REQUEST_URI = "/api/user/login";
 const EVASIVE_LOGIN_REQUEST_URI = "/api/user/%6cogin";
 const EVASIVE_CHAT_REQUEST_URI = "/api/content/ch%61t";
+const SIGN_IN_SELECTOR_PATTERN =
+  "~^/api/user/(?!(refresh-token|logout|account)(/|$))";
+const PAID_ROUTE_SELECTOR_PATTERN =
+  "~^/api/content/(chat|extract-text|upload-files|generate-study-units)$";
+const ASSIGNMENT_DIRECTIVE = "set";
+
+const DECLARED_ASSIGNMENTS = [
+  `${CLASSIFICATION_VARIABLE} ${NORMALISED_URI_VARIABLE}`,
+  "$user_service user-service",
+  "$account_service user-service",
+  "$content_service content-management-service",
+  "$documents_service content-documents",
+];
+
+const DECLARED_SELECTOR_MAPS = [
+  {
+    sourceVariable: CLASSIFICATION_VARIABLE,
+    targetVariable: AUTHENTICATION_SELECTOR_VARIABLE,
+    defaultValue: "",
+    entries: [
+      { pattern: SIGN_IN_SELECTOR_PATTERN, value: CLIENT_ADDRESS_KEY },
+    ],
+  },
+  {
+    sourceVariable: CLASSIFICATION_VARIABLE,
+    targetVariable: GENERATION_COST_SELECTOR_VARIABLE,
+    defaultValue: "",
+    entries: [
+      { pattern: PAID_ROUTE_SELECTOR_PATTERN, value: CLIENT_ADDRESS_KEY },
+    ],
+  },
+];
 
 const PREFIX_STRIPPING_REWRITES = [
   ["^/api/user/(.*)$", "/$1", "break"],
@@ -62,6 +101,17 @@ describe("the path the gateway classifies a request on", () => {
     for (const selectorMap of selectorMaps) {
       expect(selectorMap.sourceVariable).toBe(CLASSIFICATION_VARIABLE);
     }
+  });
+
+  it("feeds both throttled selectors exactly as it fed them before", () => {
+    expect(rateLimitSelectorMaps()).toEqual(DECLARED_SELECTOR_MAPS);
+  });
+
+  it("assigns no variable telling the njs module which guard to run", () => {
+    const assignmentDirectives = directivesNamed(ASSIGNMENT_DIRECTIVE);
+    const assignments = assignmentDirectives.map(argumentText);
+
+    expect(assignments).toEqual(DECLARED_ASSIGNMENTS);
   });
 });
 

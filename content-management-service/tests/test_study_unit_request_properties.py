@@ -7,11 +7,6 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from features.study_units_generation import generation_router
-from features.study_units_generation.extraction_router import (
-    _extracted_text,
-)
-from features.study_units_generation.task_ownership import signed_task_id
-from features.study_units_generation.text_sources import StoredDocument
 from shared.models import Test, TestItem
 from tests.folder_seeding import seeded_folder
 from tests.property_fakes import (
@@ -22,6 +17,7 @@ from tests.property_fakes import (
 )
 from tests.property_support import property_world
 from tests.support import authorization
+from tests.task_token_support import TASK_TOKENS
 
 _OK = 200
 _BAD_REQUEST = 400
@@ -29,9 +25,6 @@ _NOT_FOUND = 404
 _UNAVAILABLE = 503
 _CLIENT, _SESSIONS = property_world()
 _TEXT = st.text(alphabet="abcdefg", min_size=1, max_size=12)
-_EXTRACTION = "features.study_units_generation.extraction_router"
-_TEXT_FROM_FILES = f"{_EXTRACTION}.text_from_files"
-_TEXT_FROM_LINK = f"{_EXTRACTION}.text_from_link"
 _CHATBOT_FACTORY = "features.chatbot.chatbot.ai_factory"
 
 
@@ -56,27 +49,6 @@ def _seeded_item(owner: uuid.UUID) -> int:
         session.commit()
 
         return quiz.test_items[0].id
-
-
-@settings(max_examples=50)
-@given(_TEXT, st.sampled_from(["files", "link", "neither"]))
-def test__extracted_text_property_reads_whichever_source_was_given(
-    body: str, source: str
-) -> None:
-    documents = (
-        [StoredDocument(storage_name="f.pdf", extension="pdf")]
-        if source == "files"
-        else []
-    )
-    link = "https://example.com" if source == "link" else None
-
-    with (
-        mock.patch(_TEXT_FROM_FILES, return_value=body),
-        mock.patch(_TEXT_FROM_LINK, return_value=body),
-    ):
-        extracted = _extracted_text(documents, link)
-
-    assert extracted == ("" if source == "neither" else body)
 
 
 @settings(max_examples=25, deadline=None)
@@ -120,7 +92,7 @@ def test__queued_tasks_property_queues_only_what_was_asked_for(
 
     assert response.status_code == _OK
     assert reported == {
-        "note_task_id": signed_task_id("task-1", str(owner))
+        "note_task_id": TASK_TOKENS.signed_task_id("task-1", str(owner))
     }
 
 

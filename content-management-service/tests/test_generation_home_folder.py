@@ -11,7 +11,6 @@ from app_factory import create_app
 from features.study_units_generation import (
     generation_router as router_module,
 )
-from features.study_units_generation.task_ownership import signed_task_id
 from shared.database import get_db
 from shared.models import Folder
 from tests.support import (
@@ -20,6 +19,7 @@ from tests.support import (
     authorization,
     in_memory_sessions,
 )
+from tests.task_token_support import TASK_TOKENS
 
 _OK = 200
 
@@ -76,7 +76,7 @@ def test_generating_into_home_creates_it_when_it_is_missing(
 
     assert response.status_code == _OK
     assert cast("dict[str, str]", response.json()) == {
-        "note_task_id": signed_task_id("note-1", USER_ID)
+        "note_task_id": TASK_TOKENS.signed_task_id("note-1", USER_ID)
     }
     assert home.name == "Home"
     assert note_task.calls[0]["folder_id"] == USER_ID

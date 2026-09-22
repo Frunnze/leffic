@@ -6,6 +6,7 @@ import sys
 import pytest
 from srp_support import (
     CHECK,
+    THRESHOLD,
     mixed_function,
     run_project,
     unit_named,
@@ -37,12 +38,12 @@ def test_typescript_static_commonjs_import_forms(tmp_path, form):
             source = source.replace("new Worker()", "new module.Worker()")
         client.write_text(source)
 
-    assert unit_named(run_project(tmp_path), "<module>.Worker")["coefficient"] == 0.8
+    assert unit_named(run_project(tmp_path), "<module>.Worker")["coefficient"] == 0.5
 
 
 @pytest.mark.parametrize("suffix", [".py", ".ts"])
 @pytest.mark.parametrize("workflow", [False, True])
-def test_imported_dependency_type_aliases_keep_effects_and_workflows_visible(
+def test_imported_dependency_type_aliases_keep_entities_visible(
     tmp_path, suffix, workflow
 ):
     source = mixed_function(suffix)
@@ -80,10 +81,9 @@ def test_imported_dependency_type_aliases_keep_effects_and_workflows_visible(
     (tmp_path / ("worker" + suffix)).write_text(source)
     unit = unit_named(run_project(tmp_path), "<module>.work")
 
-    assert (unit["coefficient"] >= 0.8) != workflow
+    assert unit["coefficient"] >= THRESHOLD
     assert set(unit["effect_domains"]) == {"network", "filesystem"}
     assert unit["metrics"]["call_aliases"]
-    assert unit["effect_flow"]["shared_workflow"] == workflow
 
 
 @pytest.mark.parametrize("suffix", [".py", ".ts"])
@@ -112,7 +112,7 @@ def test_project_modules_named_like_libraries_are_not_assumed_to_be_those_librar
     unit = unit_named(run_project(tmp_path), "<module>.work")
 
     assert "network" not in unit["effect_domains"]
-    assert unit["coefficient"] < 0.8
+    assert unit["coefficient"] < THRESHOLD
 
 
 def test_copied_checker_works_outside_this_repository(tmp_path):
@@ -134,7 +134,7 @@ def test_copied_checker_works_outside_this_repository(tmp_path):
 
     assert result.returncode == 1, result.stderr
     assert (
-        unit_named(json.loads(result.stdout), "<module>.Worker")["coefficient"] == 0.8
+        unit_named(json.loads(result.stdout), "<module>.Worker")["coefficient"] == 0.5
     )
 
 

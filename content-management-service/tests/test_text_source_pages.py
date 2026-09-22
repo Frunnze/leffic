@@ -10,11 +10,12 @@ from features.study_units_generation.pdf_pages import PageSelectionError
 from features.study_units_generation.text_sources import (
     PageRange,
     StoredDocument,
-    text_from_files,
+    provide_stored_document_text,
 )
 from tests.pdf_support import DocumentRecorder, PdfDocuments
 
 _FILE_ID = "3f6c2b1a"
+_STORED_DOCUMENT_TEXT = provide_stored_document_text()
 
 
 def _pages_reaching_the_extractor(tmp_path: Path, asked: PageRange) -> int:
@@ -28,7 +29,7 @@ def _pages_reaching_the_extractor(tmp_path: Path, asked: PageRange) -> int:
         mock.patch.object(text_sources, "_FILES_DIRECTORY", str(tmp_path)),
         mock.patch.object(textract, "process", recorder),
     ):
-        _ = text_from_files([ranged])
+        _ = _STORED_DOCUMENT_TEXT.text_from_files([ranged])
 
     return PdfDocuments.page_count(recorder.documents[0])
 
@@ -79,6 +80,6 @@ def test_a_page_range_on_a_document_without_pages_is_refused(
         mock.patch.object(text_sources, "_FILES_DIRECTORY", str(tmp_path)),
         pytest.raises(PageSelectionError) as refusal,
     ):
-        _ = text_from_files([ranged])
+        _ = _STORED_DOCUMENT_TEXT.text_from_files([ranged])
 
     assert str(refusal.value) == "Only a document with pages can be read"

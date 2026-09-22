@@ -35,20 +35,7 @@ def test_clients_using_constructor_injection_still_corroborate_separate_groups(
             )
             (tmp_path / f"client_{group}_{index}{suffix}").write_text(source)
 
-    assert unit_named(run_project(tmp_path), "<module>.Worker")["coefficient"] == 0.8
-
-
-def test_shadowed_require_cannot_supply_positive_client_evidence(tmp_path):
-    write_split_project(tmp_path, ".ts")
-    for client in tmp_path.glob("client*.ts"):
-        source = client.read_text().replace('import {Worker} from "./worker";\n', "")
-        source = source.replace(
-            "function use() {",
-            'function use(require) { const {Worker} = require("./worker");',
-        )
-        client.write_text(source)
-
-    assert not run_project(tmp_path)["failed"]
+    assert unit_named(run_project(tmp_path), "<module>.Worker")["coefficient"] == 0.5
 
 
 def test_default_arrow_wrappers_propagate_external_clients(tmp_path):
@@ -63,7 +50,7 @@ def test_default_arrow_wrappers_propagate_external_clients(tmp_path):
                 f'import run from "./wrapper_{group}";\nrun();\n'
             )
 
-    assert unit_named(run_project(tmp_path), "<module>.Worker")["coefficient"] == 0.8
+    assert unit_named(run_project(tmp_path), "<module>.Worker")["coefficient"] == 0.5
 
 
 def test_reexported_local_fetch_is_not_the_browser_builtin(tmp_path):

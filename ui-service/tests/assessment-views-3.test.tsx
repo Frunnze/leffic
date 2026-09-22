@@ -3,6 +3,9 @@ import { fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
 import { AssessmentApi } from "../src/features/assessment/assessment-api";
 import { AssessmentReview } from "../src/features/assessment/AssessmentReview";
 import {
+  AssessmentProgress,
+} from "../src/features/assessment/assessment-progress";
+import {
   MULTIPLE_CHOICE,
   SHORT_ANSWER,
   pageOf,
@@ -10,7 +13,13 @@ import {
 
 describe("AssessmentReview", () => {
   function renderReview(): void {
-    render(() => <AssessmentReview scope="test" scopeId="7" />);
+    render(() => (
+      <AssessmentReview
+        scope="test"
+        scopeId="7"
+        progress={AssessmentProgress}
+      />
+    ));
   }
 
   it("says so when the test has no questions yet", async () => {

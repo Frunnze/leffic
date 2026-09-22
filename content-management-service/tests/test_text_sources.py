@@ -17,7 +17,7 @@ from features.study_units_generation.text_extractor import (
 from features.study_units_generation.text_sources import (
     StoredDocument,
     get_file_from_storage,
-    text_from_files,
+    provide_stored_document_text,
 )
 from tests.extraction_support import read_the_document
 
@@ -25,6 +25,7 @@ _FILE_ID = "3f6c2b1a"
 _OTHER_FILE_ID = "9a1d4c7b"
 _PDF = StoredDocument(storage_name=f"{_FILE_ID}.pdf", extension="pdf")
 _STORAGE_CONSTANT = '_FILES_DIRECTORY = "files"'
+_STORED_DOCUMENT_TEXT = provide_stored_document_text()
 
 
 class RecordingExtractor:
@@ -92,7 +93,7 @@ def test_text_from_files_reads_the_given_storage_name() -> None:
         ) as reader,
         mock.patch.object(textract, "process", read_the_document),
     ):
-        _ = text_from_files([document])
+        _ = _STORED_DOCUMENT_TEXT.text_from_files([document])
 
     assert reader.call_args.args[0] == "a-name-nobody-would-build"
 
@@ -123,7 +124,7 @@ def test_text_from_files_joins_every_document(tmp_path: Path) -> None:
         mock.patch.object(text_sources, "_FILES_DIRECTORY", str(tmp_path)),
         mock.patch.object(textract, "process", read_the_document),
     ):
-        joined = text_from_files([_PDF, other])
+        joined = _STORED_DOCUMENT_TEXT.text_from_files([_PDF, other])
 
     assert joined == "payload\nsecond\n"
 
@@ -141,7 +142,7 @@ def test_the_document_is_written_where_the_extractor_can_read_it(
             textract, "process", RecordingExtractor(seen, extensions)
         ),
     ):
-        _ = text_from_files([_PDF])
+        _ = _STORED_DOCUMENT_TEXT.text_from_files([_PDF])
 
     assert seen[0].startswith(tempfile.gettempdir())
     assert seen[0].endswith(_PDF.storage_name)
@@ -156,7 +157,7 @@ def test_text_from_files_skips_unknown_extensions(tmp_path: Path) -> None:
     _ = (tmp_path / f"{_FILE_ID}.xyz").write_bytes(b"payload")
 
     with mock.patch.object(text_sources, "_FILES_DIRECTORY", str(tmp_path)):
-        assert text_from_files([unknown]) == ""
+        assert _STORED_DOCUMENT_TEXT.text_from_files([unknown]) == ""
 
 
 def test_text_from_files_skips_documents_with_no_text(
@@ -168,7 +169,7 @@ def test_text_from_files_skips_documents_with_no_text(
         mock.patch.object(text_sources, "_FILES_DIRECTORY", str(tmp_path)),
         mock.patch.object(textract, "process", return_value=b"   "),
     ):
-        assert text_from_files([_PDF]) == ""
+        assert _STORED_DOCUMENT_TEXT.text_from_files([_PDF]) == ""
 
 
 def test_extraction_needs_no_pre_created_directory(tmp_path: Path) -> None:
@@ -178,6 +179,6 @@ def test_extraction_needs_no_pre_created_directory(tmp_path: Path) -> None:
         mock.patch.object(text_sources, "_FILES_DIRECTORY", str(tmp_path)),
         mock.patch.object(textract, "process", read_the_document),
     ):
-        extracted = text_from_files([_PDF])
+        extracted = _STORED_DOCUMENT_TEXT.text_from_files([_PDF])
 
     assert extracted == "payload\n"

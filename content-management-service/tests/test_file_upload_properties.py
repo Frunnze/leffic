@@ -5,22 +5,19 @@ from pathlib import Path
 from typing import cast
 from unittest import mock
 
-import pytest
-from fastapi import HTTPException, UploadFile
+from fastapi import UploadFile
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from sqlalchemy.orm import Session
 
 from features.file_upload import file_uploader as uploader_module
 from features.file_upload.file_uploader import (
-    _converted_to_pdf,
     _recorded_files,
     _uploaded_file_metadata,
     save_file_to_storage,
 )
 from shared.file_storage import storage_name
 from shared.models import File as StoredFile
-from shared.pdf_conversion import ConversionError
 from tests.file_upload_support import EXTENSIONS
 from tests.folder_seeding import seeded_folder
 from tests.property_support import property_world
@@ -28,14 +25,10 @@ from tests.support import authorization
 
 _OK = 200
 _NOT_FOUND = 404
-_BAD_REQUEST = 400
 _CLIENT, _SESSIONS = property_world()
 _CONTENT = st.binary(min_size=1, max_size=32)
 _UPLOAD_NAMES = ("notes.pdf", "report.docx", "archive", "a.b.txt")
 _STORAGE = tempfile.mkdtemp()
-_PDF_CONVERTED = (
-    "features.file_upload.file_uploader.PdfConversion.converted"
-)
 
 
 def _stored_names(session: Session, folder_id: uuid.UUID) -> list[str]:
@@ -46,13 +39,6 @@ def _stored_names(session: Session, folder_id: uuid.UUID) -> list[str]:
     )
 
     return [row.name for row in rows]
-
-
-def _written_document() -> Path:
-    written = Path(_STORAGE) / "document.docx"
-    _ = written.write_bytes(b"body")
-
-    return written
 
 
 def _named(described: dict[str, str]) -> str:
@@ -176,15 +162,3 @@ def test_get_file_property_reports_a_file_that_is_not_stored(
 
     assert response.status_code == _NOT_FOUND
 
-
-@settings(max_examples=10, deadline=None)
-@given(st.sampled_from(["docx", "odt", "rtf"]))
-def test__converted_to_pdf_property_translates_a_refusal_into_a_bad_request(
-    extension: str,
-) -> None:
-    with mock.patch(
-        _PDF_CONVERTED, side_effect=ConversionError("no good")
-    ), pytest.raises(HTTPException) as raised:
-        _ = _converted_to_pdf(_written_document(), extension)
-
-    assert raised.value.status_code == _BAD_REQUEST

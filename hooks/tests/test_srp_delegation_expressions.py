@@ -1,5 +1,5 @@
 import pytest
-from srp_support import run_project, run_report, unit_named
+from srp_support import THRESHOLD, run_project, run_report, unit_named
 from test_srp_delegation import delegated_source, helper_source
 
 
@@ -43,7 +43,7 @@ def test_typescript_function_values_keep_their_helper_identity(
     if scope != "imported":
         unit = unit_named(run_report(tmp_path, source, ".ts"), name)
 
-    assert unit["coefficient"] >= 0.8
+    assert unit["coefficient"] >= THRESHOLD
     assert set(unit["effect_domains"]) == {"network", "filesystem"}
 
 
@@ -65,4 +65,4 @@ def test_reassigned_typescript_function_values_do_not_keep_stale_effects(
     unit = unit_named(run_report(tmp_path, source, ".ts"), "<module>.work")
 
     assert "network" not in unit["effect_domains"]
-    assert unit["coefficient"] < 0.8
+    assert unit["coefficient"] < THRESHOLD

@@ -17,7 +17,6 @@ from features.study_units_generation.flashcard_deck_writer import (
 from features.study_units_generation.study_unit_source import (
     StudyUnitSource,
 )
-from features.study_units_generation.task_ownership import signed_task_id
 from features.study_units_generation.task_status_router import (
     _finished_result,
     _owned_task_id,
@@ -27,6 +26,7 @@ from features.study_units_generation.task_status_router import (
 from tests.folder_seeding import seeded_folder
 from tests.property_fakes import FakeAsyncResult
 from tests.support import in_memory_sessions
+from tests.task_token_support import TASK_TOKENS
 
 _SUCCEEDED: Final[str] = "SUCCESS"
 _FAILED: Final[str] = "FAILURE"
@@ -112,9 +112,10 @@ def test_get_flashcard_status_property_describes_a_finished_deck(
         finished = {"flashcard_deck_id": deck_id, "type": "basic"}
 
         owned = _owned_task_id(
-            task_id=signed_task_id(task_id, str(folder_id)),
+            task_id=TASK_TOKENS.signed_task_id(task_id, str(folder_id)),
             user_id=str(owner),
             db=session,
+            task_token_verifier=TASK_TOKENS,
         )
 
         with mock.patch.object(
@@ -144,9 +145,10 @@ def test_get_test_task_status_property_describes_a_finished_test(
         finished = {"test_id": test_id, "type": "short_answer"}
 
         owned = _owned_task_id(
-            task_id=signed_task_id(task_id, str(folder_id)),
+            task_id=TASK_TOKENS.signed_task_id(task_id, str(folder_id)),
             user_id=str(owner),
             db=session,
+            task_token_verifier=TASK_TOKENS,
         )
 
         with mock.patch.object(

@@ -140,6 +140,10 @@ export function directivesNamed(name: string): readonly ConfigDirective[] {
   return gatewayDirectives().filter((directive) => directive.name === name);
 }
 
+export function argumentText(directive: ConfigDirective): string {
+  return directive.arguments.join(" ");
+}
+
 function argumentValue(
   directive: ConfigDirective,
   prefix: string,

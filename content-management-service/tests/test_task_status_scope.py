@@ -30,6 +30,7 @@ from tests.task_token_support import (
     NOT_FOUND,
     NOTE_TASK_STATUS,
     STATUS_PATHS,
+    TASK_TOKENS,
     TEST_TASK_STATUS,
     UNAUTHORIZED,
     RefusingAsyncResult,
@@ -78,6 +79,7 @@ def test_helper_returns_the_bare_task_id_for_the_owner(
             task_id=owned_token(owned.folder_id),
             user_id=USER_ID,
             db=session,
+            task_token_verifier=TASK_TOKENS,
         )
 
     assert resolved == CELERY_TASK_ID

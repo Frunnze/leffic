@@ -6,6 +6,9 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from features.account.account_lookup import account, confirmed_account
+from features.account.bcrypt_fernet_cryptography import (
+    BcryptFernetCryptography,
+)
 from features.account.claims_extractor import get_user_id_from_jwt
 from features.account.events import (
     USER_DELETED,
@@ -13,14 +16,18 @@ from features.account.events import (
     publish,
 )
 from features.account.models import ProviderKey
+from features.account.password_cryptography import PasswordCryptography
 from shared.database import get_db
 from shared.models import User
-from shared.password_hashing import Password, hash_password
+from shared.password_hashing import Password
 
 account_router = APIRouter(prefix="/account")
 
 DatabaseSession = Annotated[Session, Depends(get_db)]
 AuthenticatedUserId = Annotated[str, Depends(get_user_id_from_jwt)]
+Cryptography = Annotated[
+    PasswordCryptography, Depends(BcryptFernetCryptography)
+]
 
 _MINIMUM_PASSWORD_LENGTH = 4
 _TAKEN_USERNAME = "That username is taken."
@@ -88,6 +95,7 @@ async def change_password(
     request_data: PasswordRequest,
     user_id: AuthenticatedUserId,
     db: DatabaseSession,
+    cryptography: Cryptography,
 ) -> JSONResponse:
     if len(request_data.new_password) < _MINIMUM_PASSWORD_LENGTH:
         raise HTTPException(
@@ -95,8 +103,12 @@ async def change_password(
             detail=_SHORT_NEW_CREDENTIALS,
         )
 
-    user = confirmed_account(db, user_id, request_data.current_password)
-    user.hashed_password = hash_password(request_data.new_password)
+    user = confirmed_account(
+        db, user_id, request_data.current_password, cryptography
+    )
+    user.hashed_password = cryptography.hash_password(
+        request_data.new_password
+    )
     db.commit()
 
     return JSONResponse(content={"msg": "Password changed!"})
@@ -107,8 +119,11 @@ async def delete_account(
     request_data: DeleteAccountRequest,
     user_id: AuthenticatedUserId,
     db: DatabaseSession,
+    cryptography: Cryptography,
 ) -> JSONResponse:
-    user = confirmed_account(db, user_id, request_data.password)
+    user = confirmed_account(
+        db, user_id, request_data.password, cryptography
+    )
 
     _announce_deletion(user_id)
 

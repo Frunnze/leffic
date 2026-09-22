@@ -5,6 +5,7 @@ from pathlib import Path
 from pypdf import PdfReader, PdfWriter
 
 _PAGE_SIDE = 200
+_EXPORTED_NAME = "exported.pdf"
 
 
 class PdfDocuments:
@@ -56,3 +57,16 @@ class LibreOfficeStub:
         return subprocess.CompletedProcess(
             args=command, returncode=0, stderr=b""
         )
+
+
+class CopyingExporter:
+    def export_pdf(self, source_path: Path, output_directory: str) -> Path:
+        exported = Path(output_directory) / _EXPORTED_NAME
+        _ = exported.write_bytes(source_path.read_bytes())
+
+        return exported
+
+
+class SilentExporter:
+    def export_pdf(self, source_path: Path, output_directory: str) -> Path:
+        return Path(output_directory) / f"{source_path.stem}.pdf"

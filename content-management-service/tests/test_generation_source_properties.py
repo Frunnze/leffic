@@ -20,6 +20,7 @@ from shared.models import FlashcardDeck, Test
 from tests.folder_seeding import seeded_folder
 from tests.property_fakes import RecordingQueuedTask
 from tests.support import in_memory_sessions
+from tests.task_token_support import TASK_TOKENS
 
 _SESSIONS = in_memory_sessions()
 _NO_SOURCE = StudyUnitSource(kind=None, reference=None)
@@ -45,7 +46,11 @@ def test__queued_flashcards_property_falls_back_to_the_default_settings(
             queued_task,
         ):
             _ = _queued_flashcards(
-                request_data, str(folder_id), session, _NO_SOURCE
+                request_data,
+                str(folder_id),
+                session,
+                _NO_SOURCE,
+                TASK_TOKENS,
             )
 
     queued_settings = cast(
@@ -83,7 +88,7 @@ def test__queued_tasks_property_stamps_the_source_on_what_it_creates(
             queued_task,
         ):
             queued = _queued_tasks(
-                request_data, str(folder_id), session
+                request_data, str(folder_id), session, TASK_TOKENS
             )
 
         deck = session.get(

@@ -10,28 +10,32 @@ from fastapi import (
     status,
 )
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
 
 from features.authentication import cookie_security
 from features.authentication.access import (
     create_access_token,
     create_refresh_token,
 )
+from features.authentication.database_user_registry import (
+    DatabaseUserRegistry,
+)
 from features.authentication.schemas import UserCreate, UserLogin
-from shared.database import get_db
+from features.authentication.user_registry import UserRegistry
 from shared.jwt_secret import ALGORITHM, SECRET_KEY
 from shared.models import User
 from shared.password_hashing import hash_password, verify_password
 
 auth = APIRouter()
 
-DatabaseSession = Annotated[Session, Depends(get_db)]
+RegisteredUsers = Annotated[UserRegistry, Depends(DatabaseUserRegistry)]
 
 _ISSUER = "my-issuer"
 _REFRESH_COOKIE = "refresh_token"
 _INVALID_CREDENTIALS = "Invalid token"
 _USERNAME_REGISTERED = "username_registered"
 _EMAIL_REGISTERED = "email_registered"
+_UNKNOWN_EMAIL = "Incorrect email"
+_WRONG_CREDENTIALS = "Incorrect password"
 
 
 def _issue_refresh_cookie(response: Response, user_id: str) -> None:
@@ -40,7 +44,7 @@ def _issue_refresh_cookie(response: Response, user_id: str) -> None:
         value=create_refresh_token(
             data={"user_id": user_id, "iss": _ISSUER}
         ),
-        httponly=True,  # Prevent JavaScript access
+        httponly=True,
         samesite="strict",
         secure=cookie_security.REFRESH_COOKIE_SECURE,
     )
@@ -57,66 +61,57 @@ def _session_payload(user: User, access_token: str) -> dict[str, str]:
 
 @auth.post("/sign-up", response_model=None)
 def register_user(
-    user: UserCreate, response: Response, db: DatabaseSession
+    user: UserCreate, response: Response, users: RegisteredUsers
 ) -> JSONResponse | dict[str, str]:
-    # Check if username or email already exists
-    if db.query(User).filter(User.username == user.username).first():
+    if users.user_named(user.username) is not None:
         return JSONResponse(
             status_code=status.HTTP_409_CONFLICT,
             content={"code": _USERNAME_REGISTERED},
         )
 
-    if db.query(User).filter(User.email == user.email).first():
+    if users.user_with_email(user.email) is not None:
         return JSONResponse(
             status_code=status.HTTP_409_CONFLICT,
             content={"code": _EMAIL_REGISTERED},
         )
 
-    # Create new user
-    db_user = User(
+    registered_user = User(
         username=user.username,
         email=user.email,
         hashed_password=hash_password(user.password),
     )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+    users.register(registered_user)
 
-    user_id = str(db_user.id)
+    user_id = str(registered_user.id)
 
-    # Set the refresh token in the HTTP-only cookie
     _issue_refresh_cookie(response, user_id)
 
-    # Return response with tokens and user
     return _session_payload(
-        db_user,
+        registered_user,
         create_access_token(data={"user_id": user_id, "iss": _ISSUER}),
     )
 
 
 @auth.post("/login", response_model=None)
 def login_user(
-    user_login: UserLogin, response: Response, db: DatabaseSession
+    user_login: UserLogin, response: Response, users: RegisteredUsers
 ) -> JSONResponse | dict[str, str]:
-    # Find user by email
-    user = db.query(User).filter(User.email == user_login.email).first()
+    user = users.user_with_email(user_login.email)
 
-    if not user:
+    if user is None:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"detail": "Incorrect email"},
+            content={"detail": _UNKNOWN_EMAIL},
         )
 
-    # Verify password
     if not verify_password(user_login.password, user.hashed_password):
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"detail": "Incorrect password"},
+            content={"detail": _WRONG_CREDENTIALS},
         )
 
     user_id = str(user.id)
 
-    # Set the refresh token in the HTTP-only cookie
     _issue_refresh_cookie(response, user_id)
 
     return _session_payload(

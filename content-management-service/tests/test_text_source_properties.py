@@ -3,25 +3,28 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+import textract
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from pydantic import ValidationError
 
-from features.study_units_generation import text_sources
+from features.study_units_generation import link_text, text_sources
+from features.study_units_generation.link_text import WebLinkText
 from features.study_units_generation.pdf_pages import PageSelectionError
 from features.study_units_generation.text_sources import (
     PageRange,
     StoredDocument,
-    _readable_document,
-    _text_from_bytes,
+    StoredDocumentText,
     get_file_from_storage,
-    text_from_files,
-    text_from_link,
+    provide_stored_document_text,
 )
+from tests.extraction_support import read_the_document
 from tests.pdf_support import PdfDocuments
 
 _PAGES = st.integers(min_value=1, max_value=20)
 _STORAGE_NAMES = st.text(alphabet="abcdef0123456789", min_size=3, max_size=8)
+_WRITTEN_TEXT = st.text(alphabet="abc \n", max_size=24)
+_STORED_DOCUMENT_TEXT = provide_stored_document_text()
 
 
 def _chunk_for(file_bytes: bytes, document: StoredDocument) -> str:
@@ -70,9 +73,13 @@ def test_text_from_files_property_joins_one_chunk_per_file(
         mock.patch.object(
             text_sources, "get_file_from_storage", return_value=b""
         ),
-        mock.patch.object(text_sources, "_text_from_bytes", _chunk_for),
+        mock.patch.object(
+            StoredDocumentText,
+            "_text_from_bytes",
+            mock.Mock(side_effect=_chunk_for),
+        ),
     ):
-        joined = text_from_files(documents)
+        joined = _STORED_DOCUMENT_TEXT.text_from_files(documents)
 
     assert joined == "".join(f"{name}|" for name in names)
 
@@ -89,7 +96,7 @@ def test__readable_document_property_refuses_pages_from_an_unpaged_file(
     )
 
     with pytest.raises(PageSelectionError):
-        _ = _readable_document(b"anything", document)
+        _ = _STORED_DOCUMENT_TEXT._readable_document(b"anything", document)
 
 
 @settings(max_examples=10, deadline=None)
@@ -101,8 +108,10 @@ def test__text_from_bytes_property_stays_empty_without_an_extractor(
         storage_name="f.unheard-of", extension="unheard-of"
     )
 
+    blank_pages = PdfDocuments.blank(page_count)
+
     assert (
-        _text_from_bytes(PdfDocuments.blank(page_count), document) == ""
+        _STORED_DOCUMENT_TEXT._text_from_bytes(blank_pages, document) == ""
     )
 
 
@@ -119,14 +128,36 @@ def test_text_from_link_property_never_answers_with_none(
 
     with (
         mock.patch.object(
-            text_sources, "get_youtube_transcript_auto", return_value=None
+            link_text, "get_youtube_transcript_auto", return_value=None
         ),
         mock.patch.object(
-            text_sources,
+            link_text,
             "extract_link_main_content",
             return_value=body or None,
         ),
     ):
-        extracted = text_from_link(link)
+        extracted = WebLinkText().text_from_link(link)
 
     assert extracted == (body or "")
+
+
+@settings(max_examples=25, deadline=None)
+@given(_WRITTEN_TEXT)
+def test_provide_stored_document_text_property_reads_back_stored_text(
+    written: str,
+) -> None:
+    document = StoredDocument(storage_name="notes.txt", extension="txt")
+    expected = f"{written.strip()}\n" if written.strip() else ""
+
+    with tempfile.TemporaryDirectory() as storage:
+        _ = (Path(storage) / document.storage_name).write_text(written)
+
+        with (
+            mock.patch.object(text_sources, "_FILES_DIRECTORY", storage),
+            mock.patch.object(textract, "process", read_the_document),
+        ):
+            extracted = provide_stored_document_text().text_from_files(
+                [document]
+            )
+
+    assert extracted == expected

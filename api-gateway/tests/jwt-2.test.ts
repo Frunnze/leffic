@@ -1,7 +1,28 @@
 import { describe, expect, it, vi } from "vitest";
 import fc from "fast-check";
 import crypto from "crypto";
-import { SECRET, requestWith, signedWith, statusOf } from "./jwt-support";
+import {
+  MISSING_SECRETS,
+  MISSING_SECRET_ERROR,
+  PREFLIGHT_METHOD,
+  PREFLIGHT_STATUS,
+  REFUSED_TOKEN_STATUS,
+  SECRET,
+  SECRET_VARIABLE,
+  VERIFIED_AUTHORIZATION,
+  authorizationOrNoneArbitrary,
+  bearerAuthorization,
+  expectNoResponseBody,
+  foreignTokenArbitrary,
+  nonPreflightMethodArbitrary,
+  protectedGuardAnswers,
+  publicGuardAnswers,
+  requestPartsArbitrary,
+  requestUsing,
+  requestWith,
+  signedWith,
+  statusOf,
+} from "./jwt-support";
 
 describe("hasExpired", () => {
   it("hasExpired property accepts every expiry still ahead of now", () => {
@@ -58,5 +79,112 @@ describe("hasExpired", () => {
     const token = signedWith({ exp: now });
 
     expect(statusOf(requestWith(`Bearer ${token}`))).toBe("invalid");
+  });
+});
+
+describe("guardPublicRoute", () => {
+  it("answers a preflight with 204 and no body", () => {
+    const preflight = requestUsing(PREFLIGHT_METHOD);
+
+    expect(publicGuardAnswers(preflight)).toEqual([[PREFLIGHT_STATUS]]);
+  });
+
+  it("guardPublicRoute property passes every non-preflight request", () => {
+    fc.assert(
+      fc.property(
+        nonPreflightMethodArbitrary,
+        authorizationOrNoneArbitrary,
+        (method, authorization) => {
+          const request = requestUsing(method, authorization);
+
+          expect(publicGuardAnswers(request)).toEqual([]);
+        },
+      ),
+    );
+  });
+
+  it("lets a request through without consulting a missing secret", () => {
+    vi.stubEnv(SECRET_VARIABLE, undefined);
+    const request = requestWith();
+
+    expect(publicGuardAnswers(request)).toEqual([]);
+    expect(request.error).not.toHaveBeenCalled();
+  });
+
+  it("guardPublicRoute property never sends a response body", () => {
+    fc.assert(
+      fc.property(requestPartsArbitrary, ([method, authorization]) => {
+        const request = requestUsing(method, authorization);
+
+        expectNoResponseBody(publicGuardAnswers(request));
+      }),
+    );
+  });
+});
+
+describe("guardProtectedRoute", () => {
+  it("answers a preflight with 204 without ever checking the secret", () => {
+    vi.stubEnv(SECRET_VARIABLE, undefined);
+    const preflight = requestUsing(PREFLIGHT_METHOD);
+
+    expect(protectedGuardAnswers(preflight)).toEqual([[PREFLIGHT_STATUS]]);
+    expect(preflight.error).not.toHaveBeenCalled();
+  });
+
+  it("guardProtectedRoute property refuses a foreign token with 401", () => {
+    fc.assert(
+      fc.property(
+        nonPreflightMethodArbitrary,
+        foreignTokenArbitrary,
+        (method, token) => {
+          const request = requestUsing(method, bearerAuthorization(token));
+          const answers = protectedGuardAnswers(request);
+
+          expect(answers).toEqual([[REFUSED_TOKEN_STATUS]]);
+        },
+      ),
+    );
+  });
+
+  it("guardProtectedRoute property passes every verified request", () => {
+    fc.assert(
+      fc.property(nonPreflightMethodArbitrary, (method) => {
+        const request = requestUsing(method, VERIFIED_AUTHORIZATION);
+
+        expect(protectedGuardAnswers(request)).toEqual([]);
+      }),
+    );
+  });
+
+  it.each(MISSING_SECRETS)(
+    "refuses a verified request with 401 when the secret is %j",
+    (secret) => {
+      vi.stubEnv(SECRET_VARIABLE, secret);
+      const request = requestWith(VERIFIED_AUTHORIZATION);
+
+      expect(protectedGuardAnswers(request)).toEqual([[REFUSED_TOKEN_STATUS]]);
+    },
+  );
+
+  it.each(MISSING_SECRETS)(
+    "logs the missing secret when the secret is %j",
+    (secret) => {
+      vi.stubEnv(SECRET_VARIABLE, secret);
+      const request = requestWith(VERIFIED_AUTHORIZATION);
+
+      protectedGuardAnswers(request);
+
+      expect(request.error).toHaveBeenCalledWith(MISSING_SECRET_ERROR);
+    },
+  );
+
+  it("guardProtectedRoute property never sends a response body", () => {
+    fc.assert(
+      fc.property(requestPartsArbitrary, ([method, authorization]) => {
+        const request = requestUsing(method, authorization);
+
+        expectNoResponseBody(protectedGuardAnswers(request));
+      }),
+    );
   });
 });

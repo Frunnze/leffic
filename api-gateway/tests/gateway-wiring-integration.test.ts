@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  argumentText,
   directivesNamed,
   gatewayConfigurationText,
   rateLimitApplications,
@@ -13,34 +14,44 @@ import {
   CLIENT_ADDRESS_KEY,
   SELECTOR_MAP_COUNT,
 } from "./rate-limit-support";
+import {
+  ACCESS_GUARD_DIRECTIVE,
+  ACCOUNT_LOCATION,
+  CATCH_ALL_LOCATION,
+  CONTENT_LOCATION,
+  DOCUMENTS_LOCATION,
+  LOCATION_DIRECTIVE,
+  PUBLIC_USER_LOCATION,
+  accessGuardsOf,
+  childrenNamed,
+  requiredLocation,
+} from "./gateway-location-support";
 
 const CORS_ORIGIN_SOURCE = "$http_origin";
 const CORS_ORIGIN_TARGET = "$allowed_origin";
 const ALLOWED_BROWSER_ORIGIN = "http://localhost:3009";
+const LOCATION_LEVEL = "http/server/location";
+const CATCH_ALL_FALLBACK = 'try_files "" =404;';
+const CATCH_ALL_CHILDREN = [["try_files", "", "=404"]];
+const PROXY_DIRECTIVE = "proxy_pass";
+const TOKEN_STATUS_DIRECTIVE = "js_set";
+const NJS_MODULE_IMPORT = "js_import jwt from jwt.js;";
+const NJS_MODULE_PATH = "js_path /etc/nginx/njs/;";
 
 const PROXIED_ROUTES = [
-  ["/api/user/", "http://$user_service:8000"],
-  ["/api/user/account", "http://$account_service:8000"],
-  ["/api/content/", "http://$content_service:8000"],
-  [
-    "~ ^/api/content/(upload-files|file|extract-text)$",
-    "http://$documents_service:8000",
-  ],
+  [PUBLIC_USER_LOCATION, "http://$user_service:8000"],
+  [ACCOUNT_LOCATION, "http://$account_service:8000"],
+  [CONTENT_LOCATION, "http://$content_service:8000"],
+  [DOCUMENTS_LOCATION, "http://$documents_service:8000"],
 ];
 
 function locationSignatures(): readonly string[] {
-  return directivesNamed("location").map((directive) => {
-    return directive.arguments.join(" ");
-  });
+  return directivesNamed(LOCATION_DIRECTIVE).map(argumentText);
 }
 
 function proxyTargetOf(signature: string): string {
-  const location = directivesNamed("location").find((directive) => {
-    return directive.arguments.join(" ") === signature;
-  });
-  const proxying = location?.children.find((child) => {
-    return child.name === "proxy_pass";
-  });
+  const location = requiredLocation(signature);
+  const proxying = childrenNamed(location, PROXY_DIRECTIVE)[0];
 
   return proxying?.arguments[0] ?? "";
 }
@@ -112,21 +123,37 @@ describe("gateway routing left intact", () => {
     }
   });
 
-  it("still answers an unrouted path with 404, not a proxy error", () => {
-    const catchAll = directivesNamed("location").find((directive) => {
-      return directive.arguments.join(" ") === "/";
+  it("answers an unrouted path with 404 only after the limits run", () => {
+    const catchAll = requiredLocation(CATCH_ALL_LOCATION);
+    const answers = catchAll.children.map((child) => {
+      return [child.name, ...child.arguments];
     });
-    const returning = catchAll?.children[0];
 
-    expect(returning?.name).toBe("return");
-    expect(returning?.arguments).toEqual(["404"]);
+    expect(answers).toEqual(CATCH_ALL_CHILDREN);
+    expect(gatewayConfigurationText()).toContain(CATCH_ALL_FALLBACK);
   });
 
-  it("still resolves the token status through the njs module", () => {
-    const configuration = gatewayConfigurationText();
+  it("runs no njs guard on an unrouted path, not even inherited", () => {
+    const catchAll = requiredLocation(CATCH_ALL_LOCATION);
+    const accessGuards = directivesNamed(ACCESS_GUARD_DIRECTIVE);
+    const inherited = accessGuards.filter((guard) => {
+      return guard.level !== LOCATION_LEVEL;
+    });
 
-    expect(configuration).toContain("js_import jwt from jwt.js;");
-    expect(configuration).toContain("js_set $jwt_status jwt.status;");
+    expect(accessGuardsOf(catchAll)).toEqual([]);
+    expect(inherited).toEqual([]);
+  });
+
+  it("no longer computes a token status into a variable", () => {
+    expect(gatewayConfigurationText()).not.toContain(TOKEN_STATUS_DIRECTIVE);
+  });
+
+  it("still imports the njs module under the name jwt", () => {
+    expect(gatewayConfigurationText()).toContain(NJS_MODULE_IMPORT);
+  });
+
+  it("still looks for the njs module where the image installs it", () => {
+    expect(gatewayConfigurationText()).toContain(NJS_MODULE_PATH);
   });
 
   it("still allows exactly the one browser origin it allowed before", () => {

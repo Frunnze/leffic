@@ -16,7 +16,6 @@ from features.study_units_generation.generation_router import (
     _queued_tasks,
     _queued_test,
 )
-from features.study_units_generation.task_ownership import signed_task_id
 from shared.database import get_db
 from shared.models import Folder
 from tests.support import (
@@ -25,6 +24,7 @@ from tests.support import (
     authorization,
     in_memory_sessions,
 )
+from tests.task_token_support import TASK_TOKENS
 
 _OK: Final[int] = 200
 _HOME_ID: Final[uuid.UUID] = uuid.UUID(USER_ID)
@@ -39,14 +39,26 @@ _RESPONSE_KEYS: Final[frozenset[str]] = frozenset({
     "test_id",
 })
 _HELPER_SIGNATURES: Final[dict[str, tuple[str, ...]]] = {
-    "_queued_tasks": ("request_data", "folder_id", "db"),
+    "_queued_tasks": (
+        "request_data",
+        "folder_id",
+        "db",
+        "task_token_signer",
+    ),
     "_queued_flashcards": (
         "request_data",
         "folder_id",
         "db",
         "source",
+        "task_token_signer",
     ),
-    "_queued_test": ("request_data", "folder_id", "db", "source"),
+    "_queued_test": (
+        "request_data",
+        "folder_id",
+        "db",
+        "source",
+        "task_token_signer",
+    ),
 }
 
 
@@ -128,7 +140,7 @@ def test_note_task_id_is_signed_with_the_target_folder(
 ) -> None:
     body = _generated(client, {"note": {}})
 
-    assert body["note_task_id"] == signed_task_id(
+    assert body["note_task_id"] == TASK_TOKENS.signed_task_id(
         _QUEUED_ID, _FOLDER_ID
     )
     assert queued_task.calls[0]["folder_id"] == _FOLDER_ID
@@ -143,7 +155,7 @@ def test_flashcard_task_ids_are_each_signed(
 
     assert queued_task.calls
     assert body["flashcard_task_ids"] == [
-        signed_task_id(_QUEUED_ID, _FOLDER_ID)
+        TASK_TOKENS.signed_task_id(_QUEUED_ID, _FOLDER_ID)
     ] * 2
 
 
@@ -156,7 +168,7 @@ def test_test_task_ids_are_each_signed(
 
     assert queued_task.calls
     assert body["test_task_ids"] == [
-        signed_task_id(_QUEUED_ID, _FOLDER_ID)
+        TASK_TOKENS.signed_task_id(_QUEUED_ID, _FOLDER_ID)
     ] * 2
 
 

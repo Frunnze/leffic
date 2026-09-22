@@ -4,7 +4,9 @@ from urllib.parse import quote
 
 from fastapi.testclient import TestClient
 
-from features.study_units_generation.task_ownership import signed_task_id
+from features.study_units_generation.task_ownership import (
+    SecretSignedTaskTokens,
+)
 
 FLASHCARDS_STATUS: Final[str] = "/flashcards-status"
 TEST_TASK_STATUS: Final[str] = "/test-task-status"
@@ -24,10 +26,11 @@ UNAUTHORIZED: Final[int] = 401
 OK: Final[int] = 200
 SERVER_ERROR_FLOOR: Final[int] = 500
 PENDING: Final[str] = "PENDING"
+TASK_TOKENS: Final[SecretSignedTaskTokens] = SecretSignedTaskTokens()
 
 
 def owned_token(folder_id: str) -> str:
-    return signed_task_id(CELERY_TASK_ID, folder_id)
+    return TASK_TOKENS.signed_task_id(CELERY_TASK_ID, folder_id)
 
 
 def forged_token(folder_id: str) -> str:
@@ -35,7 +38,9 @@ def forged_token(folder_id: str) -> str:
 
 
 def token_for_an_unknown_folder() -> str:
-    return signed_task_id(CELERY_TASK_ID, str(uuid.uuid4()))
+    return TASK_TOKENS.signed_task_id(
+        CELERY_TASK_ID, str(uuid.uuid4())
+    )
 
 
 class ForbiddenCeleryLookupError(AssertionError):

@@ -18,6 +18,7 @@ import type {
   AssessmentSessionResult,
 } from "./assessment-models";
 import type { EditedTestItem } from "./TestItemEditor";
+import type { ProgressMemory } from "./progress-memory";
 
 const FIRST_PAGE = 1;
 const NOTHING_CORRECT: AssessmentSessionResult = { correct: 0 };
@@ -25,17 +26,20 @@ const NOTHING_CORRECT: AssessmentSessionResult = { correct: 0 };
 type AssessmentReviewProps = {
   readonly scope: AssessmentScope;
   readonly scopeId: string;
+  readonly progress: ProgressMemory;
 };
 
 export function AssessmentReview(props: AssessmentReviewProps): JSX.Element {
-  const [currentPage, setCurrentPage] = createSignal<AssessmentPage | null>(null);
+  const [currentPage, setCurrentPage] =
+    createSignal<AssessmentPage | null>(null);
   const [itemIndex, setItemIndex] = createSignal(
-    untrack(() => AssessmentProgress.storedIndex(props.scopeId)),
+    untrack(() => props.progress.storedIndex(props.scopeId)),
   );
   const [chosenAnswers, setChosenAnswers] = createSignal<
     Readonly<Record<string, readonly AssessmentAnswer[]>>
   >({});
-  const [result, setResult] = createSignal<AssessmentSessionResult | null>(null);
+  const [result, setResult] =
+    createSignal<AssessmentSessionResult | null>(null);
 
   const itemOn = (page: AssessmentPage): AssessmentItem | undefined =>
     page.items[itemIndex()];
@@ -47,13 +51,17 @@ export function AssessmentReview(props: AssessmentReviewProps): JSX.Element {
     AssessmentProgress.overallPosition(page.page, page.perPage, itemIndex());
 
   const loadPage = async (number: number): Promise<AssessmentPage> => {
-    const loaded = await AssessmentApi.page(props.scope, props.scopeId, number);
+    const loaded = await AssessmentApi.page(
+      props.scope,
+      props.scopeId,
+      number,
+    );
     setCurrentPage(loaded);
 
     return loaded;
   };
 
-  onMount(() => void loadPage(AssessmentProgress.storedPage(props.scopeId)));
+  onMount(() => void loadPage(props.progress.storedPage(props.scopeId)));
 
   const submitCurrent = async (
     page: AssessmentPage,
@@ -68,7 +76,7 @@ export function AssessmentReview(props: AssessmentReviewProps): JSX.Element {
   const finish = async (page: AssessmentPage): Promise<void> => {
     const outcome = await AssessmentApi.sessionResult(page.testSession);
     setResult(outcome ?? NOTHING_CORRECT);
-    AssessmentProgress.forget(props.scopeId);
+    props.progress.forget(props.scopeId);
   };
 
   const goToNext = async (
@@ -78,7 +86,7 @@ export function AssessmentReview(props: AssessmentReviewProps): JSX.Element {
     await submitCurrent(page, item);
 
     if (itemIndex() + 1 < page.items.length) {
-      AssessmentProgress.remember(props.scopeId, page.page, itemIndex() + 1);
+      props.progress.remember(props.scopeId, page.page, itemIndex() + 1);
       setItemIndex(itemIndex() + 1);
       return;
     }
@@ -89,7 +97,7 @@ export function AssessmentReview(props: AssessmentReviewProps): JSX.Element {
     }
 
     await loadPage(page.page + 1);
-    AssessmentProgress.remember(props.scopeId, page.page + 1, 0);
+    props.progress.remember(props.scopeId, page.page + 1, 0);
     setItemIndex(0);
   };
 
@@ -100,7 +108,7 @@ export function AssessmentReview(props: AssessmentReviewProps): JSX.Element {
     await submitCurrent(page, item);
 
     if (itemIndex() > 0) {
-      AssessmentProgress.remember(props.scopeId, page.page, itemIndex() - 1);
+      props.progress.remember(props.scopeId, page.page, itemIndex() - 1);
       setItemIndex(itemIndex() - 1);
       return;
     }
@@ -108,7 +116,7 @@ export function AssessmentReview(props: AssessmentReviewProps): JSX.Element {
     const previousNumber = Math.max(FIRST_PAGE, page.page - 1);
     const previous = await loadPage(previousNumber);
     const lastIndex = Math.max(0, previous.items.length - 1);
-    AssessmentProgress.remember(props.scopeId, previousNumber, lastIndex);
+    props.progress.remember(props.scopeId, previousNumber, lastIndex);
     setItemIndex(lastIndex);
   };
 
@@ -124,7 +132,7 @@ export function AssessmentReview(props: AssessmentReviewProps): JSX.Element {
   const restart = async (): Promise<void> => {
     setResult(null);
     setChosenAnswers({});
-    AssessmentProgress.remember(props.scopeId, FIRST_PAGE, 0);
+    props.progress.remember(props.scopeId, FIRST_PAGE, 0);
     setItemIndex(0);
     await loadPage(FIRST_PAGE);
   };
@@ -169,7 +177,9 @@ export function AssessmentReview(props: AssessmentReviewProps): JSX.Element {
                   position={positionOn(page())}
                   totalItems={page().totalItems}
                   onChoose={(answer) => { chooseAnswer(item(), answer); }}
-                  onEdit={(edited) => void saveQuestion(page(), item(), edited)}
+                  onEdit={(edited) =>
+                    void saveQuestion(page(), item(), edited)
+                  }
                   onBack={() => void goToPrevious(page(), item())}
                   onNext={() => void goToNext(page(), item())}
                 />

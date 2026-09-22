@@ -1,14 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
+  argumentText,
+  directivesNamed,
   gatewayConfigurationText,
   rateLimitZones,
 } from "./nginx-config-support";
 import { selectorMapFeeding } from "./nginx-selector-support";
 import {
+  AUTHENTICATION_SELECTOR_VARIABLE,
   AUTHENTICATION_ZONE_WORD,
   CLIENT_ADDRESS_BYTES,
   CLIENT_ADDRESS_KEY,
   GENERAL_ZONE_WORD,
+  GENERATION_COST_SELECTOR_VARIABLE,
   GENERATION_COST_ZONE_WORD,
   GENERATION_WATCHER_POLL,
   evaluatedKey,
@@ -20,6 +24,21 @@ const GENERATION_WATCHER_CEILING_PER_SECOND = 4;
 const SELECTOR_FED_ZONE_WORDS = [
   AUTHENTICATION_ZONE_WORD,
   GENERATION_COST_ZONE_WORD,
+];
+
+const ZONE_DECLARATION_DIRECTIVE = "limit_req_zone";
+const LIMIT_APPLICATION_DIRECTIVE = "limit_req";
+
+const DECLARED_ZONES = [
+  `${AUTHENTICATION_SELECTOR_VARIABLE} zone=auth_limit:10m rate=10r/m`,
+  `${GENERATION_COST_SELECTOR_VARIABLE} zone=cost_limit:10m rate=30r/m`,
+  `${CLIENT_ADDRESS_KEY} zone=general_limit:10m rate=20r/s`,
+];
+
+const APPLIED_LIMITS = [
+  "zone=auth_limit burst=5 nodelay",
+  "zone=cost_limit burst=10 nodelay",
+  "zone=general_limit burst=40 nodelay",
 ];
 
 describe("gateway rate-limit zones", () => {
@@ -89,5 +108,19 @@ describe("gateway rate-limit zones", () => {
   it("counts every route towards the general zone, not a chosen few", () => {
     expect(requiredZone(GENERAL_ZONE_WORD).key).toBe(CLIENT_ADDRESS_KEY);
     expect(selectorMapFeeding(GENERAL_ZONE_WORD)).toBeNull();
+  });
+
+  it("declares the three zones exactly as it declared them before", () => {
+    const zones = directivesNamed(ZONE_DECLARATION_DIRECTIVE);
+    const declared = zones.map(argumentText);
+
+    expect(declared).toEqual(DECLARED_ZONES);
+  });
+
+  it("applies the three limits with exactly the bursts they had", () => {
+    const limits = directivesNamed(LIMIT_APPLICATION_DIRECTIVE);
+    const applied = limits.map(argumentText);
+
+    expect(applied).toEqual(APPLIED_LIMITS);
   });
 });

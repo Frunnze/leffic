@@ -4,9 +4,11 @@ from unittest import mock
 
 import pytest
 
-from shared.pdf_conversion import ConversionError, PdfConversion
+from shared.libreoffice_exporter import provide_pdf_conversion
+from shared.pdf_conversion import ConversionError
 
 _PDF_BYTES = b"%PDF-1.7 converted"
+_CONVERSION = provide_pdf_conversion()
 
 
 class LibreOfficeStub:
@@ -39,7 +41,7 @@ def test_a_converted_document_comes_back_as_pdf_bytes() -> None:
     libreoffice = LibreOfficeStub()
 
     with mock.patch.object(subprocess, "run", libreoffice):
-        converted = PdfConversion.converted(b"docx payload", "docx")
+        converted = _CONVERSION.converted(b"docx payload", "docx")
 
     assert converted == _PDF_BYTES
 
@@ -48,7 +50,7 @@ def test_the_document_is_handed_to_libreoffice_with_its_extension() -> None:
     libreoffice = LibreOfficeStub()
 
     with mock.patch.object(subprocess, "run", libreoffice):
-        _ = PdfConversion.converted(b"pptx payload", "pptx")
+        _ = _CONVERSION.converted(b"pptx payload", "pptx")
 
     assert Path(libreoffice.commands[0][-1]).suffix == ".pptx"
 
@@ -57,7 +59,7 @@ def test_the_document_is_written_where_libreoffice_reads_it() -> None:
     libreoffice = LibreOfficeStub()
 
     with mock.patch.object(subprocess, "run", libreoffice):
-        _ = PdfConversion.converted(b"docx payload", "docx")
+        _ = _CONVERSION.converted(b"docx payload", "docx")
 
     assert libreoffice.sources == [b"docx payload"]
 
@@ -69,7 +71,7 @@ def test_a_failed_conversion_reports_what_libreoffice_wrote() -> None:
         mock.patch.object(subprocess, "run", libreoffice),
         pytest.raises(ConversionError) as refusal,
     ):
-        _ = PdfConversion.converted(b"docx payload", "docx")
+        _ = _CONVERSION.converted(b"docx payload", "docx")
 
     assert "unreadable" in str(refusal.value)
 
@@ -81,6 +83,6 @@ def test_a_conversion_that_writes_no_pdf_is_refused() -> None:
         mock.patch.object(subprocess, "run", libreoffice),
         pytest.raises(ConversionError) as refusal,
     ):
-        _ = PdfConversion.converted(b"docx payload", "docx")
+        _ = _CONVERSION.converted(b"docx payload", "docx")
 
     assert str(refusal.value) == "LibreOffice produced no PDF"

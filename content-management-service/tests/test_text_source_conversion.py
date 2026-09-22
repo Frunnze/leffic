@@ -10,7 +10,7 @@ from features.study_units_generation import text_sources
 from features.study_units_generation.text_sources import (
     PageRange,
     StoredDocument,
-    text_from_files,
+    provide_stored_document_text,
 )
 from tests.pdf_support import (
     DocumentRecorder,
@@ -19,6 +19,7 @@ from tests.pdf_support import (
 )
 
 _FILE_ID = "3f6c2b1a"
+_STORED_DOCUMENT_TEXT = provide_stored_document_text()
 
 
 def _extraction_of_a_ranged_docx(
@@ -37,7 +38,7 @@ def _extraction_of_a_ranged_docx(
         mock.patch.object(subprocess, "run", libreoffice),
         mock.patch.object(textract, "process", recorder),
     ):
-        _ = text_from_files([ranged])
+        _ = _STORED_DOCUMENT_TEXT.text_from_files([ranged])
 
     return recorder
 
@@ -84,7 +85,7 @@ def test_a_docx_without_a_page_range_is_never_converted(
         mock.patch.object(subprocess, "run", libreoffice),
         mock.patch.object(textract, "process", recorder),
     ):
-        _ = text_from_files([whole])
+        _ = _STORED_DOCUMENT_TEXT.text_from_files([whole])
 
     assert libreoffice.converted_sources == []
     assert recorder.extensions == ["docx"]
@@ -112,7 +113,7 @@ def test_every_paged_format_accepts_a_range(
         mock.patch.object(subprocess, "run", LibreOfficeStub(6)),
         mock.patch.object(textract, "process", recorder),
     ):
-        _ = text_from_files([ranged])
+        _ = _STORED_DOCUMENT_TEXT.text_from_files([ranged])
 
     assert (
         PdfDocuments.page_count(recorder.documents[0]) == expected_page_count
@@ -132,7 +133,7 @@ def test_temporary_file_is_suffixed_with_the_storage_name(
         mock.patch.object(text_sources, "_FILES_DIRECTORY", str(tmp_path)),
         mock.patch.object(textract, "process", extractor),
     ):
-        _ = text_from_files([document])
+        _ = _STORED_DOCUMENT_TEXT.text_from_files([document])
 
     written = cast("str", extractor.call_args.args[0])
 

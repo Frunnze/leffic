@@ -1,126 +1,41 @@
-"""Cohesion through shared state/dependencies and direct member calls."""
-
-from srp_metrics import CallableFacts, burden, implementation_burden
-from srp_owner_policy import owner_coefficient
-from srp_relationships import external_profiles, pair_cohesion
+from srp_effects import effect_domains
+from srp_entities import external_entities, reason_coefficient
+from srp_metrics import CallableFacts, entity_reasons
 
 
-def components(members: list[CallableFacts]) -> list[list[int]]:
-    remaining = set(range(len(members)))
-    groups: list[list[int]] = []
-    resources = [set(member.resources) for member in members]
-    while remaining:
-        group = {min(remaining)}
-        pending = list(group)
-        remaining.difference_update(group)
-        while pending:
-            current = pending.pop()
-            for other in sorted(remaining):
-                connected = (
-                    resources[current] & resources[other]
-                    or members[other].name in members[current].links
-                    or members[current].name in members[other].links
-                )
-                if connected:
-                    group.add(other)
-                    pending.append(other)
-                    remaining.remove(other)
-        groups.append(sorted(group))
-    return groups
+def members_of(owner: dict, callables: list[CallableFacts]) -> list[CallableFacts]:
+    return [member for member in callables if member.owner == owner["name"]]
 
 
-def owner_score(
-    owner: dict, callables: list[CallableFacts], clients: dict | None = None
-) -> dict:
-    members = [
-        member
-        for member in callables
-        if member.owner == owner["name"]
-        and member.name.rsplit(".", 1)[-1] not in {"__init__", "__new__", "constructor"}
-        and member.statements >= 1
-    ]
-    groups = components(members)
-    supported = [
-        group
-        for group in groups
-        if sum(members[i].statements >= 2 for i in group) >= 2
-        and sum(members[i].statements for i in group) >= 6
-        and (
-            any(members[i].resources for i in group)
-            or any(
-                members[j].name in members[i].links
-                for i in group
-                for j in group
-                if i != j
-            )
-        )
-    ]
-    count = len(members)
-    disconnected = (1 - max(map(len, groups)) / count) if count else 0.0
-    support = min(
-        (sum(members[i].statements for i in group) / 12 for group in supported),
-        default=0,
-    )
-    structural = max(
-        (implementation_burden(burden(member)) for member in members), default=0
-    )
-    if len(supported) < 2:
-        support = 0.0
-    relationships = pair_cohesion(members, groups)
-    profiles = external_profiles(members)
-    effect_groups = profiles["effect_groups"]
-    group_names = [[members[i].name for i in group] for group in groups]
-    metrics = {
-        "members": count,
-        "components": len(groups),
-        "supported_components": len(supported),
-        "groups": group_names,
-        "supported_groups": [[members[i].name for i in group] for group in supported],
-        "weighted_methods": sum(member.complexity for member in members),
-        "foreign_data": len(
-            {name for member in members for name in member.foreign_data}
-        ),
-        **relationships,
-        **profiles,
-    }
-    decision = owner_coefficient(
-        owner,
-        metrics,
-        structural,
-        min(1.0, 2 * disconnected),
-        min(1.0, support),
-        clients or {},
-    )
+def entity_members(members: list[CallableFacts]) -> dict[str, list[str]]:
+    reached: dict[str, list[str]] = {}
+    for member in members:
+        for name in external_entities(member.calls + member.delegated_effects):
+            reached.setdefault(name, []).append(member.name)
+    return {name: sorted(names) for name, names in sorted(reached.items())}
+
+
+def owner_score(owner: dict, callables: list[CallableFacts]) -> dict:
+    members = members_of(owner, callables)
+    direct_calls = [call for member in members for call in member.calls]
+    delegated_calls = [call for member in members for call in member.delegated_effects]
+    direct = effect_domains(direct_calls)
+    delegated = effect_domains(delegated_calls)
+    domains = effect_domains(direct_calls + delegated_calls)
+    entities = external_entities(direct_calls + delegated_calls)
+    reached = entity_members(members)
     return {
         **owner,
-        **decision,
-        "metrics": metrics,
-        "signals": {
-            "disconnected_fraction": disconnected,
-            "group_support": min(1.0, support),
-            "implementation_burden": structural,
-        },
-        "reasons": decision["evidence"]
-        + decision["counterevidence"]
-        + (
-            [
-                "independent member groups: "
-                + " | ".join(
-                    ", ".join(members[i].name for i in group) for group in supported
-                )
-            ]
-            if len(supported) >= 2
-            else []
-        )
-        + (
-            [
-                "separate I/O implementations: "
-                + " | ".join(
-                    f"{domain}: {', '.join(names)}"
-                    for domain, names in effect_groups.items()
-                )
-            ]
-            if len(effect_groups) >= 2
-            else []
-        ),
+        "coefficient": round(reason_coefficient(entities), 12),
+        "entities": entities,
+        "entity_members": reached,
+        "metrics": {"members": len(members)},
+        "effect_domains": domains,
+        "direct_effect_domains": direct,
+        "delegated_effect_domains": delegated,
+        "reasons": entity_reasons(direct, delegated)
+        + [
+            f"{name} is reached by: " + ", ".join(names)
+            for name, names in reached.items()
+        ],
     }
